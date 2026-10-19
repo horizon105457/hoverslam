@@ -1,0 +1,10 @@
+node_modules/
+dist/
+# rendered films (tools/film.mjs) and reference footage / screenshots
+renders/
+*.MOV
+*.mov
+image.png
+# precomputed runs: regenerate with `npm run precompute:all` (~4 min)
+public/sims/
+.DS_Store

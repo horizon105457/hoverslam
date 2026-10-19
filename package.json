@@ -1,0 +1,23 @@
+{
+  "name": "vehicle-destruction-sim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "settle": "node tools/build-settle.mjs",
+    "precompute": "node tools/precompute.mjs",
+    "precompute:all": "for p in roof nose side rear corner flat; do node tools/precompute.mjs preset=$p dur=6.5 hz=100 & done; wait",
+    "film": "node tools/film.mjs",
+    "drop": "node tools/drop-test.mjs"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.4",
+    "playwright-core": "^1.56.0"
+  }
+}

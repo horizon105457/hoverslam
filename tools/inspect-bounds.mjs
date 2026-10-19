@@ -1,0 +1,11 @@
+import fs from 'fs';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const buf = fs.readFileSync('public/assets/car-model.glb');
+const gltf = await new GLTFLoader().parseAsync(buf.buffer.slice(buf.byteOffset, buf.byteOffset+buf.byteLength), '');
+const root = gltf.scene; root.updateMatrixWorld(true);
+const parts = {};
+root.traverse(o => { if (o.userData.part_type) { const b = new THREE.Box3().setFromObject(o); parts[o.userData.part_id] = b; console.log(o.userData.part_id.padEnd(16), b.min.toArray().map(v=>v.toFixed(3)).join(','), ' | ', b.max.toArray().map(v=>v.toFixed(3)).join(',')); } });
+let names=[]; root.traverse(o=>{ if(o.isMesh) names.push(o.name+' <'+o.parent.name+'>'); });
+console.log(names.filter(n=>/seat|glass|Glass|lens|cover|wiper|Wiper|optic/.test(n)).join('\n'));
+let v=0; root.traverse(o=>{ if(o.isMesh) v+=o.geometry.attributes.position.count; }); console.log('verts', v);
