@@ -227,6 +227,72 @@ function alignWinding(P, N, index, i0, i1, vo) {
   }
 }
 
+// The source model's normals are not even consistently oriented within one surface: on the hood the top points
+// into the car and the rounded front lip out of it, so the rows of the lip strip alternate between "top" and
+// "front" shading (sawtooth that crawls and flickers with every camera move along hood, lamp brows and seams).
+// Orient every connected surface consistently first: triangles are flood-filled across manifold edges (vertices
+// welded by position, a shared edge must be walked in opposite directions), each surface takes the orientation
+// most of its authored normals agree with, and vertex normals pointing against their surface are negated.
+function orientSurfaces(m) {
+  const P = m.pos, N = m.nrm, I = m.index, nv = P.length / 3, nt = I.length / 3;
+  const pid = new Int32Array(nv), weld = new Map();
+  for (let v = 0; v < nv; v++) { // 0.05 mm grid, 17 bits per axis
+    const key = ((Math.round(P[v * 3] * 2e4) + 65536) * 131072 + Math.round(P[v * 3 + 1] * 2e4) + 65536) * 131072 + Math.round(P[v * 3 + 2] * 2e4) + 65536;
+    let id = weld.get(key);
+    if (id === undefined) weld.set(key, (id = weld.size));
+    pid[v] = id;
+  }
+  const np = weld.size, edges = new Map(), tE = new Int32Array(nt * 3), eT = [], eD = [];
+  for (let t = 0; t < nt; t++) for (let k = 0; k < 3; k++) {
+    const a = pid[I[t * 3 + k]], b = pid[I[t * 3 + (k + 1) % 3]], key = a < b ? a * np + b : b * np + a;
+    let e = edges.get(key);
+    if (e === undefined) { edges.set(key, (e = eT.length / 2)); eT.push(t, -1); eD.push(a < b ? 1 : -1, 0); }
+    else if (eT[e * 2 + 1] === -1) { eT[e * 2 + 1] = t; eD[e * 2 + 1] = a < b ? 1 : -1; }
+    else eT[e * 2] = -2; // three or more triangles: do not propagate across
+    tE[t * 3 + k] = e;
+  }
+  const sgn = new Int8Array(nt), comp = new Int32Array(nt).fill(-1), queue = new Int32Array(nt), votes = [];
+  const G = new Float64Array(nt * 4); // unit face normal (as wound) + area
+  for (let t = 0; t < nt; t++) {
+    const a = I[t * 3] * 3, b = I[t * 3 + 1] * 3, c = I[t * 3 + 2] * 3;
+    const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+    const gx = uy * vz - uz * vy, gy = uz * vx - ux * vz, gz = ux * vy - uy * vx, l = Math.hypot(gx, gy, gz) || 1;
+    G[t * 4] = gx / l; G[t * 4 + 1] = gy / l; G[t * 4 + 2] = gz / l; G[t * 4 + 3] = l / 2;
+  }
+  const vote = t => { // area-weighted agreement of the (oriented) face with its authored vertex normals
+    const g = t * 4; let s = 0;
+    for (let k = 0; k < 3; k++) { const v = I[t * 3 + k] * 3; s += G[g] * N[v] + G[g + 1] * N[v + 1] + G[g + 2] * N[v + 2]; }
+    return s * G[g + 3] * sgn[t];
+  };
+  for (let seed = 0; seed < nt; seed++) {
+    if (comp[seed] >= 0) continue;
+    const id = votes.length; let head = 0, tail = 0, sum = 0;
+    comp[seed] = id; sgn[seed] = 1; queue[tail++] = seed;
+    while (head < tail) {
+      const t = queue[head++];
+      sum += vote(t);
+      for (let k = 0; k < 3; k++) {
+        const e = tE[t * 3 + k];
+        if (eT[e * 2] < 0 || eT[e * 2 + 1] < 0) continue;
+        const side = eT[e * 2] === t ? 0 : 1, o = eT[e * 2 + 1 - side];
+        if (comp[o] >= 0) continue;
+        comp[o] = id; sgn[o] = -eD[e * 2 + side] * eD[e * 2 + 1 - side] * sgn[t];
+        queue[tail++] = o;
+      }
+    }
+    votes.push(sum < 0 ? -1 : 1);
+  }
+  const index = Uint32Array.from(I), acc = new Float64Array(nv);
+  for (let t = 0; t < nt; t++) {
+    const s = (sgn[t] *= votes[comp[t]]), g = t * 4;
+    if (s < 0) { const x = index[t * 3 + 1]; index[t * 3 + 1] = index[t * 3 + 2]; index[t * 3 + 2] = x; }
+    for (let k = 0; k < 3; k++) { const v = I[t * 3 + k]; acc[v] += s * G[g + 3] * (G[g] * N[v * 3] + G[g + 1] * N[v * 3 + 1] + G[g + 2] * N[v * 3 + 2]); }
+  }
+  const nrm = Float32Array.from(N);
+  for (let v = 0; v < nv; v++) if (acc[v] < 0) { nrm[v * 3] = -N[v * 3]; nrm[v * 3 + 1] = -N[v * 3 + 1]; nrm[v * 3 + 2] = -N[v * 3 + 2]; }
+  return { ...m, nrm, index };
+}
+
 // The source normals are also broken along most panel edges (door, bumper, hood and lamp borders): the last
 // row of outer-skin vertices carries the normal of the hem behind it, pointing into the car, so a triangle
 // interpolates between opposite normals and alignWinding flips it or not depending on which corners won. The
@@ -338,7 +404,7 @@ export class CarRenderer {
     }
     this.materials = [];
     for (const [srcMat, raw] of byMat) {
-      const list = raw.map(m => ({ ...repairNormals(m), group: m.group }));
+      const list = raw.map(m => ({ ...repairNormals(orientSurfaces(m)), group: m.group }));
       let nv = 0, ni = 0;
       for (const m of list) { nv += m.pos.length / 3; ni += m.index.length; }
       const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), tet = new Float32Array(nv), bar = new Float32Array(nv * 3), grp = new Float32Array(nv);

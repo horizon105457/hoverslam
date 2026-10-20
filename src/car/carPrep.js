@@ -27,7 +27,9 @@ export const PIECES = {
                 joints: [{ box: [0, 1, .55, .8, .8, 1], F: 11e3, k: 1 }, { box: [0, 1, .1, .35, .8, 1], F: 11e3, k: 1 }, { box: [0, 1, .3, .6, 0, .15], F: 4.5e3, k: 1, latch: 0.02 }] },
   door_R:     { mass: 18, ey: 0.0035, tear: 0.5, parents: ['body'], color: 'paint',
                 joints: [{ box: [0, 1, .55, .8, .8, 1], F: 11e3, k: 1 }, { box: [0, 1, .1, .35, .8, 1], F: 11e3, k: 1 }, { box: [0, 1, .3, .6, 0, .15], F: 4.5e3, k: 1, latch: 0.02 }] },
-  hood:       { mass: 7, ey: 0.003, tear: 0.45, parents: ['body', 'windshield'], color: 'paint',
+  // the front latch needs bumper_front: no body node lies under the hood's front edge, so it used to anchor at the
+  // cowl and the front 40 cm of the hood flapped +-2 cm at ~5 Hz from the launch kick on (flicker in every film)
+  hood:       { mass: 7, ey: 0.003, tear: 0.45, parents: ['body', 'windshield', 'bumper_front'], color: 'paint',
                 joints: [{ box: [.1, .3, 0, 1, 0, .25], F: 2.6e3, k: 1 }, { box: [.7, .9, 0, 1, 0, .25], F: 2.6e3, k: 1 }, { box: [.4, .6, 0, 1, .7, 1], F: 1.8e3, k: 1, latch: 0.012 }] },
   hatch:      { mass: 13, ey: 0.0035, tear: 0.45, parents: ['body'], color: 'paint',
                 joints: [{ box: [0, .3, .5, 1, 0, 1], F: 9e3, k: 1 }, { box: [.7, 1, .5, 1, 0, 1], F: 9e3, k: 1 }, { box: [.4, .6, 0, .2, 0, 1], F: 3.5e3, k: 1, latch: 0.018 }] },
