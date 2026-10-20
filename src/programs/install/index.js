@@ -21,7 +21,7 @@ import { XRay } from './xray.js';
 import { HeroFlow, Jets, machFromArea, speedOf, tempOf } from './gas.js';
 import { boreRadius } from './nozzle.js';
 import { Hud, COL } from './hud.js';
-import { Choreo, HERO, LIFT, TL, BUILD_ORDER, buildTime, valveAt } from './choreo.js';
+import { Choreo, HERO, TL, BUILD_ORDER, buildTime, valveAt } from './choreo.js';
 import { buildShots } from './shots.js';
 
 const MONO = '"SF Mono", "Menlo", monospace';
@@ -114,7 +114,7 @@ export default class InstallProgram extends Program {
     const hw = this.kit.hero.group.matrixWorld;
     const inFly = T > TL.valve[0] - 0.2 && T < TL.valve[1] + 1.2;
     this.flow.update(T, valveAt, hw, { amt: inFly ? 1 : 0, near: ev?.near ?? 0.05 });
-    this.jets.update(T, TL.fire[0], TL.fire[1], world, -LIFT);
+    this.jets.update(T, TL.fire[0], TL.fire[1], world, 0);
     const cam = this.ctx.stage.camera, near = ev?.near ?? 0.05;
     cam.near = near; cam.far = Math.min(80, Math.max(4, near * 20000));
     // GTAO works in world units: shrink its radius for macro shots, off inside the nozzle

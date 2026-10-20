@@ -1,6 +1,6 @@
 // Assembly bay for the install film: a procedural softbox environment (PMREM) for the reflections on paint and
 // polished metal, a glossy graphite floor with a blurred planar reflection, overhead light bars and floor
-// markings; depth comes from exponential fog. The car floats above the bay (no lift: the posts read as props).
+// markings; depth comes from exponential fog. The car stands on the floor (no lift: the posts read as props).
 // Everything here is static except what the program drives per frame (light levels, floor ring pulse).
 // Reconfigures the shared Stage at runtime (fog, background, sun, exposure, bloom) and restores it in dispose().
 import * as THREE from 'three';

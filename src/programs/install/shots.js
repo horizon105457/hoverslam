@@ -1,19 +1,19 @@
 // Shot list of the install film. Each shot spans a film-time range [t0, t1] and its `cam` receives film time
-// as `t` (1 s film = 1 s animation clock). Wide shots are authored in body coordinates (+ lift); the hero
-// shots and the fly-through in the hero module / valve frames, so they follow the spec mount and exhaust.
+// as `t` (1 s film = 1 s animation clock). Wide shots are authored in body coordinates (the car stands on the floor:
+// body = world); the hero shots and the fly-through in the hero module / valve frames, so they follow the spec
+// mount and exhaust.
 import * as THREE from 'three';
 import { keyed } from './keyed.js';
-import { LIFT, liftAt, TL } from './choreo.js';
+import { TL } from './choreo.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
 export function buildShots(kit) {
   const h = kit.hero, d = h.d, k = d.rt;
-  // body -> world at the lift height of film time t
-  const B = (x, y, z, t = 99) => V(x, y + liftAt(t), z);
+  const B = V; // body -> world
   // hero module frame (installed) -> world; valve frame -> world
-  const M = (x, y, z) => h.toBody(V(x, y, z)).add(V(0, LIFT, 0));
-  const Vv = (x, y, z) => h.toBody(h.valveToModule(V(x, y, z))).add(V(0, LIFT, 0));
+  const M = (x, y, z) => h.toBody(V(x, y, z));
+  const Vv = (x, y, z) => h.toBody(h.valveToModule(V(x, y, z)));
   // bench: the assembled module waits this far behind its mount
   const bench = 1.0;
   const Mb = (x, y, z) => M(x, y + bench, z);
@@ -23,13 +23,13 @@ export function buildShots(kit) {
   const add = (name, en, t0, t1, cam) => shots.push({ name, en, t0, t1, cam });
 
   add('亮灯', 'LIGHTS ON', 0, 4.7, keyed([
-    { t: 0, pos: B(-4.4, 0.40, 4.3, 0), tgt: B(0, 0.55, 0.25, 0), fov: 30, aperture: 0.012 },
-    { t: 4.7, pos: B(-3.55, 0.58, 3.35, 0), tgt: B(0.05, 0.6, 0.05, 0), fov: 29, aperture: 0.012 },
+    { t: 0, pos: B(-4.4, 0.40, 4.3), tgt: B(0, 0.55, 0.25), fov: 30, aperture: 0.012 },
+    { t: 4.7, pos: B(-3.55, 0.58, 3.35), tgt: B(0.05, 0.6, 0.05), fov: 29, aperture: 0.012 },
   ]));
   add('X 光透视', 'X-RAY SCAN', 4.7, 8.0, keyed([
-    { t: 4.7, pos: B(-3.3, 1.45, 3.0, 4.7), tgt: B(0, 0.7, 0.15, 4.7), fov: 32, aperture: 0.008 },
-    { t: 6.3, pos: B(-4.05, 2.1, -0.5, 6.3), tgt: B(0, 0.75, -0.25, 6.3), fov: 32, aperture: 0.008 },
-    { t: 8.0, pos: B(-1.9, 2.25, -3.9, 8.0), tgt: B(0.25, 0.8, -1.0, 8.0), fov: 32, aperture: 0.008 },
+    { t: 4.7, pos: B(-3.3, 1.45, 3.0), tgt: B(0, 0.7, 0.15), fov: 32, aperture: 0.008 },
+    { t: 6.3, pos: B(-4.05, 2.1, -0.5), tgt: B(0, 0.75, -0.25), fov: 32, aperture: 0.008 },
+    { t: 8.0, pos: B(-1.9, 2.25, -3.9), tgt: B(0.25, 0.8, -1.0), fov: 32, aperture: 0.008 },
   ]));
   // exploded view and assembly from above: the L-shaped layout lies flat at the bench and the open cut wedge
   // (upper outboard quadrant) faces the lens, so every part shows its section

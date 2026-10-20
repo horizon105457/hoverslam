@@ -6,10 +6,9 @@ import { clamp01, smooth, smoother, outCubic, inOutCubic, outExpo, outBack, rang
 import { PROPULSION } from '../../core/spec.js';
 
 export const HERO = 'R_UR';
-export const LIFT = 0.45; // the car rises this far (m) during the x-ray scan and floats there
 
 export const TL = {
-  lightsOn: 0.5, scan: [4.7, 7.4], lift: [5.4, 7.8], markers: 7.0,
+  lightsOn: 0.5, scan: [4.7, 7.4], markers: 7.0,
   explodeIn: 8.0, labels: [8.9, 10.0], build: 10.0, buildStep: 0.2, buildDur: 0.5,
   insert: [13.3, 14.3], bolts: 14.45, hose: [15.25, 15.95], hosePulse: [15.9, 16.6],
   cutBuild: [9.0, 9.8], cutBuildClose: [13.0, 13.6], cut: [16.3, 17.1], cutClose: [24.3, 25.0], valve: [17.3, 24.0], throttle: [21.4, 22.6], fly: [16.2, 25.2],
@@ -31,7 +30,6 @@ export function installTimes(nozzles, heroIndex) {
   return t;
 }
 
-export const liftAt = T => LIFT * smoother(range(T, TL.lift[0], TL.lift[1]));
 /** Hero poppet lift: opens, throttles down to 35 % and back while the lens looks at the section (it is a
  *  proportional valve), closes at the end of the fly-through. */
 export const valveAt = T => {
@@ -73,8 +71,11 @@ export class Choreo {
     const P = PROPULSION;
     this.heroIndex = kit.heroIndex;
     this.tInstall = installTimes(P.nozzles, kit.heroIndex);
+    // approach direction of each module: along its exhaust axis, except the bottom row, which slides in sideways
+    // under the sill (the car stands on the floor: along their axis they would rise out of it)
+    this.inDir = kit.nozzles.map(n => (n.spec.group === 'bottom' ? new THREE.Vector3(Math.sign(n.spec.mount[0]) || 1, 0, 0) : n.axis.clone()));
     this.markers = kit.nozzles.map(n => this.marker(n));
-    this.trails = kit.nozzles.map(n => this.trail(n));
+    this.trails = kit.nozzles.map((n, i) => this.trail(n, this.inDir[i]));
     // exploded layout of the hero (per part: frame axis offset + fly-in scatter)
     const h = kit.hero, k = h.d.rt;
     this.explode = {};
@@ -112,8 +113,8 @@ export class Choreo {
     return g;
   }
 
-  /** Motion streak behind a module flying in along its axis. */
-  trail(n) {
+  /** Motion streak behind a module flying in along dir. */
+  trail(n, dir) {
     const d = n.d;
     const geo = new THREE.CylinderGeometry(d.re * 0.15, d.re * 0.9, 1, 16, 1, true).translate(0, 0.5, 0);
     const m = new THREE.Mesh(geo, new THREE.ShaderMaterial({
@@ -123,26 +124,24 @@ export class Choreo {
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
     }));
     m.userData.noAO = true; m.visible = false; m.renderOrder = 2;
-    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n.axis);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     this.kit.group.add(m);
     return m;
   }
 
-  /** Distance a non-hero module still has to travel along its axis (m) at film time T. */
+  /** Distance a non-hero module still has to travel along its approach direction (m) at film time T. */
   travel(i, T) { const u = range(T, this.tInstall[i], this.tInstall[i] + 0.7); return 1.3 * (1 - outExpo(u)); }
 
   /** Pose everything for film time T. Returns a summary for the HUD. */
   pose(T) {
     const { kit, studio, xray, rig } = this;
-    // ---- set: rise, lights
-    const L = liftAt(T);
-    rig.position.y = L;
+    // ---- set: lights
     const lt = lightsAt(T);
     studio.setLights(lt);
     // ---- x-ray
     const scan = scanAt(T);
     const inCar = scan > -1.75 && scan < 1.75;
-    xray.set({ scan, dir: 1, amt: 1, sheet: inCar ? 1 : 0, lift: L });
+    xray.set({ scan, dir: 1, amt: 1, sheet: inCar ? 1 : 0 });
     // ---- hero
     const h = kit.hero, H = this.explode;
     const ins = inOutCubic(range(T, TL.insert[0], TL.insert[1]));
@@ -175,13 +174,14 @@ export class Choreo {
       if (i !== this.heroIndex) {
         const D = this.travel(i, T);
         n.group.visible = T >= t0;
-        n.group.position.copy(n.mount).addScaledVector(n.axis, D);
+        n.group.position.copy(n.mount).addScaledVector(this.inDir[i], D);
         n.bandMat.emissiveIntensity = this.band(i, T);
         n.setValve(T > TL.fire[0] && T < TL.fire[1] + 0.05 ? 1 : 0);
         // streak: length = distance covered over the last 0.12 s
         const tr = this.trails[i], D0 = this.travel(i, T - 0.12), len = D0 - D;
         tr.visible = T >= t0 && len > 0.01;
-        if (tr.visible) { tr.position.copy(n.mount).addScaledVector(n.axis, D + n.d.Le); tr.scale.set(1, len * 1.6, 1); tr.material.uniforms.uAmt.value = Math.min(1, len * 4); }
+        // the streak starts behind the module: past the exit along the axis, past the valve tip sideways
+        if (tr.visible) { tr.position.copy(n.mount).addScaledVector(this.inDir[i], D + (n.spec.group === 'bottom' ? n.d.vC : n.d.Le)); tr.scale.set(1, len * 1.6, 1); tr.material.uniforms.uAmt.value = Math.min(1, len * 4); }
       }
       // mount markers: from after the scan until the module arrives
       const mk = this.markers[i], arrive = i === this.heroIndex ? TL.insert[1] : t0 + 0.45;
@@ -221,7 +221,7 @@ export class Choreo {
     // top-down exploded view / assembly: the floor is the backdrop, keep it a quiet black
     const floor = 1 - 0.85 * smooth(range(T, TL.explodeIn - 0.2, TL.explodeIn + 0.4)) * (1 - smooth(range(T, TL.insert[0], TL.insert[1])));
     studio.update(T, { ring, floor });
-    return { L, scan, fill };
+    return { scan, fill };
   }
 
   /** Status band glow of nozzle i: lights when its feed line is connected, breathes while pressurising. */
