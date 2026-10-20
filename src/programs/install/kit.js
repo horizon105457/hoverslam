@@ -39,7 +39,7 @@ function segHitsBox(a, b, box) {
 // ------------------------------------------------------------------------------------------- materials
 function carbonMaterial() {
   // carbon-fibre overwrap: 2x2 twill from the lathe uv, glossy resin clear coat; uFill/uGlow = pressurisation
-  const m = new THREE.MeshPhysicalMaterial({ color: 0x1c1f22, roughness: 0.42, metalness: 0.25, clearcoat: 0.7, clearcoatRoughness: 0.16 });
+  const m = new THREE.MeshPhysicalMaterial({ color: 0x2e3338, roughness: 0.36, metalness: 0.25, clearcoat: 1.0, clearcoatRoughness: 0.14 });
   m.userData.u = { uFill: { value: 0 }, uGlow: { value: 0 }, uPulse: { value: -1 } };
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, m.userData.u);
@@ -140,7 +140,7 @@ export class Kit {
     const T = PROPULSION.tank;
     this.bottles = [];
     const satin = new THREE.MeshPhysicalMaterial({ color: 0xc4cacf, metalness: 1, roughness: 0.3 });
-    const white = new THREE.MeshPhysicalMaterial({ color: 0x8c918f, metalness: 0, roughness: 0.5 }); // printed label bands
+    const white = new THREE.MeshPhysicalMaterial({ color: 0xc9cecb, metalness: 0, roughness: 0.45 }); // printed label bands
     for (const b of T.bottles) {
       const R = b.diameter / 2, L = b.length, dome = 0.62 * R, cyl = L / 2 - dome;
       // profile along the bottle axis (lathe Y): neck boss, isotensoid-ish elliptic domes, cylinder
@@ -192,7 +192,7 @@ export class Kit {
   buildManifold() {
     const M = this.manifold;
     const alu = new THREE.MeshPhysicalMaterial({ color: 0xc9cfd4, metalness: 1, roughness: 0.24 });
-    const dark = new THREE.MeshPhysicalMaterial({ color: 0x2a2e33, metalness: 0.6, roughness: 0.32, clearcoat: 0.5 });
+    const dark = new THREE.MeshPhysicalMaterial({ color: 0x424a52, metalness: 0.7, roughness: 0.28, clearcoat: 0.5 });
     // keep the block clear of the bank face behind it
     const depth = Math.min(0.06, 2 * (M.z - this.bank.max.z) - 0.004);
     this.mSize = new THREE.Vector3(0.30, 0.06, Math.max(0.03, depth));
@@ -325,14 +325,14 @@ export class Kit {
   }
 }
 
-/** Dial face for the regulator gauge: 0..40 MPa over 270°, red arc above 30 MPa. */
+/** Dial face for the regulator gauge: 0..40 MPa over 270°, red arc above the fill pressure (spec tank p0). */
 function gaugeTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 256;
   const g = c.getContext('2d');
   g.fillStyle = '#0c0f11'; g.beginPath(); g.arc(128, 128, 128, 0, Math.PI * 2); g.fill();
   g.translate(128, 128);
   const a0 = Math.PI * 0.75, span = Math.PI * 1.5;
-  g.strokeStyle = '#ff6a2b'; g.lineWidth = 10; g.beginPath(); g.arc(0, 0, 100, a0 + span * 0.75, a0 + span); g.stroke();
+  g.strokeStyle = '#ff6a2b'; g.lineWidth = 10; g.beginPath(); g.arc(0, 0, 100, a0 + span * Math.min(1, PROPULSION.tank.p0 / 40e6), a0 + span); g.stroke();
   for (let i = 0; i <= 40; i++) {
     const a = a0 + span * (i / 40), L = i % 5 === 0 ? 22 : 10;
     g.strokeStyle = '#e8eef0'; g.lineWidth = i % 5 === 0 ? 4 : 2;

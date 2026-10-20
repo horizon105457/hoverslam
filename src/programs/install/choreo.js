@@ -6,13 +6,13 @@ import { clamp01, smooth, smoother, outCubic, inOutCubic, outExpo, outBack, rang
 import { PROPULSION } from '../../core/spec.js';
 
 export const HERO = 'R_UR';
-export const LIFT = 0.45; // lift height (m)
+export const LIFT = 0.45; // the car rises this far (m) during the x-ray scan and floats there
 
 export const TL = {
   lightsOn: 0.5, scan: [4.7, 7.4], lift: [5.4, 7.8], markers: 7.0,
   explodeIn: 8.0, labels: [8.9, 10.0], build: 10.0, buildStep: 0.2, buildDur: 0.5,
   insert: [13.3, 14.3], bolts: 14.45, hose: [15.25, 15.95], hosePulse: [15.9, 16.6],
-  cutBuild: [9.0, 9.8], cutBuildClose: [13.0, 13.6], cut: [16.3, 17.1], cutClose: [24.3, 25.0], valve: [17.3, 24.0], throttle: [21.4, 22.6], fly: [16.2, 25.2], rams: [4.9, 5.5],
+  cutBuild: [9.0, 9.8], cutBuildClose: [13.0, 13.6], cut: [16.3, 17.1], cutClose: [24.3, 25.0], valve: [17.3, 24.0], throttle: [21.4, 22.6], fly: [16.2, 25.2],
   nine: 25.6, fill: [31.2, 33.0], unscan: [33.1, 34.3], fire: [34.6, 34.95], title: 36.4, end: 40.0,
 };
 
@@ -134,9 +134,9 @@ export class Choreo {
   /** Pose everything for film time T. Returns a summary for the HUD. */
   pose(T) {
     const { kit, studio, xray, rig } = this;
-    // ---- set: lift, lights
+    // ---- set: rise, lights
     const L = liftAt(T);
-    rig.position.y = L; studio.setLift(L, smooth(range(T, TL.rams[0], TL.rams[1])));
+    rig.position.y = L;
     const lt = lightsAt(T);
     studio.setLights(lt);
     // ---- x-ray

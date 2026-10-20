@@ -1,37 +1,45 @@
-// Dark assembly bay for the install film: a procedural softbox environment (PMREM) for the reflections on
-// paint and polished metal, a glossy black floor with a blurred planar reflection, overhead light bars, floor
-// markings and a four-post lift; depth comes from exponential fog. Everything here is static except what the
-// program drives per frame (light levels, lift height, floor ring pulse). Reconfigures the shared Stage at runtime
-// (fog, background, sun, exposure, bloom) and restores it in dispose().
+// Assembly bay for the install film: a procedural softbox environment (PMREM) for the reflections on paint and
+// polished metal, a glossy graphite floor with a blurred planar reflection, overhead light bars and floor
+// markings; depth comes from exponential fog. The car floats above the bay (no lift: the posts read as props).
+// Everything here is static except what the program drives per frame (light levels, floor ring pulse).
+// Reconfigures the shared Stage at runtime (fog, background, sun, exposure, bloom) and restores it in dispose().
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 
+// full light levels: environment intensity, top (shadow-casting) light, hemisphere fill, rim spots
+const ENV = 1.35, TOP = 2.6, FILL = 0.55, RIM = [48, 30];
+
 // ---------------------------------------------------------------------------------------------- environment
 /**
- * Studio lighting environment: a dark room with a large overhead softbox, two tall strip lights and a cool
- * back strip. Car paint and chrome need *shapes* to reflect (the long highlights that define a product shot);
- * an HDRI sky would put a horizon and trees into a black studio.
+ * Studio lighting environment: a graphite room with a large overhead softbox, tall strip lights, two broad 3/4
+ * fill panels and a cool back strip. Car paint and chrome need *shapes* to reflect (the long highlights that
+ * define a product shot); an HDRI sky would put a horizon and trees into the studio. The room and the floor are
+ * kept dark grey, not black: paint and carbon reflect them over most of their area, and a black room left the
+ * car and the kit as silhouettes.
  */
 export function studioEnvironment(renderer) {
   const s = new THREE.Scene();
   const basic = (c, k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(k), side: THREE.DoubleSide });
-  const room = new THREE.Mesh(new THREE.BoxGeometry(26, 11, 26), basic(0x1a1d20, 0.10));
+  const room = new THREE.Mesh(new THREE.BoxGeometry(26, 11, 26), basic(0x2a2f34, 0.32));
   room.material.side = THREE.BackSide; room.position.y = 4.5;
   s.add(room);
   const panel = (w, h, pos, look, mat) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.copy(pos); m.lookAt(look); s.add(m); return m; };
   const O = new THREE.Vector3(0, 0.8, 0);
   // overhead key: long softbox along the car (gives the roof/bonnet its sheen)
-  panel(3.2, 7.5, new THREE.Vector3(0, 8.5, 0), new THREE.Vector3(0, 0, 0), basic(0xffffff, 2.4));
+  panel(4.0, 8.0, new THREE.Vector3(0, 8.5, 0), new THREE.Vector3(0, 0, 0), basic(0xffffff, 2.8));
   // tall side strips, slightly forward/back so the doors catch a vertical highlight
   for (const sx of [-1, 1]) {
-    panel(0.45, 6.5, new THREE.Vector3(sx * 9, 3.4, sx * 2.5), O, basic(0xf4f7ff, 3.6));
-    panel(0.30, 4.5, new THREE.Vector3(sx * 7.5, 2.4, -sx * 6.5), O, basic(0xdfe9ff, 3.0));
+    panel(0.45, 6.5, new THREE.Vector3(sx * 9, 3.4, sx * 2.5), O, basic(0xf4f7ff, 4.2));
+    panel(0.30, 4.5, new THREE.Vector3(sx * 7.5, 2.4, -sx * 6.5), O, basic(0xdfe9ff, 3.4));
   }
+  // broad 3/4 fills where the wide shots look from (front-left, rear-right): soft key on the flanks
+  panel(5.0, 2.6, new THREE.Vector3(-6.5, 2.2, 6.0), O, basic(0xfff3e6, 1.1));
+  panel(5.0, 2.6, new THREE.Vector3(6.5, 2.2, -6.0), O, basic(0xe6f0ff, 1.0));
   // cool back strip low behind the car (rim on the tail), warm low kicker in front
   panel(12, 0.35, new THREE.Vector3(0, 1.6, -11), O, basic(0xcfe2ff, 3.5));
-  panel(9, 0.8, new THREE.Vector3(0, 0.9, 11), O, basic(0xffe6cc, 0.9));
-  // floor: very dark so undersides stay dark
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), basic(0x101214, 0.08));
+  panel(9, 0.8, new THREE.Vector3(0, 0.9, 11), O, basic(0xffe6cc, 1.4));
+  // floor: dark grey epoxy, bounces a little light into the undersides (bottom nozzles under the floating car)
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), basic(0x1c1f22, 0.3));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -0.01;
   s.add(floor);
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -90,9 +98,9 @@ const FLOOR_FRAG = /* glsl */`
 
 function floorMaterial(rt, texMat, size) {
   // matte for the lights (no broad sun hotspot), glossy through the blurred planar mirror
-  const m = new THREE.MeshStandardMaterial({ color: 0x07080a, roughness: 0.78, metalness: 0.0, envMapIntensity: 0.2 });
+  const m = new THREE.MeshStandardMaterial({ color: 0x121518, roughness: 0.7, metalness: 0.0, envMapIntensity: 0.35 });
   m.userData.uniforms = {
-    tMirror: { value: rt.texture }, uTexMat: { value: texMat }, uMirror: { value: 0.55 }, uLines: { value: 1 }, uRing: { value: 0 }, uRingR: { value: 3.0 },
+    tMirror: { value: rt.texture }, uTexMat: { value: texMat }, uMirror: { value: 0.6 }, uLines: { value: 1 }, uRing: { value: 0 }, uRingR: { value: 3.0 },
     uTime: { value: 0 }, uMirrorSize: { value: new THREE.Vector2(size.x, size.y) },
   };
   m.onBeforeCompile = sh => {
@@ -105,30 +113,9 @@ function floorMaterial(rt, texMat, size) {
   return m;
 }
 
-// ---------------------------------------------------------------------------------------------- lift
-/** Four-post lift: chrome rams in dark bases with rubber pads under the sill jacking points. */
-function buildLift(posts) {
-  const g = new THREE.Group();
-  const base = new THREE.MeshStandardMaterial({ color: 0x1b1e21, roughness: 0.5, metalness: 0.6 });
-  const chrome = new THREE.MeshStandardMaterial({ color: 0xe8ecef, roughness: 0.08, metalness: 1.0 });
-  const pad = new THREE.MeshStandardMaterial({ color: 0x141516, roughness: 0.85, metalness: 0 });
-  const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x93d3b8).multiplyScalar(2.2) });
-  const rams = [];
-  for (const [x, z] of posts) {
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.08, 40), base); b.position.set(x, 0.04, z);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.125, 0.004, 8, 64), glow); ring.rotation.x = Math.PI / 2; ring.position.set(x, 0.081, z);
-    const ram = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1, 32), chrome);
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.03, 32), pad);
-    for (const m of [b, ram, p]) { m.castShadow = true; m.receiveShadow = true; }
-    g.add(b, ring, ram, p);
-    rams.push({ ram, pad: p, x, z });
-  }
-  return { group: g, rams };
-}
-
 export class Studio {
-  /** @param stage Stage; @param opts {lift: [[x,z],...] post positions, padY: pad top at lift 0} */
-  constructor(stage, { posts, padY }) {
+  /** @param stage Stage */
+  constructor(stage) {
     this.stage = stage;
     const r = stage.renderer, scene = stage.scene;
     this.saved = { fog: scene.fog, bg: scene.background, env: scene.environment, envI: scene.environmentIntensity, exp: r.toneMappingExposure,
@@ -139,20 +126,20 @@ export class Studio {
     this.group = new THREE.Group(); this.group.name = 'studio';
     scene.add(this.group);
 
-    // shared stage, reconfigured for a dark studio
-    const bg = new THREE.Color(0x07090b);
+    // shared stage, reconfigured for a graphite studio
+    const bg = new THREE.Color(0x0c1013);
     scene.background = bg;
-    scene.fog = new THREE.FogExp2(0x07090b, 0.055);
+    scene.fog = new THREE.FogExp2(0x0c1013, 0.04);
     scene.environment = this.env;
-    scene.environmentIntensity = 1.0;
-    r.toneMappingExposure = 1.0;
+    scene.environmentIntensity = ENV;
+    r.toneMappingExposure = 1.15;
     r.localClippingEnabled = true; // cutaways
-    stage.bloom.strength = 0.28; stage.bloom.radius = 0.5; stage.bloom.threshold = 3.0;
-    stage.finish.uniforms.uVignette.value = 0.42;
+    stage.bloom.strength = 0.28; stage.bloom.radius = 0.5; stage.bloom.threshold = 4.0; // brighter room: keep bloom to real glints
+    stage.finish.uniforms.uVignette.value = 0.3;
     stage.finish.uniforms.uGrain.value = 0.025;
     stage.gtao.blendIntensity = 0.9;
     // the "sun" becomes a near-vertical top light: a soft contact shadow under the car on the floor
-    stage.sun.intensity = 1.6; stage.sun.color.set(0xf3f6ff);
+    stage.sun.intensity = TOP; stage.sun.color.set(0xf3f6ff);
     stage.sunDir.set(0.42, 1, 0.3).normalize(); // off vertical: no mirror glint of it in top-down shots
     const sc = stage.sun.shadow.camera;
     sc.left = -3.2; sc.right = 3.2; sc.top = 3.2; sc.bottom = -3.2; sc.near = 100; sc.far = 140; sc.updateProjectionMatrix();
@@ -160,10 +147,14 @@ export class Studio {
     stage.sun.shadow.bias = -0.0002;
     stage.focus.set(0, 0.6, -0.2);
 
-    // rim lights (no shadows: cheap) to separate the dark car and metal from the black background
-    const rim = (this.rim = new THREE.SpotLight(0xcfe0ff, 30, 18, 0.55, 0.8, 1.6));
+    // diffuse fill (a hemisphere light has no specular, so no glints on polished parts): lifts the shadow sides
+    // of the car and the kit, also in the macro shots where the direct lights are dimmed
+    this.fill = new THREE.HemisphereLight(0xdde7ef, 0x15181b, FILL);
+    this.group.add(this.fill);
+    // rim lights (no shadows: cheap) to separate the car and metal from the background
+    const rim = (this.rim = new THREE.SpotLight(0xcfe0ff, RIM[0], 18, 0.55, 0.8, 1.6));
     rim.position.set(-3.0, 4.6, -6); rim.target.position.set(0, 0.6, -0.5);
-    const rim2 = (this.rim2 = new THREE.SpotLight(0xffe2c8, 18, 16, 0.5, 0.9, 1.6));
+    const rim2 = (this.rim2 = new THREE.SpotLight(0xffe2c8, RIM[1], 16, 0.5, 0.9, 1.6));
     rim2.position.set(-4.2, 2.6, 4.6); rim2.target.position.set(0, 0.5, 0.3); // front-left: not mirrored into the rear-right finale camera
     this.group.add(rim, rim.target, rim2, rim2.target);
 
@@ -195,9 +186,9 @@ export class Studio {
       this.group.add(bar, h);
     }
     // far back wall: dark panels with thin vertical light slits for depth in wide shots
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x0d0f11, roughness: 0.7, metalness: 0.2 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x171b1f, roughness: 0.7, metalness: 0.2 });
     const wall = new THREE.Mesh(new THREE.PlaneGeometry(40, 9), wallMat); wall.position.set(0, 4.5, -13);
-    const slitMat = (this.slitMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xcfe0ff).multiplyScalar(1.6) }));
+    const slitMat = (this.slitMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xcfe0ff).multiplyScalar(2.6) }));
     this.group.add(wall);
     for (let i = -6; i <= 6; i++) {
       if (i === 0) continue;
@@ -205,31 +196,15 @@ export class Studio {
       s.position.set(i * 1.6, 2.0, -12.95); s.userData.noAO = true; this.group.add(s);
     }
     const wall2 = wall.clone(); wall2.position.set(0, 4.5, 13); wall2.rotation.y = Math.PI; this.group.add(wall2);
-
-    // lift
-    this.lift = buildLift(posts);
-    this.padY = padY;
-    this.group.add(this.lift.group);
-    this.setLift(0);
   }
 
-  /** Lift height h (m above rest); extend 0..1 raises the rams out of the floor up to the sills first. */
-  setLift(h, extend = 1) {
-    const top = this.padY * extend + h;
-    for (const { ram, pad, x, z } of this.lift.rams) {
-      const len = Math.max(0.001, top - 0.03 - 0.06);
-      ram.scale.y = len; ram.position.set(x, 0.06 + len / 2, z); ram.visible = top > 0.1;
-      pad.position.set(x, Math.max(0.065, top - 0.015), z);
-    }
-  }
-
-  /** Light levels 0..1: overhead bars (each), environment, top light, rims, wall slits. */
+  /** Light levels 0..1: overhead bars (each), environment, top light (+ fill), rims, wall slits. */
   setLights({ bars = [1, 1, 1], env = 1, top = 1, rim = 1, slits = 1 }) {
     this.bars.forEach((b, i) => b.material.color.setRGB(0.95, 0.965, 1).multiplyScalar(3.6 * bars[i]));
-    this.stage.scene.environmentIntensity = env;
-    this.stage.sun.intensity = 1.6 * top;
-    this.rim.intensity = 30 * rim; this.rim2.intensity = 18 * rim;
-    this.slitMat.color.setRGB(0.81, 0.88, 1).multiplyScalar(1.6 * slits);
+    this.stage.scene.environmentIntensity = ENV * env;
+    this.stage.sun.intensity = TOP * top; this.fill.intensity = FILL * top;
+    this.rim.intensity = RIM[0] * rim; this.rim2.intensity = RIM[1] * rim;
+    this.slitMat.color.setRGB(0.81, 0.88, 1).multiplyScalar(2.6 * slits);
   }
 
   /** Per composed frame (and per film sub-sample): allow one mirror render, animate uniforms. */

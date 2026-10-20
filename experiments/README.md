@@ -103,54 +103,60 @@ closed loop pays for yaw damping with the rear jets); (4) the roof preset drifts
 1.5 m footprint margin). A clearance-margin cost on the twin's hull points was tried and dropped (the planner
 hovered instead of landing).
 
-Soft body, escape-soft-landing criteria (`ThrusterRig.summary`), lattice of 2026-10-20 13:25 (hood latch):
+Soft body, escape-soft-landing criteria (`ThrusterRig.summary`), spec of 2026-10-20 17:00 (35 MPa fill, 8.7 kN bottom
+nozzles), lattice of 16:20 (headlamp joint):
 
 | run | controller | success | vy_td m/s | tilt_td ° | rate_td rad/s | max tilt in hold ° | hull strike | gas kg | parts off |
 |---|---|---|---|---|---|---|---|---|---|
-| nose | ap (`flight-soft`) | ✓ | 0.91 | 0.06 | 0.04 | 1.3 | – | 60.4 | 0 |
-| nose | pd (`flight-pd-nose`) | × | 0.80 | 0.09 | 0.15 | 60.2 | 3.76 s | 47.4 | 10 |
-| nose | replay of Python MPPI (`flight-replay-mppi-nose`) | × | 6.69 | 50.7 | 0.78 | 176.9 | 2.46 s | 77.9 | 13 |
-| nose | mppi, baseline settings | × | 0.95 | 4.6 | 0.34 | 4.6 | 3.64 s | 67.1 | 7 |
-| nose | **mppi-soft** (`flight-mppi-nose`) | ✓ | 0.51 | 0.64 | 0.20 | 1.7 | – | 64.1 | 0 |
-| roof | ap (`flight-recover`) | ✓ | 0.96 | 0.05 | 0.11 | 1.2 | – | 79.3 | 0 |
-| roof | pd (`flight-pd-roof`) | × | 0.80 | 0.07 | 0.13 | 50.9 | 3.78 s | 50.7 | 10 |
-| roof | mppi, baseline settings | × | 0.63 | 7.9 | 0.14 | 7.9 | 4.07 s | 59.6 | 5 |
-| roof | **mppi-soft** (`flight-mppi-roof`) | ✓ | 0.61 | 0.64 | 0.19 | 3.3 | – | 63.1 | 0 |
+| nose | ap (`flight-soft`) | ✓ | 0.91 | 0.04 | 0.04 | 1.4 | – | 61.4 | 0 |
+| nose | pd (`flight-pd-nose`) | × | 0.80 | 0.10 | 0.15 | 54.8 | 3.65 s | 46.0 | 10 |
+| nose | replay of Python MPPI (`flight-replay-mppi-nose`) | × | 6.33 | 46.7 | 0.88 | 75.4 | 2.40 s | 79.5 | 9 |
+| nose | mppi, baseline settings | × | 0.76 | 2.0 | 0.29 | 5.3 | 3.57 s | 60.0 | 11 |
+| nose | **mppi-soft** (`flight-mppi-nose`) | ✓ | 0.52 | 0.99 | 0.24 | 1.1 | – | 74.1 | 0 |
+| roof | ap (`flight-recover`) | ✓ | 0.95 | 0.05 | 0.12 | 1.3 | – | 80.8 | 0 |
+| roof | pd (`flight-pd-roof`) | × | 0.80 | 0.08 | 0.14 | 37.8 | 3.68 s | 49.5 | 11 |
+| roof | mppi, baseline settings | × | 0.53 | 7.2 | 0.33 | 7.0 | 3.76 s | 68.7 | 5 |
+| roof | **mppi-soft** (`flight-mppi-roof`) | ✓ | 0.76 | 0.21 | 0.14 | 1.1 | – | 62.6 | 0 |
 
-mppi-soft on further soft-body cases (outDir runs): nose seed 1 ✓ 1.28 m/s, nose seed 2 ✓ 0.59, roof seed 1 ✓ 0.94
-(hits something 1.1 s after touchdown, after the hold), roof seed 2 ✓ 0.68, flat ✓ 1.11, rear ✓ 0.52, side ✓ 0.51,
-corner × (0.46 m/s, hull strike 0.23 s after touchdown): 9/10 + the two recordings above.
+mppi-soft on further soft-body cases (outDir runs): nose seed 1 ✓ 0.77 m/s, nose seed 2 ✓ 0.47, roof seed 1 ✓ 0.84,
+roof seed 2 ✓ 0.54, flat ✓ 0.77, rear ✓ 0.46, side ✓ 0.52, corner ✓ 0.63: 8/8 + the two recordings above (the
+corner preset struck its hull 0.27 s after touchdown on the previous spec). After the hold, roof s1 / flat /
+nose s2 / side still roll into something 1.2 / 2.6 / 2.9 / 3.3 s after touchdown (4-8 parts off in the first three).
 
 Twin (`mppi-soft-landing`, 6 presets x seeds 1..10, JS and Python give identical episodes):
 
 | controller | n | success | hull strike | vy_td | tilt_td | gas kg | return | corner | flat | nose | rear | roof | side | s/ep JS / Py |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| pd | 60 | 42% | 58% | 0.80 | 0.01 | 48.75 | -3.94 | 0% | 60% | 40% | 80% | 10% | 60% | 0.0 / 1.1 |
-| mppi | 60 | 90% | 0% | 0.82 | 3.85 | 55.42 | 5.51 | 100% | 100% | 90% | 100% | 70% | 80% | 2.7 / 24 |
-| mppi-soft | 60 | 93% | 3% | 0.71 | 1.00 | 51.61 | 6.13 | 100% | 100% | 80% | 100% | 90% | 90% | 2.4 / 33 |
+| pd | 60 | 52% | 48% | 0.80 | 0.01 | 47.46 | -1.87 | 0% | 70% | 40% | 100% | 40% | 60% | 0.0 / 1.1 |
+| mppi | 60 | 93% | 0% | 0.89 | 4.71 | 54.60 | 5.78 | 100% | 90% | 90% | 100% | 90% | 90% | 2.6 / 24 |
+| mppi-soft | 60 | 97% | 0% | 0.66 | 1.31 | 49.74 | 6.95 | 100% | 100% | 90% | 90% | 100% | 100% | 2.4 / 33 |
 
-(`baseline-soft-landing` with the shared noise stream: mppi 15/18 (83 %, failures: nose s2 hovers into the
-timeout, roof s1 / side s2 land at z ≈ 26-28 by the kerb line and tilt past 12° in the hold); the 18/18 in the table below used numpy's normal RNG, which is gone: with 3 seeds per preset
-(and seeds 0 and 1 drawing the same initial condition) the spread between noise streams is that large, hence the
-10-seed config. Python s/ep measured with 16 workers on 18 cores.)
+(Spec of 2026-10-20 17:00: 35 MPa fill, 8.7 kN bottom nozzles; on the previous spec (30 MPa, 6.9 kN) pd / mppi /
+mppi-soft scored 42 / 90 / 93 %. With 3 seeds per preset (and seeds 0 and 1 drawing the same initial condition) the
+spread between noise streams is large (`baseline-soft-landing` once gave mppi 18/18 with numpy's normal RNG, 15/18
+with the shared stream), hence the 10-seed config. Python s/ep measured with 16 workers on 18 cores, previous spec.)
 
 ## Results so far
 
-`baseline-soft-landing` (escape-soft-landing, 6 presets × 3 seeds, spec 2026-10-20):
+`baseline-soft-landing` (escape-soft-landing, 6 presets × 3 seeds, spec 2026-10-20 17:00: 35 MPa, 8.7 kN bottom):
 
-| controller | n | success | hull strike | vy_td mean (m/s) | tilt_td mean (°) | gas (kg) | return | s/episode |
+| controller | n | success | hull strike | vy_td mean (m/s) | tilt_td mean (°) | gas (kg) | return | s/episode (Py, 8 workers) |
 |---|---|---|---|---|---|---|---|---|
-| zero | 18 | 0 % | 100 % | 12.65 | 150.4 | 0.0 | −32.96 | 1.0 |
-| pd | 18 | 61 % | 39 % | 0.80 | 0.01 | 49.2 | −0.14 | 2.2 |
-| mppi | 18 | 100 % | 0 % | 0.73 | 3.37 | 56.7 | 6.98 | 32.0 |
+| zero | 18 | 0 % | 100 % | 12.65 | 150.3 | 0.0 | −32.97 | 0.5 |
+| pd | 18 | 72 % | 28 % | 0.80 | 0.01 | 48.0 | 2.16 | 1.1 |
+| mppi | 18 | 89 % | 0 % | 0.93 | 3.95 | 55.2 | 4.99 | 20.0 |
 
-pd fails on `roof` and `corner` (and one `nose` seed): its slow powered descent carries the car onto the sidewalk
-side of the crossing and it rolls into a kerb within the 1 s upright hold; MPPI sees the kerb in its rollouts and
-steers / times the landing into the kerb-free crossing.
+pd fails on every `corner` seed and on one `nose` and one `roof` seed: its slow powered descent carries the car
+onto the sidewalk side of the crossing and it rolls into a kerb within the 1 s upright hold; MPPI sees the kerb in
+its rollouts and steers / times the landing into the kerb-free crossing (its failures: nose s2 hovers into the
+timeout, roof s0 tilts past the limit in the hold). `flight-replay-mppi-nose` replays `mppi__nose__s2` of this run.
 
 `pd-precision-pad`, `pd-tumble-recovery` (12 task-drawn seeds each): pd 0 % on the pad task (it does not aim: its
-long powered descent lands 21–36 m past the pad), 25 % on tumble-recovery (it rights every car within ~0.5 m of
+long powered descent lands 20–34 m past the pad), 25 % on tumble-recovery (it rights every car within ~0.5 m of
 leaving the deck, then rolls into a kerb); zero thrust 0 % on both.
+
+The PPO results below were trained and evaluated on the previous spec (30 MPa, 6.9 kN bottom nozzles); the
+policies carry that spec hash and need retraining on the current one.
 
 `ppo-hover-hold` (`python -m coldgas.ppo --task hover-hold --steps 3000000 --envs 256 --bc-steps 204800 --log-std -2
 --lr 1e-4`): from scratch PPO (4–5 M steps) never succeeded (first it learned to hop and land early, which the task

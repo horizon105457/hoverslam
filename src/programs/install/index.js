@@ -2,7 +2,7 @@
 // Tesla Roadster "Rocket" trim (10 SpaceX cold-gas thrusters fed from COPV air bottles). Dark assembly bay,
 // x-ray scan of the car, the hero nozzle (R_UR) assembled from an exploded view, docked and torqued, a camera
 // fly-through of its insides (exit cone -> throat -> plenum -> poppet seat -> solenoid -> out), the other nine
-// installed at once, the bank pressurised to 30 MPa and a restrained test fire. Every position, direction and
+// installed at once, the bank pressurised to its fill pressure and a test fire. Every position, direction and
 // size comes from spec/propulsion.json; thrust numbers from the reference propulsion model.
 //
 // Film: `film.render(T)` is a pure function of film time T (choreo.js); realtime playback uses the same pose.
@@ -40,8 +40,7 @@ export default class InstallProgram extends Program {
     const { stage, ui, assets, params } = this.ctx;
     ui.setTitle(InstallProgram.meta.title);
     ui.loadText('搭建装配间');
-    // lift pads under the sill jacking points, clear of the wheels and the side thrusters
-    this.studio = new Studio(stage, { posts: [[-0.6, 0.42], [0.6, 0.42], [-0.6, -0.6], [0.6, -0.6]], padY: 0.205 });
+    this.studio = new Studio(stage);
     ui.loadText('载入车模');
     const car = await assets.car();
     this.carView = new CarRenderer(car, { envMap: this.studio.env });
@@ -123,8 +122,11 @@ export default class InstallProgram extends Program {
     // dim the direct lights for the whole move (the environment keeps the metal readable)
     // (same for the exploded view and assembly close-ups: a delta-light glint on polished parts is a white blob)
     const close = smooth(range(T, TL.explodeIn - 0.3, TL.explodeIn + 0.3)) * (1 - smooth(range(T, TL.fly[1] - 0.8, TL.fly[1])));
-    const dimL = 1 - 0.85 * close;
+    // (the diffuse fill carries the macro shots instead: no glints, the dark parts stay readable; inside the bore the
+    // environment is pulled back too, polished walls all around the lens mirror it at full strength)
+    const dimL = 1 - 0.85 * close, fly = smooth(range(T, TL.fly[0] + 0.3, TL.fly[0] + 1.0)) * (1 - smooth(range(T, TL.fly[1] - 0.8, TL.fly[1])));
     this.ctx.stage.sun.intensity *= dimL; this.studio.rim.intensity *= dimL; this.studio.rim2.intensity *= dimL;
+    this.ctx.stage.scene.environmentIntensity *= (1 + 0.25 * close) * (1 - 0.5 * fly); this.studio.fill.intensity *= 1 + 1.2 * close;
     const g = this.ctx.stage.gtao;
     // AO only for the solid car (the ghost shell would print its AO onto the kit inside) and not at macro scale
     g.enabled = near > 0.0015 && this.xray.state.solidAll;
@@ -182,7 +184,7 @@ export default class InstallProgram extends Program {
       const p = range(T, 2.2, 3.4), a = 1 - smooth(range(T, 4.2, 4.6));
       hud.block(hud.W - 58 * hud.k, hud.H * 0.42, [
         { t: '10 × 冷气喷口', px: 30, weight: 300, spacing: 3 },
-        { t: '6 × COPV · 30 MPa · ' + Math.round(this.vol * 1000) + ' L', px: 13, fam: MONO, color: COL.dim },
+        { t: `6 × COPV · ${PROPULSION.tank.p0 / 1e6} MPa · ${Math.round(this.vol * 1000)} L`, px: 13, fam: MONO, color: COL.dim },
         { t: `ΣF ${(this.sumF / 1000).toFixed(1)} kN · Isp ${this.isp.toFixed(0)} s`, px: 13, fam: MONO, color: COL.dim },
       ], p, { align: 'right', alpha: a });
     }
@@ -278,7 +280,7 @@ export default class InstallProgram extends Program {
       });
       if (T > TL.fire[0] - 0.4) {
         const p = range(T, TL.fire[0] - 0.4, TL.fire[0] + 0.2);
-        hud.block(hud.W / 2, hud.H * 0.16, [{ t: 'RESTRAINED TEST FIRE · 约束点火', px: 13, fam: MONO, weight: 600, color: COL.hot, spacing: 3 }, { t: `${((TL.fire[1] - TL.fire[0]) * 1000).toFixed(0)} ms · 10 / 10 · Isp ${this.isp.toFixed(0)} s`, px: 12, fam: MONO, color: COL.dim }], p, { align: 'center', alpha: a });
+        hud.block(hud.W / 2, hud.H * 0.16, [{ t: 'STATIC TEST FIRE · 点火试喷', px: 13, fam: MONO, weight: 600, color: COL.hot, spacing: 3 }, { t: `${((TL.fire[1] - TL.fire[0]) * 1000).toFixed(0)} ms · 10 / 10 · Isp ${this.isp.toFixed(0)} s`, px: 12, fam: MONO, color: COL.dim }], p, { align: 'center', alpha: a });
       }
     }
     // ---- title card

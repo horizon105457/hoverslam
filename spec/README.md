@@ -61,8 +61,8 @@ Per step of length `dt` with commanded openings `u_cmd[i]` (held over the step):
 4. **Tank** (all bottles = one volume `V = Σ volume`): `m ← max(0, m − Σṁ dt)`, `ρ = m/V`,
    `p = K ρ^n` with `K = p0 / ρ0^n`, `ρ0 = p0/(R T0)`, `n = tank.polytropic_n`; `T = p/(ρ R)`.
 
-Flows and thrust use the tank state at the **start** of the step. Nominal values at full tank: ≈7.0 kN (bottom),
-≈4.9 kN (rear), ≈3.0 kN (side), Isp ≈ 65 s, 124.9 kg of air; the regulator drops out after ~70 % of the gas.
+Flows and thrust use the tank state at the **start** of the step. Nominal values at full tank: ≈8.7 kN (bottom),
+≈4.9 kN (rear), ≈3.0 kN (side), Isp ≈ 65 s, 145.7 kg of air; the regulator drops out after ~75 % of the gas.
 
 ## 4. Vehicle mass properties
 

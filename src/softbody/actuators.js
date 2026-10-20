@@ -45,7 +45,7 @@ import { NU, CONTROL_DT, NOZZLE_IDS } from '../flight/contract.js';
 import { quatToMat, quatMul, quatNorm } from '../core/quat.js';
 import { DECK } from '../scene/layout.js';
 
-const CLUSTER = 128;     // body nodes per nozzle mount (~12 kg of lattice: spreads 7 kN without denting the floor)
+const CLUSTER = 128;     // body nodes per nozzle mount (~12 kg of lattice: spreads a bottom nozzle's 8.7 kN without denting the floor)
 const AXIAL = 0.35;      // weight of depth along the thrust line when ranking mount nodes
 const PROP_EVERY = 8;    // substeps per propulsion step (1 ms at 8 kHz)
 const STREET_Y = 1.0;    // contacts below this height are with the street (task "touchdown" rule)

@@ -7,14 +7,14 @@ from coldgas.spec import WORLD
 
 
 def test_nominal_numbers():
-    """spec/README.md section 3: ~7.0 / 4.9 / 3.0 kN per bottom / rear / side nozzle at 6 MPa feed, Isp ~65 s, 124.9 kg."""
+    """spec/README.md section 3: ~8.7 / 4.9 / 3.0 kN per bottom / rear / side nozzle at 6 MPa feed, Isp ~65 s, 145.7 kg."""
     P = Propulsion()
-    assert abs(P.m0 - 124.9) < 0.05
+    assert abs(P.m0 - 145.7) < 0.05
     P.valve = [1.0] * NU  # fully open, full tank: one tiny step reads the nominal point
     F = np.array(P.step(np.ones(NU), 1e-9))
     md = np.array(P.mdot)
     assert P.pc == P.spec['regulator']['p_set']
-    assert abs(F[GROUPS['bottom']].mean() - 7000) < 100 and abs(F[GROUPS['rear']].mean() - 4900) < 100
+    assert abs(F[GROUPS['bottom']].mean() - 8700) < 100 and abs(F[GROUPS['rear']].mean() - 4900) < 100
     assert abs(F[GROUPS['side']].mean() - 3000) < 100
     assert abs(F.sum() / (md.sum() * WORLD['gravity']) - 65) < 2
 

@@ -20,7 +20,8 @@ export const SPRING = { k: 14e3, travel: 0.11, bump: 0.03, rebound: 0.02, breakF
 const JOINT_GIVE = 0.007; // m of (low-passed) stretch at which a bolt / hinge / clip lets go
 
 // Piece table. mass in kg, ey = yield strain of the lattice beams, tear = plastic strain at rupture,
-// brittle pieces split into `chunks` fragments glued by welds that snap at `weld` N.
+// brittle pieces split into `chunks` fragments glued by welds that snap at `weld` N. Joints: `box` = region of the
+// piece's bounding box (u0 u1 v0 v1 w0 w1 over x y z), `k` anchors sharing `F` N, `parents` overrides the piece's.
 export const PIECES = {
   body:       { mass: 330, ey: 0.0045, tear: 0.55, color: 'paint' },
   door_L:     { mass: 18, ey: 0.0035, tear: 0.5, parents: ['body'], color: 'paint',
@@ -33,8 +34,11 @@ export const PIECES = {
                 joints: [{ box: [.1, .3, 0, 1, 0, .25], F: 2.6e3, k: 1 }, { box: [.7, .9, 0, 1, 0, .25], F: 2.6e3, k: 1 }, { box: [.4, .6, 0, 1, .7, 1], F: 1.8e3, k: 1, latch: 0.012 }] },
   hatch:      { mass: 13, ey: 0.0035, tear: 0.45, parents: ['body'], color: 'paint',
                 joints: [{ box: [0, .3, .5, 1, 0, 1], F: 9e3, k: 1 }, { box: [.7, 1, .5, 1, 0, 1], F: 9e3, k: 1 }, { box: [.4, .6, 0, .2, 0, 1], F: 3.5e3, k: 1, latch: 0.018 }] },
-  fender_front_L: { mass: 4, ey: 0.003, tear: 0.4, parents: ['body'], color: 'paint', joints: [{ F: 8e3, k: 6 }] },
-  fender_front_R: { mass: 4, ey: 0.003, tear: 0.4, parents: ['body'], color: 'paint', joints: [{ F: 8e3, k: 6 }] },
+  // the headlamp belongs to the fender in the GLB: its 35 cm block hung 40-70 cm off the nearest fender anchors and
+  // swung +-7 mm sideways against the bumper skin that wraps it, pushing its black housing (flush behind the skin)
+  // through the paint every other frame after the landing. The lamp joint bolts the block to that bumper.
+  fender_front_L: { mass: 4, ey: 0.003, tear: 0.4, parents: ['body'], color: 'paint', joints: [{ F: 8e3, k: 6 }, { box: [0, 1, .6, .9, .7, 1], F: 3e3, k: 3, parents: ['bumper_front'] }] },
+  fender_front_R: { mass: 4, ey: 0.003, tear: 0.4, parents: ['body'], color: 'paint', joints: [{ F: 8e3, k: 6 }, { box: [0, 1, .6, .9, .7, 1], F: 3e3, k: 3, parents: ['bumper_front'] }] },
   bumper_front: { mass: 6, ey: 0.006, tear: 0.18, chunks: 7, weld: 1500, parents: ['body'], color: 'plastic', joints: [{ F: 6e3, k: 10 }] },
   bumper_rear:  { mass: 5, ey: 0.006, tear: 0.18, chunks: 6, weld: 1500, parents: ['body'], color: 'plastic', joints: [{ F: 5e3, k: 8 }] },
   mirror_L:   { mass: 1.2, ey: 0.004, tear: 0.4, parents: ['door_L', 'body'], color: 'plastic', joints: [{ box: [0, 1, 0, .6, 0, 1], F: 1.6e3, k: 2 }] },
@@ -483,6 +487,7 @@ export function buildCar(meshes, { h = 0.065, seed = 7 } = {}) {
     const own = [];
     for (const ch of chunks) if (ch.piece === p && ch.nodeCount) for (let n = ch.nodeStart; n < ch.nodeStart + ch.nodeCount; n++) own.push(n);
     for (const J of def.joints) {
+      const jp = J.parents ? new Set(J.parents.map(alias).filter(q => pieceBounds.has(q))) : parents;
       let grow = 0;
       const inBox = n => {
         if (!J.box) return true;
@@ -493,7 +498,7 @@ export function buildCar(meshes, { h = 0.065, seed = 7 } = {}) {
       for (; grow < 1 && cand.length < J.k; grow += 0.12) {
         let reach = 1.5 * h;
         for (let tries = 0; tries < 3 && cand.length < J.k; tries++, reach *= 1.5) {
-          cand = own.filter(n => inBox(n)).map(n => [n, nearby(restArr[n * 3], restArr[n * 3 + 1], restArr[n * 3 + 2], reach, m => parents.has(pieceOfNode(m)))]).filter(c => c[1].length);
+          cand = own.filter(n => inBox(n)).map(n => [n, nearby(restArr[n * 3], restArr[n * 3 + 1], restArr[n * 3 + 2], reach, m => jp.has(pieceOfNode(m)))]).filter(c => c[1].length);
         }
       }
       if (!cand.length) { jointLog.push(`${p}: joint found no parent nodes`); continue; }

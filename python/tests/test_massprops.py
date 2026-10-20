@@ -5,10 +5,10 @@ from coldgas.spec import PROPULSION, GENERATED
 
 def test_matches_js(node):
     js = node("import { MassModel } from './src/flight/massprops.js'; const m = new MassModel(), out = [];"
-              "for (const g of [0, 1e-3, 17.5, 62.25, 124.92170482832431]) { const r = m.at(g); out.push([r.M, Array.from(r.com), Array.from(r.I), Array.from(r.Iinv)]); }"
+              "for (const g of [0, 1e-3, 17.5, 62.25, 145.74198896637836]) { const r = m.at(g); out.push([r.M, Array.from(r.com), Array.from(r.I), Array.from(r.Iinv)]); }"
               "console.log(JSON.stringify(out));")
     m = MassModel()
-    for g, (M, c, I, Ii) in zip([0, 1e-3, 17.5, 62.25, 124.92170482832431], js):
+    for g, (M, c, I, Ii) in zip([0, 1e-3, 17.5, 62.25, 145.74198896637836], js):
         r = m.at(g)
         assert r[0] == M and list(r[1]) == c and list(r[2]) == I and list(r[3]) == Ii
 

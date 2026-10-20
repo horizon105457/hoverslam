@@ -208,12 +208,12 @@ export function makeMaterials(d, clip = null, cap = null) {
   const M = {
     polished: sec(P({ color: 0xdfe3e6, metalness: 1, roughness: 0.13 }), SEC.metal, H),
     satin: sec(P({ color: 0xc0c6cb, metalness: 1, roughness: 0.3 }), SEC.metal, H),
-    anod: sec(P({ color: 0x2a2e33, metalness: 0.6, roughness: 0.32, clearcoat: 0.5, clearcoatRoughness: 0.25 }), SEC.dark, H),
+    anod: sec(P({ color: 0x424a52, metalness: 0.7, roughness: 0.28, clearcoat: 0.5, clearcoatRoughness: 0.2 }), SEC.dark, H), // gunmetal anodising
     iron: sec(P({ color: 0x858c92, metalness: 1, roughness: 0.4 }), SEC.metal, H),
     copper: sec(P({ color: 0xe0915c, metalness: 1, roughness: 0.26 }), 0xd8834f, H * 3),
     spring: sec(P({ color: 0xb8bfc5, metalness: 1, roughness: 0.2 }), SEC.metal, H),
-    ptfe: sec(P({ color: 0x2b2c2f, metalness: 0, roughness: 0.45 }), SEC.dark, H), // FKM seal (dark: a white disc would blank out the macro shots)
-    bobbin: sec(P({ color: 0x26292d, metalness: 0, roughness: 0.5 }), SEC.dark, H),
+    ptfe: sec(P({ color: 0x3a3c40, metalness: 0, roughness: 0.45 }), SEC.dark, H), // FKM seal (dark: a white disc would blank out the macro shots)
+    bobbin: sec(P({ color: 0x383b40, metalness: 0, roughness: 0.5 }), SEC.dark, H),
     bolt: sec(P({ color: 0x60666c, metalness: 1, roughness: 0.28 }), SEC.metal, H),
     blue: sec(P({ color: 0x2a5fc4, metalness: 0.6, roughness: 0.3 }), SEC.dark, H),
   };

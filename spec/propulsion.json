@@ -4,7 +4,7 @@
   "gas": { "name": "air", "gamma": 1.4, "R": 287.05 },
   "tank": {
     "_doc": "Six Type-IV COPVs on one manifold, treated as a single gas volume. Polytropic blowdown p*V^n = const per unit mass with n between isothermal (1.0) and adiabatic (gamma).",
-    "p0": 30.0e6,
+    "p0": 35.0e6,
     "T0": 293.15,
     "polytropic_n": 1.25,
     "bottles": [
@@ -15,7 +15,7 @@
       { "id": "C5", "center": [0, 0.49, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
       { "id": "C6", "center": [0, 0.76, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 }
     ],
-    "_approx": { "volume_total_m3": 0.3504, "gas_mass0_kg": 124.9 }
+    "_approx": { "volume_total_m3": 0.3504, "gas_mass0_kg": 145.7 }
   },
   "regulator": {
     "_doc": "Feed pressure to every valve: p_c = min(p_set, p_tank - dp_min), never below ambient.",
@@ -31,10 +31,10 @@
   },
   "control": { "dt": 0.02 },
   "nozzles": [
-    { "id": "B_FL", "group": "bottom", "label": "底部 左前", "mount": [-0.45, 0.225,  0.55], "exit": [-0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
-    { "id": "B_FR", "group": "bottom", "label": "底部 右前", "mount": [ 0.45, 0.225,  0.55], "exit": [ 0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
-    { "id": "B_RL", "group": "bottom", "label": "底部 左后", "mount": [-0.45, 0.225, -0.95], "exit": [-0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
-    { "id": "B_RR", "group": "bottom", "label": "底部 右后", "mount": [ 0.45, 0.225, -0.95], "exit": [ 0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
+    { "id": "B_FL", "group": "bottom", "label": "底部 左前", "mount": [-0.45, 0.225,  0.55], "exit": [-0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
+    { "id": "B_FR", "group": "bottom", "label": "底部 右前", "mount": [ 0.45, 0.225,  0.55], "exit": [ 0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
+    { "id": "B_RL", "group": "bottom", "label": "底部 左后", "mount": [-0.45, 0.225, -0.95], "exit": [-0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
+    { "id": "B_RR", "group": "bottom", "label": "底部 右后", "mount": [ 0.45, 0.225, -0.95], "exit": [ 0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
     { "id": "R_UL", "group": "rear", "label": "尾部 左上", "mount": [-0.42, 0.80, -1.553], "exit": [-0.42, 0.80, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
     { "id": "R_UR", "group": "rear", "label": "尾部 右上", "mount": [ 0.42, 0.80, -1.553], "exit": [ 0.42, 0.80, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
     { "id": "R_LL", "group": "rear", "label": "尾部 左下", "mount": [-0.42, 0.40, -1.551], "exit": [-0.42, 0.40, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
