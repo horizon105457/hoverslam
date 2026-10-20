@@ -1,0 +1,17 @@
+{
+  "name": "mpc-baseline",
+  "description": "Pure MPC (src/flight/mpc, no pd anywhere) with its default settings and each optimizer family, against pd, on escape-soft-landing. JS only (tools/flight/bench.mjs). Reference numbers for the MPC experiments of 2026-10-20 (barrel roll, gas-optimal landing).",
+  "task": "escape-soft-landing",
+  "controllers": [
+    { "name": "pd" },
+    { "name": "mpc", "label": "mpc-cem" },
+    { "name": "mpc", "label": "mpc-mppi", "optimizer": "mppi" },
+    { "name": "mpc", "label": "mpc-grad", "optimizer": "grad", "grad": { "iters": 2 } },
+    { "name": "mpc", "label": "mpc-hybrid", "optimizer": "hybrid", "hybrid": { "stages": [{ "type": "mppi", "iters": 2 }, { "type": "grad", "iters": 1 }] } },
+    { "name": "mpc", "label": "mpc-cem-zoh", "interp": "zoh" }
+  ],
+  "presets": ["flat", "nose", "rear", "side", "roof", "corner"],
+  "seeds": [1, 2, 3],
+  "record": "first",
+  "workers": 16
+}

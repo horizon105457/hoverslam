@@ -1,0 +1,261 @@
+{
+ "name": "gas-budget",
+ "task": "escape-soft-landing",
+ "description": "Gas and success vs rollout budget per plan for each optimizer family (zero cold start, gas objective).",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "cem-16x3",
+   "optimizer": "cem",
+   "cem": {
+    "samples": 16
+   }
+  },
+  {
+   "label": "cem-32x3",
+   "optimizer": "cem",
+   "cem": {
+    "samples": 32
+   }
+  },
+  {
+   "label": "cem-64x3",
+   "optimizer": "cem",
+   "cem": {
+    "samples": 64
+   }
+  },
+  {
+   "label": "cem-128x3",
+   "optimizer": "cem",
+   "cem": {
+    "samples": 128
+   }
+  },
+  {
+   "label": "cem-256x3",
+   "optimizer": "cem",
+   "cem": {
+    "samples": 256
+   }
+  },
+  {
+   "label": "cem-512x3",
+   "optimizer": "cem",
+   "cem": {
+    "samples": 512
+   }
+  },
+  {
+   "label": "mppi-16x3",
+   "optimizer": "mppi",
+   "mppi": {
+    "samples": 16
+   }
+  },
+  {
+   "label": "mppi-32x3",
+   "optimizer": "mppi",
+   "mppi": {
+    "samples": 32
+   }
+  },
+  {
+   "label": "mppi-64x3",
+   "optimizer": "mppi",
+   "mppi": {
+    "samples": 64
+   }
+  },
+  {
+   "label": "mppi-128x3",
+   "optimizer": "mppi",
+   "mppi": {
+    "samples": 128
+   }
+  },
+  {
+   "label": "mppi-256x3",
+   "optimizer": "mppi",
+   "mppi": {
+    "samples": 256
+   }
+  },
+  {
+   "label": "mppi-512x3",
+   "optimizer": "mppi",
+   "mppi": {
+    "samples": 512
+   }
+  },
+  {
+   "label": "grad-1",
+   "optimizer": "grad",
+   "grad": {
+    "iters": 1
+   }
+  },
+  {
+   "label": "grad-2",
+   "optimizer": "grad",
+   "grad": {
+    "iters": 2
+   }
+  },
+  {
+   "label": "grad-4",
+   "optimizer": "grad",
+   "grad": {
+    "iters": 4
+   }
+  },
+  {
+   "label": "grad-8",
+   "optimizer": "grad",
+   "grad": {
+    "iters": 8
+   }
+  },
+  {
+   "label": "xlbfgs-1",
+   "optimizer": {
+    "type": "xlbfgs",
+    "iters": 1
+   }
+  },
+  {
+   "label": "xlbfgs-2",
+   "optimizer": {
+    "type": "xlbfgs",
+    "iters": 2
+   }
+  },
+  {
+   "label": "xlbfgs-4",
+   "optimizer": {
+    "type": "xlbfgs",
+    "iters": 4
+   }
+  },
+  {
+   "label": "xlbfgs-8",
+   "optimizer": {
+    "type": "xlbfgs",
+    "iters": 8
+   }
+  },
+  {
+   "label": "cem64x2>xlbfgs1",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2,
+     "samples": 64
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ]
+  },
+  {
+   "label": "cem128x2>xlbfgs1",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2,
+     "samples": 128
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ]
+  },
+  {
+   "label": "cem128x2>xlbfgs2",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2,
+     "samples": 128
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 2
+    }
+   ]
+  },
+  {
+   "label": "cem256x2>xlbfgs4",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2,
+     "samples": 256
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 4
+    }
+   ]
+  },
+  {
+   "label": "grad-spsa8-4",
+   "optimizer": "grad",
+   "grad": {
+    "iters": 4,
+    "fd": "spsa",
+    "spsa_samples": 8
+   }
+  },
+  {
+   "label": "grad-spsa8-16",
+   "optimizer": "grad",
+   "grad": {
+    "iters": 16,
+    "fd": "spsa",
+    "spsa_samples": 8
+   }
+  },
+  {
+   "label": "xlbfgs-2-central",
+   "optimizer": {
+    "type": "xlbfgs",
+    "iters": 2,
+    "fd": "central"
+   }
+  },
+  {
+   "label": "xlbfgs-4-coarse",
+   "optimizer": {
+    "type": "xlbfgs",
+    "iters": 4
+   },
+   "knot": 0.1,
+   "knot_growth": 1.15
+  },
+  {
+   "label": "cem-128x3-coarse",
+   "knot": 0.1,
+   "knot_growth": 1.15
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "record": "none"
+}

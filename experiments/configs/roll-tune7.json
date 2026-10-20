@@ -1,0 +1,175 @@
+{
+ "name": "roll-tune7",
+ "description": "Barrel-roll tuning round 7 (twin, flat): v1 and s (soft-body slip terms) on seeds 11-20 (seeds 1-10: roll-tune4 / roll-tune5), and s with w_wrong 50 + 40 cold-start passes on seeds 1-20.",
+ "_doc_defaults": "Objective weights are spelled out in full.",
+ "task": "escape-soft-landing",
+ "controllers": [
+  {
+   "name": "mpc",
+   "label": "v1",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 20
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "s",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_slip": 0.3,
+    "w_td_slip": 10,
+    "w_wrong": 20
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "s-w50-fp40",
+   "horizon": 4.0,
+   "first_passes": 40,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_slip": 0.3,
+    "w_td_slip": 10,
+    "w_wrong": 50
+   }
+  }
+ ],
+ "presets": [
+  "flat"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20
+ ],
+ "record": "all",
+ "workers": 5
+}

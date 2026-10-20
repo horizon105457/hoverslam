@@ -3,6 +3,8 @@
 // found by shape matching) plus Int16 local node offsets at 0.25 mm. Rigid flight/spin interpolates exactly
 // (slerp) and local offsets only change while metal actually deforms, so recordings compress very well.
 import { quatToMat, quatMul, quatNorm, slerp } from '../core/quat.js';
+import { LAUNCH } from '../core/spec.js';
+import { driveIn, launchOrigin } from '../scene/layout.js';
 export { slerp };
 
 const LOCAL_SCALE = 4000; // 1 unit = 0.25 mm
@@ -224,10 +226,13 @@ export function unpackRecording(buf) {
 }
 
 // ------------------------------------------------------------------------------------------------
-/** Samples node / particle positions at arbitrary times (incl. the pre-roll before the sim started). */
+/** Samples node / particle positions at arbitrary times (incl. the drive-in before the sim started: the first
+ *  frame moved rigidly along `driveIn`, wheels rolling). */
 export class RecordingPlayer {
   constructor(car, meta, frames = []) {
     this.car = car; this.meta = meta; this.frames = frames;
+    const v = meta.launch?.velocity || [0, 0, 0];
+    this.drive = driveIn(launchOrigin(v, meta.scenario?.lead ?? LAUNCH.defaults.lead), v);
     this.N = meta.N; this.C = meta.C;
     this.chunks = car.chunks.map(c => ({ start: c.nodeStart, count: c.nodeCount }));
     this.pos = new Float32Array(this.N * 3);
@@ -253,8 +258,7 @@ export class RecordingPlayer {
     if (!F.length) return pos;
     let [i0, i1, a] = this.frameIndex(t);
     const f0 = F[i0], f1 = F[i1];
-    const pre = t < F[0].t ? t - F[0].t : 0;
-    const vel = this.meta.launch?.velocity || [0, 0, 0];
+    const D = t < F[0].t ? this.drive(t - F[0].t) : null;
     for (let c = 0; c < this.C; c++) {
       const { start, count } = this.chunks[c];
       if (!count) continue;
@@ -264,13 +268,14 @@ export class RecordingPlayer {
       this.q0[0] = X0[o + 3]; this.q0[1] = X0[o + 4]; this.q0[2] = X0[o + 5]; this.q0[3] = X0[o + 6];
       this.q1[0] = X1[o + 3]; this.q1[1] = X1[o + 4]; this.q1[2] = X1[o + 5]; this.q1[3] = X1[o + 6];
       const q = slerp(this.q0, this.q1, a, this.qi);
-      if (pre < 0) {
-        cx += vel[0] * pre; cy += vel[1] * pre; cz += vel[2] * pre;
+      if (D) {
+        const x0 = cx; cx = D.c * x0 + D.s * cz + D.dx; cz = -D.s * x0 + D.c * cz + D.dz;
         const w = this.wheelChunk.get(c);
-        if (w) { // roll the wheel backwards about its (world) axle
-          const ax = this.axleDir(w, f0), ang = w.omega * pre, s = Math.sin(ang / 2);
+        if (w) { // roll the wheel backwards about its axle at t = 0 (constant speed: angle ∝ time)
+          const ax = this.axleDir(w, f0), ang = w.omega * (t - F[0].t), s = Math.sin(ang / 2);
           quatMul([ax[0] * s, ax[1] * s, ax[2] * s, Math.cos(ang / 2)], q, q);
         }
+        quatMul(D.q, q, q);
       }
       quatToMat(q, m);
       const L0 = f0.local, L1 = f1.local;
@@ -329,7 +334,9 @@ export class RecordingPlayer {
     const F = this.frames;
     if (!F.length) return [0, 0, 0];
     const [i0, i1, a] = this.frameIndex(t);
-    const b0 = F[i0].body, b1 = F[i1].body, pre = t < F[0].t ? t - F[0].t : 0, v = this.meta.launch?.velocity || [0, 0, 0];
-    return [b0[0] + (b1[0] - b0[0]) * a + v[0] * pre, b0[1] + (b1[1] - b0[1]) * a + v[1] * pre, b0[2] + (b1[2] - b0[2]) * a + v[2] * pre];
+    const b0 = F[i0].body, b1 = F[i1].body, b = [b0[0] + (b1[0] - b0[0]) * a, b0[1] + (b1[1] - b0[1]) * a, b0[2] + (b1[2] - b0[2]) * a];
+    if (t >= F[0].t) return b;
+    const D = this.drive(t - F[0].t);
+    return [D.c * b[0] + D.s * b[2] + D.dx, b[1], -D.s * b[0] + D.c * b[2] + D.dz];
   }
 }

@@ -1,0 +1,632 @@
+{
+ "name": "gas-optim",
+ "task": "escape-soft-landing",
+ "description": "Optimizer families (sampling cem / mppi, gradient grad / xlbfgs, hybrids) at ~400 rollouts per plan, from four cold starts: zero, hover-ish constant heave 0.42, early constant heave 0.7, late burn (xinit). Gas objective.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "cem@zero",
+   "optimizer": [
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "cem@hover",
+   "optimizer": [
+    {
+     "type": "cem"
+    }
+   ],
+   "init": [
+    0.42,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "cem@early",
+   "optimizer": [
+    {
+     "type": "cem"
+    }
+   ],
+   "init": [
+    0.7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "cem@late",
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        1.05,
+        1
+       ],
+       [
+        1.45,
+        1
+       ],
+       [
+        1.5,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "mppi@zero",
+   "optimizer": [
+    {
+     "type": "mppi"
+    }
+   ]
+  },
+  {
+   "label": "mppi@hover",
+   "optimizer": [
+    {
+     "type": "mppi"
+    }
+   ],
+   "init": [
+    0.42,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "mppi@early",
+   "optimizer": [
+    {
+     "type": "mppi"
+    }
+   ],
+   "init": [
+    0.7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "mppi@late",
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        1.05,
+        1
+       ],
+       [
+        1.45,
+        1
+       ],
+       [
+        1.5,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "type": "mppi"
+    }
+   ]
+  },
+  {
+   "label": "grad@zero",
+   "optimizer": [
+    {
+     "type": "grad",
+     "iters": 2
+    }
+   ]
+  },
+  {
+   "label": "grad@hover",
+   "optimizer": [
+    {
+     "type": "grad",
+     "iters": 2
+    }
+   ],
+   "init": [
+    0.42,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "grad@early",
+   "optimizer": [
+    {
+     "type": "grad",
+     "iters": 2
+    }
+   ],
+   "init": [
+    0.7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "grad@late",
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        1.05,
+        1
+       ],
+       [
+        1.45,
+        1
+       ],
+       [
+        1.5,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "type": "grad",
+     "iters": 2
+    }
+   ]
+  },
+  {
+   "label": "xlbfgs@zero",
+   "optimizer": [
+    {
+     "type": "xlbfgs",
+     "iters": 2
+    }
+   ]
+  },
+  {
+   "label": "xlbfgs@hover",
+   "optimizer": [
+    {
+     "type": "xlbfgs",
+     "iters": 2
+    }
+   ],
+   "init": [
+    0.42,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "xlbfgs@early",
+   "optimizer": [
+    {
+     "type": "xlbfgs",
+     "iters": 2
+    }
+   ],
+   "init": [
+    0.7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "xlbfgs@late",
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        1.05,
+        1
+       ],
+       [
+        1.45,
+        1
+       ],
+       [
+        1.5,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 2
+    }
+   ]
+  },
+  {
+   "label": "cem>xlbfgs@zero",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ]
+  },
+  {
+   "label": "cem>xlbfgs@hover",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ],
+   "init": [
+    0.42,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "cem>xlbfgs@early",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ],
+   "init": [
+    0.7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "cem>xlbfgs@late",
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        1.05,
+        1
+       ],
+       [
+        1.45,
+        1
+       ],
+       [
+        1.5,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ]
+  },
+  {
+   "label": "xlbfgs>cem@zero",
+   "optimizer": [
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    },
+    {
+     "type": "cem",
+     "iters": 1
+    }
+   ]
+  },
+  {
+   "label": "xlbfgs>cem@hover",
+   "optimizer": [
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    },
+    {
+     "type": "cem",
+     "iters": 1
+    }
+   ],
+   "init": [
+    0.42,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "xlbfgs>cem@early",
+   "optimizer": [
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    },
+    {
+     "type": "cem",
+     "iters": 1
+    }
+   ],
+   "init": [
+    0.7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "xlbfgs>cem@late",
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        1.05,
+        1
+       ],
+       [
+        1.45,
+        1
+       ],
+       [
+        1.5,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    },
+    {
+     "type": "cem",
+     "iters": 1
+    }
+   ]
+  },
+  {
+   "label": "mppi>grad@zero",
+   "optimizer": [
+    {
+     "type": "mppi",
+     "iters": 2
+    },
+    {
+     "type": "grad",
+     "iters": 1
+    }
+   ]
+  },
+  {
+   "label": "mppi>grad@hover",
+   "optimizer": [
+    {
+     "type": "mppi",
+     "iters": 2
+    },
+    {
+     "type": "grad",
+     "iters": 1
+    }
+   ],
+   "init": [
+    0.42,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "mppi>grad@early",
+   "optimizer": [
+    {
+     "type": "mppi",
+     "iters": 2
+    },
+    {
+     "type": "grad",
+     "iters": 1
+    }
+   ],
+   "init": [
+    0.7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "mppi>grad@late",
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        0
+       ],
+       [
+        1.05,
+        1
+       ],
+       [
+        1.45,
+        1
+       ],
+       [
+        1.5,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "type": "mppi",
+     "iters": 2
+    },
+    {
+     "type": "grad",
+     "iters": 1
+    }
+   ]
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "record": "first"
+}

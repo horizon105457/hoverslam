@@ -1,0 +1,193 @@
+{
+ "name": "gas-attitude",
+ "task": "escape-soft-landing",
+ "description": "Search aid for early attitude correction: in-air angular-rate / tilt shaping (air_rate per (rad/s)² per step, air_tilt per (1 - cos)) on the gas objective, free and with the heave-only coast to 0.9 s (xmask). Judged on gas and success.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "free-rate0.3",
+   "objective": {
+    "name": "gas",
+    "air_rate": 0.3
+   }
+  },
+  {
+   "label": "free-rate1",
+   "objective": {
+    "name": "gas",
+    "air_rate": 1
+   }
+  },
+  {
+   "label": "free-rate3",
+   "objective": {
+    "name": "gas",
+    "air_rate": 3
+   }
+  },
+  {
+   "label": "hc0.9-rate0",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_rate": 0
+   }
+  },
+  {
+   "label": "hc0.9-rate0.3",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_rate": 0.3
+   }
+  },
+  {
+   "label": "hc0.9-rate1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_rate": 1
+   }
+  },
+  {
+   "label": "hc0.9-rate3",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_rate": 3
+   }
+  },
+  {
+   "label": "hc0.9-tilt10",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_tilt": 10
+   }
+  },
+  {
+   "label": "hc0.9-tilt30",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_tilt": 30
+   }
+  },
+  {
+   "label": "hc0.9-tilt10-rate1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_tilt": 10,
+    "air_rate": 1
+   }
+  },
+  {
+   "label": "hc0.7-rate1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.7
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_rate": 1
+   }
+  },
+  {
+   "label": "hc1-rate1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 1
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "objective": {
+    "name": "gas",
+    "air_rate": 1
+   }
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "first"
+}

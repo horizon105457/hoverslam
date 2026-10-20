@@ -1,17 +1,19 @@
 // Controller registry (same names and semantics in python/coldgas/controllers). Interface (src/flight/contract.js):
 //   reset({task, seed}) once per episode, act(state, info) -> u_cmd (Float64Array(NU), each in [0, 1]) every
 //   CONTROL_DT; act sees only FlightState fields (twin or soft-body estimate), the task and the spec.
-// Config: a name ('zero' | 'pd' | 'replay' | 'mlp' | 'mppi') or {name, ...settings}; pd and mppi settings default
-// to defaults.json; replay needs {traj: coldgas-traj@1 object}, mlp {policy: coldgas-policy@1 object}.
+// Config: a name ('zero' | 'pd' | 'replay' | 'mlp' | 'mppi' | 'mpc') or {name, ...settings}; pd and mppi settings
+// default to defaults.json; replay needs {traj: coldgas-traj@1 object}, mlp {policy: coldgas-policy@1 object}.
+// `mpc` (pure MPC, no base pilot; settings in src/flight/mpc/defaults.json) is JS only: not in the Python registry.
 // loadController() also resolves {file} (Node) or {url} (browser) to that object first.
 import { createZero } from './zero.js';
 import { createPD } from './pd.js';
 import { createReplay } from './replay.js';
 import { createMLP } from './mlp.js';
 import { createMPPI } from './mppi.js';
+import { createMPC } from '../mpc/index.js';
 import defaults from './defaults.json' with { type: 'json' };
 
-export const CONTROLLERS = { zero: createZero, pd: createPD, replay: createReplay, mlp: createMLP, mppi: createMPPI };
+export const CONTROLLERS = { zero: createZero, pd: createPD, replay: createReplay, mlp: createMLP, mppi: createMPPI, mpc: createMPC };
 export const CONTROLLER_DEFAULTS = defaults;
 
 export function createController(nameOrConfig = 'zero') {

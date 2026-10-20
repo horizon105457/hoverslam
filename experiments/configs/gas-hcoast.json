@@ -1,0 +1,183 @@
+{
+ "name": "gas-hcoast",
+ "task": "escape-soft-landing",
+ "description": "Heave-only coast: the collective (heave channel) held at 0 until the first knot at or after arming + t (xmask), attitude channels free from arming; CEM, gas objective.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "hcoast-0",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.1
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.2",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.2
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.3",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.3
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.4",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.4
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.5",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.5
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.6",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.6
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.7",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.7
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.8",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.8
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-0.9",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 1
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-1.1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 1.1
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "hcoast-1.2",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 1.2
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "all"
+}

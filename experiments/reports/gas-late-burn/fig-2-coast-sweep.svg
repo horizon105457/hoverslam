@@ -1,0 +1,245 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 692" width="940" height="692" role="img"><style>
+svg{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.t3{fill:#898781}.grid{stroke:#e1e0d9;stroke-width:1}.axis{stroke:#c3c2b7;stroke-width:1}
+.shade{fill:#0b0b0b;fill-opacity:0.05}.ref{stroke:#52514e;stroke-width:1;stroke-dasharray:4 3;fill:none}
+.ln{fill:none!important;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.band{stroke:none!important;fill-opacity:0.12}
+.mk{stroke:#fcfcfb!important;stroke-width:2}.err{stroke-width:1.5;fill:none!important}
+.s0{stroke:#2a78d6;fill:#2a78d6}.s1{stroke:#eb6834;fill:#eb6834}.s2{stroke:#1baf7a;fill:#1baf7a}
+@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#f0efec}.t2{fill:#c3c2b7}.grid{stroke:#2c2c2a}.axis{stroke:#383835}.shade{fill:#f0efec}.ref{stroke:#c3c2b7}.mk{stroke:#1a1a19!important}.s0{stroke:#3987e5;fill:#3987e5}.s1{stroke:#d95926;fill:#d95926}.s2{stroke:#199e70;fill:#199e70}}
+</style>
+<rect class="bg" width="940" height="692"/>
+<text class="t1" x="12" y="20" font-size="15" font-weight="600">图 2  强制滑行扫描：CEM-MPC + 无偏用气目标，6 预设 × 5 种子，每点 30 回合</text>
+<text class="t1" x="56" y="48" font-size="13" font-weight="600">(a) 成功率</text>
+<line class="grid" x1="56" x2="454" y1="308" y2="308"/><text class="t3" x="50" y="311.5" font-size="10" text-anchor="end">0%</text>
+<line class="grid" x1="56" x2="454" y1="252.76" y2="252.76"/><text class="t3" x="50" y="256.26" font-size="10" text-anchor="end">25%</text>
+<line class="grid" x1="56" x2="454" y1="197.52" y2="197.52"/><text class="t3" x="50" y="201.02" font-size="10" text-anchor="end">50%</text>
+<line class="grid" x1="56" x2="454" y1="142.29" y2="142.29"/><text class="t3" x="50" y="145.79" font-size="10" text-anchor="end">75%</text>
+<line class="grid" x1="56" x2="454" y1="87.05" y2="87.05"/><text class="t3" x="50" y="90.55" font-size="10" text-anchor="end">100%</text>
+<text class="t3" x="71.31" y="323" font-size="10" text-anchor="middle">0</text>
+<text class="t3" x="147.85" y="323" font-size="10" text-anchor="middle">0.25</text>
+<text class="t3" x="224.38" y="323" font-size="10" text-anchor="middle">0.5</text>
+<text class="t3" x="300.92" y="323" font-size="10" text-anchor="middle">0.75</text>
+<text class="t3" x="377.46" y="323" font-size="10" text-anchor="middle">1</text>
+<text class="t3" x="454" y="323" font-size="10" text-anchor="middle">1.25</text>
+<line class="axis" x1="56" x2="454" y1="308" y2="308"/>
+<text class="t2" x="255" y="342" font-size="11" text-anchor="middle">滑行时长：解锁后 (s)</text>
+<text class="t2" transform="translate(13,192) rotate(-90)" font-size="11" text-anchor="middle">成功率（95% Wilson 区间）</text>
+<line class="ref" x1="375.63" x2="375.63" y1="76" y2="308"/><text class="t2" x="371.63" y="300" font-size="10" text-anchor="end">垂直通道最优点火时刻</text>
+<line class="err s0" x1="71.31" x2="71.31" y1="123.88" y2="88.35"/>
+<line class="err s0" x1="101.92" x2="101.92" y1="112.13" y2="87.05"/>
+<line class="err s0" x1="132.54" x2="132.54" y1="123.88" y2="88.35"/>
+<line class="err s0" x1="163.15" x2="163.15" y1="134.16" y2="91.13"/>
+<line class="err s0" x1="193.77" x2="193.77" y1="185.26" y2="118.38"/>
+<line class="err s0" x1="224.38" x2="224.38" y1="185.26" y2="118.38"/>
+<line class="err s0" x1="255" x2="255" y1="214.49" y2="141.38"/>
+<line class="err s0" x1="285.62" x2="285.62" y1="296.27" y2="242.42"/>
+<line class="err s0" x1="316.23" x2="316.23" y1="308" y2="282.92"/>
+<line class="err s0" x1="346.85" x2="346.85" y1="308" y2="282.92"/>
+<line class="err s0" x1="377.46" x2="377.46" y1="308" y2="282.92"/>
+<line class="err s0" x1="408.08" x2="408.08" y1="308" y2="282.92"/>
+<line class="err s0" x1="438.69" x2="438.69" y1="308" y2="282.92"/>
+<path class="ln s0" d="M71.31,94.41L101.92,87.05L132.54,94.41L163.15,101.78L193.77,145.97L224.38,145.97L255,175.43L285.62,278.54L316.23,308L346.85,308L377.46,308L408.08,308L438.69,308"/>
+<circle class="mk s0" cx="71.31" cy="94.41" r="4.5"><title>全部阀门关闭 0 s: 0.97</title></circle>
+<circle class="mk s0" cx="101.92" cy="87.05" r="4.5"><title>全部阀门关闭 0.1 s: 1.00</title></circle>
+<circle class="mk s0" cx="132.54" cy="94.41" r="4.5"><title>全部阀门关闭 0.2 s: 0.97</title></circle>
+<circle class="mk s0" cx="163.15" cy="101.78" r="4.5"><title>全部阀门关闭 0.3 s: 0.93</title></circle>
+<circle class="mk s0" cx="193.77" cy="145.97" r="4.5"><title>全部阀门关闭 0.4 s: 0.73</title></circle>
+<circle class="mk s0" cx="224.38" cy="145.97" r="4.5"><title>全部阀门关闭 0.5 s: 0.73</title></circle>
+<circle class="mk s0" cx="255" cy="175.43" r="4.5"><title>全部阀门关闭 0.6 s: 0.60</title></circle>
+<circle class="mk s0" cx="285.62" cy="278.54" r="4.5"><title>全部阀门关闭 0.7 s: 0.13</title></circle>
+<circle class="mk s0" cx="316.23" cy="308" r="4.5"><title>全部阀门关闭 0.8 s: 0.00</title></circle>
+<circle class="mk s0" cx="346.85" cy="308" r="4.5"><title>全部阀门关闭 0.9 s: 0.00</title></circle>
+<circle class="mk s0" cx="377.46" cy="308" r="4.5"><title>全部阀门关闭 1 s: 0.00</title></circle>
+<circle class="mk s0" cx="408.08" cy="308" r="4.5"><title>全部阀门关闭 1.1 s: 0.00</title></circle>
+<circle class="mk s0" cx="438.69" cy="308" r="4.5"><title>全部阀门关闭 1.2 s: 0.00</title></circle>
+<line class="err s1" x1="71.31" x2="71.31" y1="123.88" y2="88.35"/>
+<line class="err s1" x1="101.92" x2="101.92" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="132.54" x2="132.54" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="163.15" x2="163.15" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="193.77" x2="193.77" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="224.38" x2="224.38" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="255" x2="255" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="285.62" x2="285.62" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="316.23" x2="316.23" y1="123.88" y2="88.35"/>
+<line class="err s1" x1="346.85" x2="346.85" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="377.46" x2="377.46" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="408.08" x2="408.08" y1="112.13" y2="87.05"/>
+<line class="err s1" x1="438.69" x2="438.69" y1="134.16" y2="91.13"/>
+<path class="ln s1" d="M71.31,94.41L101.92,87.05L132.54,87.05L163.15,87.05L193.77,87.05L224.38,87.05L255,87.05L285.62,87.05L316.23,94.41L346.85,87.05L377.46,87.05L408.08,87.05L438.69,101.78"/>
+<circle class="mk s1" cx="71.31" cy="94.41" r="4.5"><title>仅升力关闭（姿态自由） 0 s: 0.97</title></circle>
+<circle class="mk s1" cx="101.92" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.1 s: 1.00</title></circle>
+<circle class="mk s1" cx="132.54" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.2 s: 1.00</title></circle>
+<circle class="mk s1" cx="163.15" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.3 s: 1.00</title></circle>
+<circle class="mk s1" cx="193.77" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.4 s: 1.00</title></circle>
+<circle class="mk s1" cx="224.38" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.5 s: 1.00</title></circle>
+<circle class="mk s1" cx="255" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.6 s: 1.00</title></circle>
+<circle class="mk s1" cx="285.62" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.7 s: 1.00</title></circle>
+<circle class="mk s1" cx="316.23" cy="94.41" r="4.5"><title>仅升力关闭（姿态自由） 0.8 s: 0.97</title></circle>
+<circle class="mk s1" cx="346.85" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 0.9 s: 1.00</title></circle>
+<circle class="mk s1" cx="377.46" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 1 s: 1.00</title></circle>
+<circle class="mk s1" cx="408.08" cy="87.05" r="4.5"><title>仅升力关闭（姿态自由） 1.1 s: 1.00</title></circle>
+<circle class="mk s1" cx="438.69" cy="101.78" r="4.5"><title>仅升力关闭（姿态自由） 1.2 s: 0.93</title></circle>
+<line class="ln s0" x1="56" x2="70" y1="66" y2="66"/><text class="t2" x="74" y="69.5" font-size="10">全部阀门关闭</text>
+<line class="ln s1" x1="146" x2="160" y1="66" y2="66"/><text class="t2" x="164" y="69.5" font-size="10">仅升力关闭（姿态自由）</text>
+<text class="t1" x="526" y="48" font-size="13" font-weight="600">(b) 用气（仅成功回合，均值 ± 标准差）</text>
+<line class="grid" x1="526" x2="924" y1="308" y2="308"/><text class="t3" x="520" y="311.5" font-size="10" text-anchor="end">20</text>
+<line class="grid" x1="526" x2="924" y1="241.71" y2="241.71"/><text class="t3" x="520" y="245.21" font-size="10" text-anchor="end">30</text>
+<line class="grid" x1="526" x2="924" y1="175.43" y2="175.43"/><text class="t3" x="520" y="178.93" font-size="10" text-anchor="end">40</text>
+<line class="grid" x1="526" x2="924" y1="109.14" y2="109.14"/><text class="t3" x="520" y="112.64" font-size="10" text-anchor="end">50</text>
+<text class="t3" x="541.31" y="323" font-size="10" text-anchor="middle">0</text>
+<text class="t3" x="617.85" y="323" font-size="10" text-anchor="middle">0.25</text>
+<text class="t3" x="694.38" y="323" font-size="10" text-anchor="middle">0.5</text>
+<text class="t3" x="770.92" y="323" font-size="10" text-anchor="middle">0.75</text>
+<text class="t3" x="847.46" y="323" font-size="10" text-anchor="middle">1</text>
+<text class="t3" x="924" y="323" font-size="10" text-anchor="middle">1.25</text>
+<line class="axis" x1="526" x2="924" y1="308" y2="308"/>
+<text class="t2" x="725" y="342" font-size="11" text-anchor="middle">滑行时长：解锁后 (s)</text>
+<text class="t2" transform="translate(483,192) rotate(-90)" font-size="11" text-anchor="middle">用气 (kg)</text>
+<line class="ref" x1="845.63" x2="845.63" y1="76" y2="308"/><text class="t2" x="841.63" y="300" font-size="10" text-anchor="end">垂直通道最优点火时刻</text>
+<line class="ref" x1="526" x2="924" y1="259.8" y2="259.8"/><text class="t2" x="920" y="255.8" font-size="10" text-anchor="end">垂直通道下限 27.3 kg（v_td 1.5）</text>
+<line class="err s0" x1="541.31" x2="541.31" y1="181.47" y2="118.11"/>
+<line class="err s0" x1="571.92" x2="571.92" y1="193.56" y2="123.38"/>
+<line class="err s0" x1="602.54" x2="602.54" y1="184.95" y2="128.35"/>
+<line class="err s0" x1="633.15" x2="633.15" y1="185.2" y2="151.32"/>
+<line class="err s0" x1="663.77" x2="663.77" y1="179.99" y2="163.99"/>
+<line class="err s0" x1="694.38" x2="694.38" y1="176.51" y2="142.32"/>
+<line class="err s0" x1="725" x2="725" y1="164.29" y2="136.94"/>
+<line class="err s0" x1="755.62" x2="755.62" y1="170.33" y2="163.89"/>
+<path class="ln s0" d="M541.31,149.79L571.92,158.47L602.54,156.65L633.15,168.26L663.77,171.99L694.38,159.41L725,150.62L755.62,167.11"/>
+<circle class="mk s0" cx="541.31" cy="149.79" r="4.5"><title>全部阀门关闭 0 s: 43.87</title></circle>
+<circle class="mk s0" cx="571.92" cy="158.47" r="4.5"><title>全部阀门关闭 0.1 s: 42.56</title></circle>
+<circle class="mk s0" cx="602.54" cy="156.65" r="4.5"><title>全部阀门关闭 0.2 s: 42.83</title></circle>
+<circle class="mk s0" cx="633.15" cy="168.26" r="4.5"><title>全部阀门关闭 0.3 s: 41.08</title></circle>
+<circle class="mk s0" cx="663.77" cy="171.99" r="4.5"><title>全部阀门关闭 0.4 s: 40.52</title></circle>
+<circle class="mk s0" cx="694.38" cy="159.41" r="4.5"><title>全部阀门关闭 0.5 s: 42.42</title></circle>
+<circle class="mk s0" cx="725" cy="150.62" r="4.5"><title>全部阀门关闭 0.6 s: 43.74</title></circle>
+<circle class="mk s0" cx="755.62" cy="167.11" r="4.5"><title>全部阀门关闭 0.7 s: 41.26</title></circle>
+<line class="err s1" x1="541.31" x2="541.31" y1="181.47" y2="118.11"/>
+<line class="err s1" x1="571.92" x2="571.92" y1="186.17" y2="124.73"/>
+<line class="err s1" x1="602.54" x2="602.54" y1="183.87" y2="108.32"/>
+<line class="err s1" x1="633.15" x2="633.15" y1="179.84" y2="113.79"/>
+<line class="err s1" x1="663.77" x2="663.77" y1="178.99" y2="125.86"/>
+<line class="err s1" x1="694.38" x2="694.38" y1="175.4" y2="134.24"/>
+<line class="err s1" x1="725" x2="725" y1="175.48" y2="140.14"/>
+<line class="err s1" x1="755.62" x2="755.62" y1="181.11" y2="142.92"/>
+<line class="err s1" x1="786.23" x2="786.23" y1="191.61" y2="141.56"/>
+<line class="err s1" x1="816.85" x2="816.85" y1="195.88" y2="156.19"/>
+<line class="err s1" x1="847.46" x2="847.46" y1="192.18" y2="152.7"/>
+<line class="err s1" x1="878.08" x2="878.08" y1="179.27" y2="146.89"/>
+<line class="err s1" x1="908.69" x2="908.69" y1="171.59" y2="138.43"/>
+<path class="ln s1" d="M541.31,149.79L571.92,155.45L602.54,146.09L633.15,146.81L663.77,152.43L694.38,154.82L725,157.81L755.62,162.01L786.23,166.59L816.85,176.03L847.46,172.44L878.08,163.08L908.69,155.01"/>
+<circle class="mk s1" cx="541.31" cy="149.79" r="4.5"><title>仅升力关闭 0 s: 43.87</title></circle>
+<circle class="mk s1" cx="571.92" cy="155.45" r="4.5"><title>仅升力关闭 0.1 s: 43.01</title></circle>
+<circle class="mk s1" cx="602.54" cy="146.09" r="4.5"><title>仅升力关闭 0.2 s: 44.43</title></circle>
+<circle class="mk s1" cx="633.15" cy="146.81" r="4.5"><title>仅升力关闭 0.3 s: 44.32</title></circle>
+<circle class="mk s1" cx="663.77" cy="152.43" r="4.5"><title>仅升力关闭 0.4 s: 43.47</title></circle>
+<circle class="mk s1" cx="694.38" cy="154.82" r="4.5"><title>仅升力关闭 0.5 s: 43.11</title></circle>
+<circle class="mk s1" cx="725" cy="157.81" r="4.5"><title>仅升力关闭 0.6 s: 42.66</title></circle>
+<circle class="mk s1" cx="755.62" cy="162.01" r="4.5"><title>仅升力关闭 0.7 s: 42.02</title></circle>
+<circle class="mk s1" cx="786.23" cy="166.59" r="4.5"><title>仅升力关闭 0.8 s: 41.33</title></circle>
+<circle class="mk s1" cx="816.85" cy="176.03" r="4.5"><title>仅升力关闭 0.9 s: 39.91</title></circle>
+<circle class="mk s1" cx="847.46" cy="172.44" r="4.5"><title>仅升力关闭 1 s: 40.45</title></circle>
+<circle class="mk s1" cx="878.08" cy="163.08" r="4.5"><title>仅升力关闭 1.1 s: 41.86</title></circle>
+<circle class="mk s1" cx="908.69" cy="155.01" r="4.5"><title>仅升力关闭 1.2 s: 43.08</title></circle>
+<line class="ln s0" x1="526" x2="540" y1="66" y2="66"/><text class="t2" x="544" y="69.5" font-size="10">全部阀门关闭</text>
+<line class="ln s1" x1="616" x2="630" y1="66" y2="66"/><text class="t2" x="634" y="69.5" font-size="10">仅升力关闭</text>
+<text class="t1" x="56" y="368" font-size="13" font-weight="600">(c) 主燃烧点火时刻与触地时刻（成功回合）</text>
+<line class="grid" x1="56" x2="454" y1="628" y2="628"/><text class="t3" x="50" y="631.5" font-size="10" text-anchor="end">0</text>
+<line class="grid" x1="56" x2="454" y1="575.27" y2="575.27"/><text class="t3" x="50" y="578.77" font-size="10" text-anchor="end">0.5</text>
+<line class="grid" x1="56" x2="454" y1="522.55" y2="522.55"/><text class="t3" x="50" y="526.05" font-size="10" text-anchor="end">1</text>
+<line class="grid" x1="56" x2="454" y1="469.82" y2="469.82"/><text class="t3" x="50" y="473.32" font-size="10" text-anchor="end">1.5</text>
+<line class="grid" x1="56" x2="454" y1="417.09" y2="417.09"/><text class="t3" x="50" y="420.59" font-size="10" text-anchor="end">2</text>
+<text class="t3" x="71.31" y="643" font-size="10" text-anchor="middle">0</text>
+<text class="t3" x="147.85" y="643" font-size="10" text-anchor="middle">0.25</text>
+<text class="t3" x="224.38" y="643" font-size="10" text-anchor="middle">0.5</text>
+<text class="t3" x="300.92" y="643" font-size="10" text-anchor="middle">0.75</text>
+<text class="t3" x="377.46" y="643" font-size="10" text-anchor="middle">1</text>
+<text class="t3" x="454" y="643" font-size="10" text-anchor="middle">1.25</text>
+<line class="axis" x1="56" x2="454" y1="628" y2="628"/>
+<text class="t2" x="255" y="662" font-size="11" text-anchor="middle">滑行时长：解锁后 (s)</text>
+<text class="t2" transform="translate(13,512) rotate(-90)" font-size="11" text-anchor="middle">解锁后时间 (s)</text>
+<line class="ref" x1="375.63" x2="375.63" y1="396" y2="628"/><text class="t2" x="371.63" y="620" font-size="10" text-anchor="end">垂直通道最优点火时刻</text>
+<path class="ln s0" d="M71.31,507.35L101.92,507.5L132.54,512.95L163.15,512.38L193.77,510.95L224.38,523.6L255,533.21L285.62,530.45"/>
+<circle class="mk s0" cx="71.31" cy="507.35" r="4.5"><title>点火（全部关闭）: 0, 1.14</title></circle>
+<circle class="mk s0" cx="101.92" cy="507.5" r="4.5"><title>点火（全部关闭）: 0.1, 1.14</title></circle>
+<circle class="mk s0" cx="132.54" cy="512.95" r="4.5"><title>点火（全部关闭）: 0.2, 1.09</title></circle>
+<circle class="mk s0" cx="163.15" cy="512.38" r="4.5"><title>点火（全部关闭）: 0.3, 1.1</title></circle>
+<circle class="mk s0" cx="193.77" cy="510.95" r="4.5"><title>点火（全部关闭）: 0.4, 1.11</title></circle>
+<circle class="mk s0" cx="224.38" cy="523.6" r="4.5"><title>点火（全部关闭）: 0.5, 0.99</title></circle>
+<circle class="mk s0" cx="255" cy="533.21" r="4.5"><title>点火（全部关闭）: 0.6, 0.9</title></circle>
+<circle class="mk s0" cx="285.62" cy="530.45" r="4.5"><title>点火（全部关闭）: 0.7, 0.93</title></circle>
+<path class="ln s1" d="M71.31,507.35L101.92,508.63L132.54,513.76L163.15,515.73L193.77,511.51L224.38,509.96L255,508.91L285.62,507.92L316.23,502.55L346.85,500.54L377.46,491.26L408.08,481.84L438.69,472.68"/>
+<circle class="mk s1" cx="71.31" cy="507.35" r="4.5"><title>点火（仅升力关闭）: 0, 1.14</title></circle>
+<circle class="mk s1" cx="101.92" cy="508.63" r="4.5"><title>点火（仅升力关闭）: 0.1, 1.13</title></circle>
+<circle class="mk s1" cx="132.54" cy="513.76" r="4.5"><title>点火（仅升力关闭）: 0.2, 1.08</title></circle>
+<circle class="mk s1" cx="163.15" cy="515.73" r="4.5"><title>点火（仅升力关闭）: 0.3, 1.06</title></circle>
+<circle class="mk s1" cx="193.77" cy="511.51" r="4.5"><title>点火（仅升力关闭）: 0.4, 1.1</title></circle>
+<circle class="mk s1" cx="224.38" cy="509.96" r="4.5"><title>点火（仅升力关闭）: 0.5, 1.12</title></circle>
+<circle class="mk s1" cx="255" cy="508.91" r="4.5"><title>点火（仅升力关闭）: 0.6, 1.13</title></circle>
+<circle class="mk s1" cx="285.62" cy="507.92" r="4.5"><title>点火（仅升力关闭）: 0.7, 1.14</title></circle>
+<circle class="mk s1" cx="316.23" cy="502.55" r="4.5"><title>点火（仅升力关闭）: 0.8, 1.19</title></circle>
+<circle class="mk s1" cx="346.85" cy="500.54" r="4.5"><title>点火（仅升力关闭）: 0.9, 1.21</title></circle>
+<circle class="mk s1" cx="377.46" cy="491.26" r="4.5"><title>点火（仅升力关闭）: 1, 1.3</title></circle>
+<circle class="mk s1" cx="408.08" cy="481.84" r="4.5"><title>点火（仅升力关闭）: 1.1, 1.39</title></circle>
+<circle class="mk s1" cx="438.69" cy="472.68" r="4.5"><title>点火（仅升力关闭）: 1.2, 1.47</title></circle>
+<path class="ln s2" d="M71.31,429.98L101.92,431.06L132.54,432.19L163.15,434.18L193.77,432.66L224.38,430.3L255,430.29L285.62,430.04L316.23,429.37L346.85,429.76L377.46,424.74L408.08,418.92L438.69,416.13"/>
+<circle class="mk s2" cx="71.31" cy="429.98" r="4.5"><title>触地（仅升力关闭）: 0, 1.88</title></circle>
+<circle class="mk s2" cx="101.92" cy="431.06" r="4.5"><title>触地（仅升力关闭）: 0.1, 1.87</title></circle>
+<circle class="mk s2" cx="132.54" cy="432.19" r="4.5"><title>触地（仅升力关闭）: 0.2, 1.86</title></circle>
+<circle class="mk s2" cx="163.15" cy="434.18" r="4.5"><title>触地（仅升力关闭）: 0.3, 1.84</title></circle>
+<circle class="mk s2" cx="193.77" cy="432.66" r="4.5"><title>触地（仅升力关闭）: 0.4, 1.85</title></circle>
+<circle class="mk s2" cx="224.38" cy="430.3" r="4.5"><title>触地（仅升力关闭）: 0.5, 1.87</title></circle>
+<circle class="mk s2" cx="255" cy="430.29" r="4.5"><title>触地（仅升力关闭）: 0.6, 1.87</title></circle>
+<circle class="mk s2" cx="285.62" cy="430.04" r="4.5"><title>触地（仅升力关闭）: 0.7, 1.88</title></circle>
+<circle class="mk s2" cx="316.23" cy="429.37" r="4.5"><title>触地（仅升力关闭）: 0.8, 1.88</title></circle>
+<circle class="mk s2" cx="346.85" cy="429.76" r="4.5"><title>触地（仅升力关闭）: 0.9, 1.88</title></circle>
+<circle class="mk s2" cx="377.46" cy="424.74" r="4.5"><title>触地（仅升力关闭）: 1, 1.93</title></circle>
+<circle class="mk s2" cx="408.08" cy="418.92" r="4.5"><title>触地（仅升力关闭）: 1.1, 1.98</title></circle>
+<circle class="mk s2" cx="438.69" cy="416.13" r="4.5"><title>触地（仅升力关闭）: 1.2, 2.01</title></circle>
+<line class="ln s0" x1="56" x2="70" y1="386" y2="386"/><text class="t2" x="74" y="389.5" font-size="10">点火（全部关闭）</text>
+<line class="ln s1" x1="166" x2="180" y1="386" y2="386"/><text class="t2" x="184" y="389.5" font-size="10">点火（仅升力关闭）</text>
+<line class="ln s2" x1="286" x2="300" y1="386" y2="386"/><text class="t2" x="304" y="389.5" font-size="10">触地（仅升力关闭）</text>
+<text class="t1" x="526" y="368" font-size="13" font-weight="600">(d) 点火前用气（姿态修正等），成功回合</text>
+<line class="grid" x1="526" x2="924" y1="628" y2="628"/><text class="t3" x="520" y="631.5" font-size="10" text-anchor="end">0</text>
+<line class="grid" x1="526" x2="924" y1="581.6" y2="581.6"/><text class="t3" x="520" y="585.1" font-size="10" text-anchor="end">5</text>
+<line class="grid" x1="526" x2="924" y1="535.2" y2="535.2"/><text class="t3" x="520" y="538.7" font-size="10" text-anchor="end">10</text>
+<line class="grid" x1="526" x2="924" y1="488.8" y2="488.8"/><text class="t3" x="520" y="492.3" font-size="10" text-anchor="end">15</text>
+<line class="grid" x1="526" x2="924" y1="442.4" y2="442.4"/><text class="t3" x="520" y="445.9" font-size="10" text-anchor="end">20</text>
+<line class="grid" x1="526" x2="924" y1="396" y2="396"/><text class="t3" x="520" y="399.5" font-size="10" text-anchor="end">25</text>
+<text class="t3" x="541.31" y="643" font-size="10" text-anchor="middle">0</text>
+<text class="t3" x="617.85" y="643" font-size="10" text-anchor="middle">0.25</text>
+<text class="t3" x="694.38" y="643" font-size="10" text-anchor="middle">0.5</text>
+<text class="t3" x="770.92" y="643" font-size="10" text-anchor="middle">0.75</text>
+<text class="t3" x="847.46" y="643" font-size="10" text-anchor="middle">1</text>
+<text class="t3" x="924" y="643" font-size="10" text-anchor="middle">1.25</text>
+<line class="axis" x1="526" x2="924" y1="628" y2="628"/>
+<text class="t2" x="725" y="662" font-size="11" text-anchor="middle">滑行时长：解锁后 (s)</text>
+<text class="t2" transform="translate(483,512) rotate(-90)" font-size="11" text-anchor="middle">点火前用气 (kg)</text>
+<line class="ref" x1="845.63" x2="845.63" y1="396" y2="628"/><text class="t2" x="841.63" y="620" font-size="10" text-anchor="end">垂直通道最优点火时刻</text>
+<path class="ln s0" d="M541.31,478.11L571.92,486.09L602.54,495.76L633.15,506.71L663.77,506.93L694.38,528.76L725,552.75L755.62,566.63"/>
+<circle class="mk s0" cx="541.31" cy="478.11" r="4.5"><title>全部阀门关闭: 0, 16.15</title></circle>
+<circle class="mk s0" cx="571.92" cy="486.09" r="4.5"><title>全部阀门关闭: 0.1, 15.29</title></circle>
+<circle class="mk s0" cx="602.54" cy="495.76" r="4.5"><title>全部阀门关闭: 0.2, 14.25</title></circle>
+<circle class="mk s0" cx="633.15" cy="506.71" r="4.5"><title>全部阀门关闭: 0.3, 13.07</title></circle>
+<circle class="mk s0" cx="663.77" cy="506.93" r="4.5"><title>全部阀门关闭: 0.4, 13.05</title></circle>
+<circle class="mk s0" cx="694.38" cy="528.76" r="4.5"><title>全部阀门关闭: 0.5, 10.69</title></circle>
+<circle class="mk s0" cx="725" cy="552.75" r="4.5"><title>全部阀门关闭: 0.6, 8.11</title></circle>
+<circle class="mk s0" cx="755.62" cy="566.63" r="4.5"><title>全部阀门关闭: 0.7, 6.61</title></circle>
+<path class="ln s1" d="M541.31,478.11L571.92,491.12L602.54,489.7L633.15,494.49L663.77,489.44L694.38,492.23L725,492.96L755.62,497.48L786.23,489.53L816.85,499.56L847.46,475.91L878.08,450.66L908.69,424.72"/>
+<circle class="mk s1" cx="541.31" cy="478.11" r="4.5"><title>仅升力关闭: 0, 16.15</title></circle>
+<circle class="mk s1" cx="571.92" cy="491.12" r="4.5"><title>仅升力关闭: 0.1, 14.75</title></circle>
+<circle class="mk s1" cx="602.54" cy="489.7" r="4.5"><title>仅升力关闭: 0.2, 14.9</title></circle>
+<circle class="mk s1" cx="633.15" cy="494.49" r="4.5"><title>仅升力关闭: 0.3, 14.39</title></circle>
+<circle class="mk s1" cx="663.77" cy="489.44" r="4.5"><title>仅升力关闭: 0.4, 14.93</title></circle>
+<circle class="mk s1" cx="694.38" cy="492.23" r="4.5"><title>仅升力关闭: 0.5, 14.63</title></circle>
+<circle class="mk s1" cx="725" cy="492.96" r="4.5"><title>仅升力关闭: 0.6, 14.55</title></circle>
+<circle class="mk s1" cx="755.62" cy="497.48" r="4.5"><title>仅升力关闭: 0.7, 14.06</title></circle>
+<circle class="mk s1" cx="786.23" cy="489.53" r="4.5"><title>仅升力关闭: 0.8, 14.92</title></circle>
+<circle class="mk s1" cx="816.85" cy="499.56" r="4.5"><title>仅升力关闭: 0.9, 13.84</title></circle>
+<circle class="mk s1" cx="847.46" cy="475.91" r="4.5"><title>仅升力关闭: 1, 16.39</title></circle>
+<circle class="mk s1" cx="878.08" cy="450.66" r="4.5"><title>仅升力关闭: 1.1, 19.11</title></circle>
+<circle class="mk s1" cx="908.69" cy="424.72" r="4.5"><title>仅升力关闭: 1.2, 21.91</title></circle>
+<line class="ln s0" x1="526" x2="540" y1="386" y2="386"/><text class="t2" x="544" y="389.5" font-size="10">全部阀门关闭</text>
+<line class="ln s1" x1="616" x2="630" y1="386" y2="386"/><text class="t2" x="634" y="389.5" font-size="10">仅升力关闭</text>
+<text class="t3" x="12" y="685" font-size="10.5">gas-coast 20261020-215800 · gas-hcoast 20261020-220221</text>
+</svg>

@@ -52,7 +52,7 @@ if (!isMainThread) { // --------------------------------------------------------
     const wall = (performance.now() - t0) / 1000;
     if (job.traj) { r.traj.controller = job.shown; fs.writeFileSync(job.traj, JSON.stringify(r.traj)); }
     parentPort.postMessage({ label: job.label, controller: job.shown, task: job.task, preset: r.traj.preset, seed: job.seed, metrics: r.metrics, wall_s: wall,
-      plans: ctrl.plans ?? null, plan_s: ctrl.planMs != null ? ctrl.planMs / 1000 : null, traj: job.traj ? path.relative(job.out, job.traj) : null });
+      plans: ctrl.plans ?? null, plan_s: ctrl.planMs != null ? ctrl.planMs / 1000 : null, evals: ctrl.evals ?? null, traj: job.traj ? path.relative(job.out, job.traj) : null });
   });
 } else { // ---------------------------------------------------------------------------------------- main
   const { parseArgs } = await import('../lib/args.mjs');

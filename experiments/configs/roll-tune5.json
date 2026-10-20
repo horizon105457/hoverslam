@@ -1,0 +1,218 @@
+{
+ "name": "roll-tune5",
+ "description": "Barrel-roll tuning round 5 (twin, flat, 10 seeds): soft-body robustness terms on top of v1: slip / ground-yaw (land's opt-in soft-body terms), yaw exploration x2, rear-floor clearance after touchdown (w_clear).",
+ "task": "escape-soft-landing",
+ "controllers": [
+  {
+   "name": "mpc",
+   "label": "s",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 20,
+    "w_slip": 0.3,
+    "w_td_slip": 10,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "s-y",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.4,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 20,
+    "w_slip": 0.3,
+    "w_td_slip": 10,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "sc",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 20,
+    "w_slip": 0.3,
+    "w_td_slip": 10,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1,
+    "w_clear": 0.5
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "sc-y",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.4,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 20,
+    "w_slip": 0.3,
+    "w_td_slip": 10,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1,
+    "w_clear": 0.5
+   }
+  }
+ ],
+ "presets": [
+  "flat"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "record": "all",
+ "workers": 8
+}

@@ -39,7 +39,7 @@ SI units throughout (m, s, kg, N, Pa, K, rad). Angles in JSON are degrees only w
 
 | idx | id | group | where |
 |---|---|---|---|
-| 0–3 | B_FL B_FR B_RL B_RR | bottom | under the floor pan, symmetric about the COM in z (heave / roll / pitch) |
+| 0–3 | B_FL B_FR B_RL B_RR | bottom | under the floor pan, front pair z = 0.55, rear pair z = −0.95 (heave / roll / pitch); not symmetric about the kit's rear-heavy COM (z ≈ −0.43 full): equal openings pitch the car, the largest pitch-free thrust is ≈ 26.6 kN (rear pair full, front ≈ 0.53), thrust/weight ≈ 2.36 |
 | 4–7 | R_UL R_UR R_LL R_LR | rear | 2×2 through the rear bumper (surge; yaw by left/right, pitch by upper/lower) |
 | 8–9 | S_L S_R | side | on the sills at the COM (sway) |
 
@@ -233,7 +233,8 @@ For a preset (`speed` km/h, `angle` deg, `spin` = [pitch, yaw, roll] rad/s, `lea
   loaded from the FlightState (`RigidTwin.loadState` / `Twin.load_state`) with integrator step `plan_dt`; noise
   from `gauss()` seeded `seed·1000003 + episode seed + 1`, reductions summed sequentially, softmax through the
   portable `exp`, so the two languages are bit-identical; settings and cost in `defaults.json` `mppi`). Python
-  only: PPO-trained policies exported as `coldgas-policy@1`.
+  only: PPO-trained policies exported as `coldgas-policy@1`. JS only: `mpc` (pure MPC without a base pilot,
+  `src/flight/mpc/`, settings in `src/flight/mpc/defaults.json`; deterministic, not parity-tested).
 - **Policy** `coldgas-policy@1` (JSON): `{format, spec_hash, model, task, obs: {format: 'coldgas-obs@1', names[],
   mean[], std[], clip}, layers: [{W[out][in], b[out], act: 'tanh'|'relu'|'linear'}], action: {transform:
   'clip01'|'tanh01'}, meta: {...}}`. Evaluation: `x = clip((o − mean)/std, −clip, clip)` with `o` the task's

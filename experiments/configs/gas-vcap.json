@@ -1,0 +1,69 @@
+{
+ "name": "gas-vcap",
+ "task": "escape-soft-landing",
+ "description": "Touchdown-speed cap of the gas objective (the \"smooth\" requirement): gas vs touchdown speed (Pareto). CEM.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "vcap-0.5",
+   "objective": {
+    "name": "gas",
+    "v_cap": 0.5
+   }
+  },
+  {
+   "label": "vcap-0.75",
+   "objective": {
+    "name": "gas",
+    "v_cap": 0.75
+   }
+  },
+  {
+   "label": "vcap-1",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   }
+  },
+  {
+   "label": "vcap-1.25",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1.25
+   }
+  },
+  {
+   "label": "vcap-1.5",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1.5
+   }
+  },
+  {
+   "label": "vcap-1.75",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1.75
+   }
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "first"
+}

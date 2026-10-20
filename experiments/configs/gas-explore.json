@@ -1,0 +1,154 @@
+{
+ "name": "gas-explore",
+ "task": "escape-soft-landing",
+ "description": "MPC search settings that might find the attitude-first solution of pd: torque-channel exploration x2 (channel_scale pitch/roll 1), CEM sigma 0.2, 256 samples and 30 cold passes, replanning every step; free and with the heave-only coast to 0.9 s.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "free-cs1",
+   "channel_scale": {
+    "pitch": 1,
+    "roll": 1,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   }
+  },
+  {
+   "label": "free-cs1-s0.2",
+   "channel_scale": {
+    "pitch": 1,
+    "roll": 1,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "cem": {
+    "sigma": 0.2
+   }
+  },
+  {
+   "label": "hc0.9-cs1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "channel_scale": {
+    "pitch": 1,
+    "roll": 1,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   }
+  },
+  {
+   "label": "hc0.9-cs1-s0.2",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "channel_scale": {
+    "pitch": 1,
+    "roll": 1,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "cem": {
+    "sigma": 0.2
+   }
+  },
+  {
+   "label": "hc0.9-cs1-s0.2-256-fp30",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "channel_scale": {
+    "pitch": 1,
+    "roll": 1,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "cem": {
+    "sigma": 0.2,
+    "samples": 256
+   },
+   "first_passes": 30
+  },
+  {
+   "label": "hc0.9-replan1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "replan": 1
+  },
+  {
+   "label": "hc0.9-cs1-replan1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "channel_scale": {
+    "pitch": 1,
+    "roll": 1,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "replan": 1
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "first"
+}

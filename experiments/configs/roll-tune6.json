@@ -1,0 +1,169 @@
+{
+ "name": "roll-tune6",
+ "description": "Barrel-roll tuning round 6 (twin, flat, 10 seeds): slip terms without the airborne one (w_slip 0: pricing slip in the air pulled v_z down and the car back towards the viaduct), with a stronger deck margin, and the airborne slip term with the stronger deck margin.",
+ "_doc_defaults": "Objective weights are spelled out in full.",
+ "task": "escape-soft-landing",
+ "controllers": [
+  {
+   "name": "mpc",
+   "label": "s-noair",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_slip": 0,
+    "w_td_slip": 10,
+    "w_wrong": 20
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "s-noair-deck5",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 5,
+    "w_gas": 0.6,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_slip": 0,
+    "w_td_slip": 10,
+    "w_wrong": 20
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "s-deck5",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 5,
+    "w_gas": 0.6,
+    "w_gnd_slip": 5,
+    "w_gnd_yaw": 1,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_slip": 0.3,
+    "w_td_slip": 10,
+    "w_wrong": 20
+   }
+  }
+ ],
+ "presets": [
+  "flat"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "record": "all",
+ "workers": 5
+}

@@ -1,0 +1,194 @@
+{
+ "name": "roll-tune1",
+ "description": "Barrel-roll tuning round 1 (twin, flat): cold-start settings that make the first plan find jump + roll (first_passes 30, cem sigma 0.2, heave exploration x2, w_jump 200, dense climb term), variants on the inverted-thrust term, the jump-first ordering and the jump height.",
+ "task": "escape-soft-landing",
+ "controllers": [
+  {
+   "name": "mpc",
+   "label": "base",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 0,
+    "w_gas": 0.6,
+    "w_inv": 0,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 0
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "inv0.5",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 0,
+    "w_gas": 0.6,
+    "w_inv": 0.5,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 0
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "inv2",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 0,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 0
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "noorder",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": false,
+    "w_climb": 3,
+    "w_deck": 0,
+    "w_gas": 0.6,
+    "w_inv": 0.5,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 0
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "h2",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "objective": {
+    "name": "roll",
+    "h_jump": 2.0,
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 0,
+    "w_gas": 0.6,
+    "w_inv": 0.5,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 0
+   }
+  },
+  {
+   "name": "mpc",
+   "label": "H4.5",
+   "horizon": 4.5,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 0,
+    "w_gas": 0.6,
+    "w_inv": 0.5,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 0
+   }
+  }
+ ],
+ "presets": [
+  "flat"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "record": "all",
+ "workers": 8,
+ "_doc_defaults": "Objective weights are spelled out in full (the roll objective's defaults were changed to the tuned values after these rounds), so the run reproduces with the current code."
+}

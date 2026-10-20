@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 692" width="940" height="692" role="img"><style>
+svg{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.t3{fill:#898781}.grid{stroke:#e1e0d9;stroke-width:1}.axis{stroke:#c3c2b7;stroke-width:1}
+.shade{fill:#0b0b0b;fill-opacity:0.05}.ref{stroke:#52514e;stroke-width:1;stroke-dasharray:4 3;fill:none}
+.ln{fill:none!important;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.band{stroke:none!important;fill-opacity:0.12}
+.mk{stroke:#fcfcfb!important;stroke-width:2}.err{stroke-width:1.5;fill:none!important}
+.s0{stroke:#2a78d6;fill:#2a78d6}.s1{stroke:#eb6834;fill:#eb6834}.s2{stroke:#1baf7a;fill:#1baf7a}.s3{stroke:#eda100;fill:#eda100}
+@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#f0efec}.t2{fill:#c3c2b7}.grid{stroke:#2c2c2a}.axis{stroke:#383835}.shade{fill:#f0efec}.ref{stroke:#c3c2b7}.mk{stroke:#1a1a19!important}.s0{stroke:#3987e5;fill:#3987e5}.s1{stroke:#d95926;fill:#d95926}.s2{stroke:#199e70;fill:#199e70}.s3{stroke:#c98500;fill:#c98500}}
+</style>
+<rect class="bg" width="940" height="692"/>
+<text class="t1" x="12" y="20" font-size="15" font-weight="600">图 6  推力上限（长而缓 vs 短而猛）与落地速度上限（平稳程度）</text>
+<text class="t1" x="56" y="48" font-size="13" font-weight="600">(a) 推力上限：用气</text>
+<line class="grid" x1="56" x2="454" y1="308" y2="308"/><text class="t3" x="50" y="311.5" font-size="10" text-anchor="end">20</text>
+<line class="grid" x1="56" x2="454" y1="223.64" y2="223.64"/><text class="t3" x="50" y="227.14" font-size="10" text-anchor="end">40</text>
+<line class="grid" x1="56" x2="454" y1="139.27" y2="139.27"/><text class="t3" x="50" y="142.77" font-size="10" text-anchor="end">60</text>
+<text class="t3" x="155.5" y="323" font-size="10" text-anchor="middle">0.6</text>
+<text class="t3" x="288.17" y="323" font-size="10" text-anchor="middle">0.8</text>
+<text class="t3" x="420.83" y="323" font-size="10" text-anchor="middle">1</text>
+<line class="axis" x1="56" x2="454" y1="308" y2="308"/>
+<text class="t2" x="255" y="342" font-size="11" text-anchor="middle">umax.bottom</text>
+<text class="t2" transform="translate(13,192) rotate(-90)" font-size="11" text-anchor="middle">用气 (kg)</text>
+<line class="err s0" x1="89.17" x2="89.17" y1="162.91" y2="132.36"/>
+<line class="err s0" x1="155.5" x2="155.5" y1="208.03" y2="180.18"/>
+<line class="err s0" x1="221.83" x2="221.83" y1="217.48" y2="186.67"/>
+<line class="err s0" x1="288.17" x2="288.17" y1="223.07" y2="191.22"/>
+<line class="err s0" x1="354.5" x2="354.5" y1="230.26" y2="185.85"/>
+<line class="err s0" x1="420.83" x2="420.83" y1="227.48" y2="187.16"/>
+<path class="ln s0" d="M89.17,147.64L155.5,194.11L221.83,202.07L288.17,207.14L354.5,208.06L420.83,207.32"/>
+<circle class="mk s0" cx="89.17" cy="147.64" r="4.5"><title>umax 0.5: 58.0 kg</title></circle>
+<circle class="mk s0" cx="155.5" cy="194.11" r="4.5"><title>umax 0.6: 47.0 kg</title></circle>
+<circle class="mk s0" cx="221.83" cy="202.07" r="4.5"><title>umax 0.7: 45.1 kg</title></circle>
+<circle class="mk s0" cx="288.17" cy="207.14" r="4.5"><title>umax 0.8: 43.9 kg</title></circle>
+<circle class="mk s0" cx="354.5" cy="208.06" r="4.5"><title>umax 0.9: 43.7 kg</title></circle>
+<circle class="mk s0" cx="420.83" cy="207.32" r="4.5"><title>umax 1: 43.9 kg</title></circle>
+<path class="ln s1" stroke-dasharray="5 4" d="M89.17,212.27L155.5,245.17L221.83,259.82L288.17,268.17L354.5,273.56L420.83,277.32"/>
+<circle class="mk s1" cx="89.17" cy="212.27" r="4.5"><title>垂直通道下限: 0.5, 42.69</title></circle>
+<circle class="mk s1" cx="155.5" cy="245.17" r="4.5"><title>垂直通道下限: 0.6, 34.89</title></circle>
+<circle class="mk s1" cx="221.83" cy="259.82" r="4.5"><title>垂直通道下限: 0.7, 31.42</title></circle>
+<circle class="mk s1" cx="288.17" cy="268.17" r="4.5"><title>垂直通道下限: 0.8, 29.44</title></circle>
+<circle class="mk s1" cx="354.5" cy="273.56" r="4.5"><title>垂直通道下限: 0.9, 28.16</title></circle>
+<circle class="mk s1" cx="420.83" cy="277.32" r="4.5"><title>垂直通道下限: 1, 27.27</title></circle>
+<line class="ln s0" x1="56" x2="70" y1="66" y2="66"/><text class="t2" x="74" y="69.5" font-size="10">MPC（成功回合）</text>
+<line class="ln s1" x1="162.8" x2="176.8" y1="66" y2="66" stroke-dasharray="5 4"/><text class="t2" x="180.8" y="69.5" font-size="10">垂直通道下限</text>
+<text class="t1" x="526" y="48" font-size="13" font-weight="600">(b) 推力上限：成功率</text>
+<line class="grid" x1="526" x2="924" y1="308" y2="308"/><text class="t3" x="520" y="311.5" font-size="10" text-anchor="end">0%</text>
+<line class="grid" x1="526" x2="924" y1="248.95" y2="248.95"/><text class="t3" x="520" y="252.45" font-size="10" text-anchor="end">25%</text>
+<line class="grid" x1="526" x2="924" y1="189.9" y2="189.9"/><text class="t3" x="520" y="193.4" font-size="10" text-anchor="end">50%</text>
+<line class="grid" x1="526" x2="924" y1="130.86" y2="130.86"/><text class="t3" x="520" y="134.36" font-size="10" text-anchor="end">75%</text>
+<line class="grid" x1="526" x2="924" y1="71.81" y2="71.81"/><text class="t3" x="520" y="75.31" font-size="10" text-anchor="end">100%</text>
+<text class="t3" x="625.5" y="323" font-size="10" text-anchor="middle">0.6</text>
+<text class="t3" x="758.17" y="323" font-size="10" text-anchor="middle">0.8</text>
+<text class="t3" x="890.83" y="323" font-size="10" text-anchor="middle">1</text>
+<line class="axis" x1="526" x2="924" y1="308" y2="308"/>
+<text class="t2" x="725" y="342" font-size="11" text-anchor="middle">umax.bottom</text>
+<text class="t2" transform="translate(483,184) rotate(-90)" font-size="11" text-anchor="middle">成功率</text>
+<path class="ln s0" d="M559.17,260.76L625.5,95.43L691.83,71.81L758.17,71.81L824.5,71.81L890.83,79.68"/>
+<circle class="mk s0" cx="559.17" cy="260.76" r="4.5"><title>umax 0.5: 20%, 燃烧 2.06 s</title></circle>
+<circle class="mk s0" cx="625.5" cy="95.43" r="4.5"><title>umax 0.6: 90%, 燃烧 1.50 s</title></circle>
+<circle class="mk s0" cx="691.83" cy="71.81" r="4.5"><title>umax 0.7: 100%, 燃烧 1.36 s</title></circle>
+<circle class="mk s0" cx="758.17" cy="71.81" r="4.5"><title>umax 0.8: 100%, 燃烧 1.17 s</title></circle>
+<circle class="mk s0" cx="824.5" cy="71.81" r="4.5"><title>umax 0.9: 100%, 燃烧 1.04 s</title></circle>
+<circle class="mk s0" cx="890.83" cy="79.68" r="4.5"><title>umax 1: 97%, 燃烧 1.02 s</title></circle>
+<text class="t1" x="56" y="368" font-size="13" font-weight="600">(c) 用气 vs 实际落地速度（Pareto）</text>
+<line class="grid" x1="56" x2="454" y1="628" y2="628"/><text class="t3" x="50" y="631.5" font-size="10" text-anchor="end">20</text>
+<line class="grid" x1="56" x2="454" y1="570" y2="570"/><text class="t3" x="50" y="573.5" font-size="10" text-anchor="end">30</text>
+<line class="grid" x1="56" x2="454" y1="512" y2="512"/><text class="t3" x="50" y="515.5" font-size="10" text-anchor="end">40</text>
+<line class="grid" x1="56" x2="454" y1="454" y2="454"/><text class="t3" x="50" y="457.5" font-size="10" text-anchor="end">50</text>
+<line class="grid" x1="56" x2="454" y1="396" y2="396"/><text class="t3" x="50" y="399.5" font-size="10" text-anchor="end">60</text>
+<text class="t3" x="56" y="643" font-size="10" text-anchor="middle">0</text>
+<text class="t3" x="150.76" y="643" font-size="10" text-anchor="middle">0.5</text>
+<text class="t3" x="245.52" y="643" font-size="10" text-anchor="middle">1</text>
+<text class="t3" x="340.29" y="643" font-size="10" text-anchor="middle">1.5</text>
+<text class="t3" x="435.05" y="643" font-size="10" text-anchor="middle">2</text>
+<line class="axis" x1="56" x2="454" y1="628" y2="628"/>
+<text class="t2" x="255" y="662" font-size="11" text-anchor="middle">平均触地竖直速度 (m/s)</text>
+<text class="t2" transform="translate(13,512) rotate(-90)" font-size="11" text-anchor="middle">用气 (kg)</text>
+<path class="ln s0" d="M147.73,468.94L194.8,473.95L240.87,479.13L288.64,487.09L333.86,489.56L383.39,495.28"/>
+<circle class="mk s0" cx="147.73" cy="468.94" r="4.5"><title>v_cap 0.5: v_td 0.48 m/s, 47.4 kg, 成功 100%</title></circle>
+<circle class="mk s0" cx="194.8" cy="473.95" r="4.5"><title>v_cap 0.75: v_td 0.73 m/s, 46.6 kg, 成功 100%</title></circle>
+<circle class="mk s0" cx="240.87" cy="479.13" r="4.5"><title>v_cap 1: v_td 0.98 m/s, 45.7 kg, 成功 100%</title></circle>
+<circle class="mk s0" cx="288.64" cy="487.09" r="4.5"><title>v_cap 1.25: v_td 1.23 m/s, 44.3 kg, 成功 100%</title></circle>
+<circle class="mk s0" cx="333.86" cy="489.56" r="4.5"><title>v_cap 1.5: v_td 1.47 m/s, 43.9 kg, 成功 97%</title></circle>
+<circle class="mk s0" cx="383.39" cy="495.28" r="4.5"><title>v_cap 1.75: v_td 1.73 m/s, 42.9 kg, 成功 97%</title></circle>
+<path class="ln s1" stroke-dasharray="5 4" d="M150.76,569.02L245.52,577.38L340.29,585.82L435.05,594.1"/>
+<circle class="mk s1" cx="150.76" cy="569.02" r="4.5"><title>垂直下限: 0.5, 30.17</title></circle>
+<circle class="mk s1" cx="245.52" cy="577.38" r="4.5"><title>垂直下限: 1, 28.73</title></circle>
+<circle class="mk s1" cx="340.29" cy="585.82" r="4.5"><title>垂直下限: 1.5, 27.27</title></circle>
+<circle class="mk s1" cx="435.05" cy="594.1" r="4.5"><title>垂直下限: 2, 25.85</title></circle>
+<circle class="mk s2" cx="263.85" cy="473.95" r="4.5"><title>land: 1.10 m/s, 46.6 kg</title></circle>
+<path class="ln s3" stroke-dasharray="2 3" d="M207.44,465.88L207.45,461.24L207.45,452.77L207.48,475.71L216.55,513.48L295.62,539.09"/>
+<circle class="mk s3" cx="207.44" cy="465.88" r="4.5"><title>pd brake_frac 0.6: v_td 0.80 m/s, 48.0 kg, 成功 57%</title></circle>
+<circle class="mk s3" cx="207.45" cy="461.24" r="4.5"><title>pd brake_frac 0.5: v_td 0.80 m/s, 48.8 kg, 成功 53%</title></circle>
+<circle class="mk s3" cx="207.45" cy="452.77" r="4.5"><title>pd brake_frac 0.4: v_td 0.80 m/s, 50.2 kg, 成功 50%</title></circle>
+<circle class="mk s3" cx="207.48" cy="475.71" r="4.5"><title>pd brake_frac 0.7: v_td 0.80 m/s, 46.3 kg, 成功 67%</title></circle>
+<circle class="mk s3" cx="216.55" cy="513.48" r="4.5"><title>pd brake_frac 0.8: v_td 0.85 m/s, 39.7 kg, 成功 97%</title></circle>
+<circle class="mk s3" cx="295.62" cy="539.09" r="4.5"><title>pd brake_frac 0.9: v_td 1.26 m/s, 35.3 kg, 成功 97%</title></circle>
+<line class="ln s0" x1="56" x2="70" y1="386" y2="386"/><text class="t2" x="74" y="389.5" font-size="10">MPC gas（v_cap 扫描）</text>
+<line class="ln s1" x1="198.8" x2="212.8" y1="386" y2="386" stroke-dasharray="5 4"/><text class="t2" x="216.8" y="389.5" font-size="10">垂直下限</text>
+<line class="ln s2" x1="268.8" x2="282.8" y1="386" y2="386"/><text class="t2" x="286.8" y="389.5" font-size="10">MPC land</text>
+<line class="ln s3" x1="343.6" x2="357.6" y1="386" y2="386" stroke-dasharray="2 3"/><text class="t2" x="361.6" y="389.5" font-size="10">pd 参考</text>
+<text class="t1" x="526" y="368" font-size="13" font-weight="600">(d) 落地速度上限：成功率</text>
+<line class="grid" x1="526" x2="924" y1="628" y2="628"/><text class="t3" x="520" y="631.5" font-size="10" text-anchor="end">0%</text>
+<line class="grid" x1="526" x2="924" y1="568.95" y2="568.95"/><text class="t3" x="520" y="572.45" font-size="10" text-anchor="end">25%</text>
+<line class="grid" x1="526" x2="924" y1="509.9" y2="509.9"/><text class="t3" x="520" y="513.4" font-size="10" text-anchor="end">50%</text>
+<line class="grid" x1="526" x2="924" y1="450.86" y2="450.86"/><text class="t3" x="520" y="454.36" font-size="10" text-anchor="end">75%</text>
+<line class="grid" x1="526" x2="924" y1="391.81" y2="391.81"/><text class="t3" x="520" y="395.31" font-size="10" text-anchor="end">100%</text>
+<text class="t3" x="553.45" y="643" font-size="10" text-anchor="middle">0.5</text>
+<text class="t3" x="622.07" y="643" font-size="10" text-anchor="middle">0.75</text>
+<text class="t3" x="690.69" y="643" font-size="10" text-anchor="middle">1</text>
+<text class="t3" x="759.31" y="643" font-size="10" text-anchor="middle">1.25</text>
+<text class="t3" x="827.93" y="643" font-size="10" text-anchor="middle">1.5</text>
+<text class="t3" x="896.55" y="643" font-size="10" text-anchor="middle">1.75</text>
+<line class="axis" x1="526" x2="924" y1="628" y2="628"/>
+<text class="t2" x="725" y="662" font-size="11" text-anchor="middle">v_cap (m/s)</text>
+<text class="t2" transform="translate(483,504) rotate(-90)" font-size="11" text-anchor="middle">成功率</text>
+<path class="ln s0" d="M553.45,391.81L622.07,391.81L690.69,391.81L759.31,391.81L827.93,399.68L896.55,399.68"/>
+<circle class="mk s0" cx="553.45" cy="391.81" r="4.5"><title>成功率: 0.5, 1</title></circle>
+<circle class="mk s0" cx="622.07" cy="391.81" r="4.5"><title>成功率: 0.75, 1</title></circle>
+<circle class="mk s0" cx="690.69" cy="391.81" r="4.5"><title>成功率: 1, 1</title></circle>
+<circle class="mk s0" cx="759.31" cy="391.81" r="4.5"><title>成功率: 1.25, 1</title></circle>
+<circle class="mk s0" cx="827.93" cy="399.68" r="4.5"><title>成功率: 1.5, 0.97</title></circle>
+<circle class="mk s0" cx="896.55" cy="399.68" r="4.5"><title>成功率: 1.75, 0.97</title></circle>
+<text class="t3" x="12" y="685" font-size="10.5">gas-umax 20261020-223553 · gas-vcap 20261020-223834</text>
+</svg>

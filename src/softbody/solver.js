@@ -4,7 +4,7 @@
 // Runs in a Web Worker in the app and in plain Node for tuning.
 
 import { BEAM, SPRING } from '../car/carPrep.js';
-import { DECK, KICK, staticColliders } from '../scene/layout.js';
+import { DECK, KICK, staticColliders, launchOrigin } from '../scene/layout.js';
 import { LAUNCH } from '../core/spec.js';
 
 const G = -9.81;
@@ -230,8 +230,7 @@ export class CrashSim {
     const f = [-Math.cos(th), 0, Math.sin(th)], r = [Math.sin(th), 0, Math.cos(th)];
     const vz = speed * f[2], vx = speed * f[0];
     // centre of mass crosses the edge `lead` seconds after start, at the middle of the gap
-    const edge = DECK.halfWidth;
-    const zc = edge - vz * sc.lead - 0.9, xc = (DECK.gap[0] + DECK.gap[1]) / 2 + 1.5 - vx * sc.lead;
+    const [xc, zc] = launchOrigin([vx, 0, vz], sc.lead);
     for (let n = 0; n < N; n++) {
       const lx = x[n * 3] - mx, ly = x[n * 3 + 1], lz = x[n * 3 + 2] - mz;
       x[n * 3] = xc + lx * r[0] + lz * f[0];

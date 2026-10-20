@@ -1,0 +1,63 @@
+{
+ "name": "gas-umax",
+ "task": "escape-soft-landing",
+ "description": "Thrust ceiling of the bottom group (umax.bottom): long gentle vs short hard burn. CEM, gas objective.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "umax-0.5",
+   "umax": {
+    "bottom": 0.5
+   }
+  },
+  {
+   "label": "umax-0.6",
+   "umax": {
+    "bottom": 0.6
+   }
+  },
+  {
+   "label": "umax-0.7",
+   "umax": {
+    "bottom": 0.7
+   }
+  },
+  {
+   "label": "umax-0.8",
+   "umax": {
+    "bottom": 0.8
+   }
+  },
+  {
+   "label": "umax-0.9",
+   "umax": {
+    "bottom": 0.9
+   }
+  },
+  {
+   "label": "umax-1",
+   "umax": {
+    "bottom": 1
+   }
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "first"
+}

@@ -4,7 +4,7 @@
 // a construction gap in the deck parapet, and a distant skyline in the haze.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { DECK, PIERS, GROUND } from './layout.js';
+import { DECK, DECK_LINES, PIERS, GROUND } from './layout.js';
 import * as T from './textures.js';
 
 const TEX = '/assets/tex/';
@@ -222,8 +222,8 @@ export function buildWorld(scene, { renderer }) {
     const geos = [];
     const strip = (x0, x1, z0, z1) => { const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0); g.rotateX(-Math.PI / 2); g.translate((x0 + x1) / 2, top + 0.006, (z0 + z1) / 2); geos.push(g); };
     for (const s of [1, -1]) {
-      strip(D.x0, D.x1, s * 0.75 - 0.075, s * 0.75 + 0.075);
-      for (const zl of [4.3, 8.0 - 0.6]) { if (zl > 7) strip(D.x0, D.x1, s * zl - 0.075, s * zl + 0.075); else for (let x = D.x0; x < D.x1 - 6; x += 15) strip(x, x + 6, s * zl - 0.075, s * zl + 0.075); }
+      for (const zl of [DECK_LINES.inner, DECK_LINES.outer]) strip(D.x0, D.x1, s * zl - 0.075, s * zl + 0.075);
+      for (let x = D.x0; x < D.x1 - 6; x += 15) strip(x, x + 6, s * DECK_LINES.divider - 0.075, s * DECK_LINES.divider + 0.075);
     }
     add(mergeGeometries(geos), roadPaint, { cast: false });
     // parapets (F-shape) with the construction gap on +z

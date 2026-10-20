@@ -6,7 +6,8 @@
 //               (src/programs/flight/controllers.js; all but ap come from the flight-twin registry)
 //   level=1: levelled suspension + free-spinning wheels (CrashSim `level`, opt-in model update; settles itself)
 //   outDir=<dir>: write <dir>/flight-<out>.sim (+ .json with meta.flight) instead of public/sims (scratch runs)
-//   mppi:{...}: closed-loop MPPI on the soft body (twin registry); its plan count / time go into meta.flight
+//   mppi:{...} / mpc:{...}: closed-loop MPPI (residual on pd) / pure MPC (src/flight/mpc) on the soft body (twin
+//               registry); plan count / time (/ rollouts) go into meta.flight.controllerStats
 //   replay: the launch (preset, speed, angle, spin, lead) is taken from the trajectory's `init` so the open-loop
 //           commands meet the same initial condition the twin saw (preset= is then ignored)
 import fs from 'fs';
@@ -56,9 +57,9 @@ const t0 = Date.now();
 frames.push(enc.encode(sim, true));
 sim.run(sc.duration, s => {
   k++; frames.push(enc.encode(s, k % 4 === 0));
-  if (k % 25 === 0) process.stdout.write(`\r${name} t=${s.time.toFixed(2)} y=${rig.state.p[1].toFixed(2)} vy=${rig.state.v[1].toFixed(2)} tilt=${(rig.state.tilt * 57.3 || 0).toFixed(1)} gas=${rig.prop.m.toFixed(1)} ${rig.state.phase} ${((Date.now() - t0) / 1000).toFixed(0)}s   `);
+  if (k % 25 === 0) process.stdout.write(`\r${name} t=${s.time.toFixed(2)} y=${rig.state.p[1].toFixed(2)} vy=${rig.state.v[1].toFixed(2)} tilt=${(rig.state.tilt * 57.3 || 0).toFixed(1)} gasLeft=${rig.prop.m.toFixed(1)} ${rig.state.phase} ${((Date.now() - t0) / 1000).toFixed(0)}s   `);
 });
-const cstats = controller.plans != null ? { plans: controller.plans, plan_s: +(controller.planMs / 1000).toFixed(2) } : null;
+const cstats = controller.plans != null ? { plans: controller.plans, plan_s: +(controller.planMs / 1000).toFixed(2), ...(controller.evals != null ? { evals: controller.evals } : {}) } : null;
 const flight = { ...rig.summary(sim), ...(ctlConfig ? { controllerConfig: ctlConfig } : {}), ...(cstats ? { controllerStats: cstats } : {}), preset, spinScale, init: init || null, replayOf: traj ? { file: ctlSpec.slice(7), producer: traj.producer, controller: traj.controller, seed: traj.seed, metrics: traj.metrics } : null, computeSeconds: (Date.now() - t0) / 1000, settled: sc.level ? 'levelled (own settle)' : 'settled-coldgas.bin' };
 const meta = finalMeta(sim, enc, { name, label: `${P.label} · ${flight.controller}`, propulsion: rig.propulsionLog(), flight });
 let size;

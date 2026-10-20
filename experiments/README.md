@@ -72,6 +72,59 @@ u_cmd[10] ∈ [0,1]` every 20 ms, FlightState fields only (so they also run on a
 | `replay` | JS, Py | `traj` (object) or `file` | plays `u_cmd` of a `coldgas-traj@1` |
 | `mlp` | JS, Py (bit-identical) | `policy` (object) or `file` | runs a `coldgas-policy@1` (PPO export) |
 | `mppi` | JS, Py (bit-identical) | `samples horizon knot replan sigma temperature plan_dt base seed w_* v_ok curb_*` + soft-body options `w_slip w_td_slip w_gnd_slip w_gnd_yaw curb_steps curb_margin bottom_gate base_pd` | sampling MPC (`src/flight/controllers/mppi.js` = `coldgas/controllers/mppi.py`): K noisy residual sequences on top of `pd`, rolled out on a twin loaded from the FlightState, softmax-weighted; settings / cost documented in `defaults.json` `mppi`. JS: ~2.5 s per escape episode (Python ~18 s); runs closed loop on the soft body |
+| `mpc` | JS only | `horizon knot knot_growth interp replan plan_dt mixer umax channel_scale noise_decay coast init first_passes optimizer objective` + optimizer blocks `mppi cem grad hybrid` | pure MPC (`src/flight/mpc/`), no base pilot: an open-loop command schedule re-optimised every `replan` steps from the FlightState; optimizers `mppi` / `cem` (sampling), `grad` (finite-difference projected descent), `hybrid` (stages); objectives `land` / `roll` / `gas`. Defaults in `src/flight/mpc/defaults.json`. ~16 s per escape episode (cem); runs closed loop on the soft body (`controller='mpc:{...}'`) |
+
+## Pure MPC (`mpc`, JS only)
+
+`src/flight/mpc/` plans raw valve commands without any base pilot (the residual MPPI above needs pd for attitude).
+Per plan, an optimizer improves the command schedule θ (warm-started from the previous plan, shifted in time) on a
+rigid planning twin loaded from the current FlightState; the first part of it is executed until the next plan.
+
+- **Schedule** (`param.js`): knots every `knot` s (growing by `knot_growth`), `interp` `linear` (default) or `zoh`;
+  `mixer` `modes` (default: 7 wrench channels, bottom heave / pitch / roll, rear surge / pitch / yaw, side sway, from
+  the min-norm allocation of each nozzle group about the full-tank COM) or `raw` (10 valves); `umax` ceiling per
+  group; `coast` s of forced free fall after arming (plan and execution); `init` the cold-start schedule.
+- **Optimizers** (`optim/`): `mppi` (softmax mean), `cem` (elite refit; default), `grad` (finite differences on
+  the rollout cost, forward / central / SPSA, projected normalised descent with backtracking), `hybrid` (stages on
+  the same θ, e.g. mppi → grad). Sampling noise is AR(1)-smooth along the knots (`rho`), scaled per channel
+  (`channel_scale`) and per knot (`noise_decay`); means are updated on unclipped samples (no bias at the bounds).
+  More optimizers: `optim/extra.js`. Every rollout is counted (`ctl.evals`; bench `evals`), for equal-budget
+  comparisons.
+- **Objectives** (`objectives/`): `land` (soft landing; terms in its header), `roll` and `gas` (owned by the two
+  experiment streams of 2026-10-20 evening, see `docs/ARCHITECTURE.md`). Interface: header of `objectives/land.js`.
+- **Analysis hooks**: `ctl.trace` (per plan t / cost / rollouts / ms, with `trace: true`), `ctl.predict(state)`
+  (the current plan's predicted rollout), `ctl.theta` / `ctl.param` (the schedule itself).
+
+What made it work (twin, escape-soft-landing): linear interpolation (zoh schedules: 33 %), much stronger attitude
+terms than the residual MPPI's (`w_td_tilt` 400, `w_tilt` 3, `w_gnd_tilt` 20), an end-in-the-air penalty above any
+landing (`w_air` 50 + 20/m, otherwise the plan hovers), small exploration on the torque channels (open-loop torque
+noise random-walks the attitude), and pricing the touchdown before the crash in the same step (else every crashing
+sample costs the same and the one with the least gas wins).
+
+`mpc-baseline` (6 presets × seeds 1-3, defaults unless noted, spec of 2026-10-20 17:00):
+
+| controller | n | success | hull strike | vy_td | tilt_td | gas kg | return | corner | flat | nose | rear | roof | side | s/ep |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| pd | 18 | 72% | 28% | 0.80 | 0.01 | 47.56 | 2.20 | 0% | 100% | 67% | 100% | 67% | 100% | 0.1 |
+| mpc-cem | 18 | 100% | 0% | 1.13 | 1.40 | 46.13 | 5.65 | 100% | 100% | 100% | 100% | 100% | 100% | 15.9 |
+| mpc-mppi | 18 | 94% | 6% | 1.10 | 2.44 | 47.14 | 4.37 | 67% | 100% | 100% | 100% | 100% | 100% | 14.4 |
+| mpc-grad (2 iters) | 18 | 33% | 39% | 2.84 | 6.69 | 40.62 | -6.64 | 33% | 0% | 67% | 33% | 67% | 0% | 10.7 |
+| mpc-hybrid (mppi 2 → grad 1) | 18 | 94% | 6% | 1.10 | 1.53 | 46.63 | 4.57 | 67% | 100% | 100% | 100% | 100% | 100% | 21.5 |
+| mpc-cem, zoh | 18 | 33% | 33% | 1.54 | 10.58 | 107.63 | -11.01 | 67% | 33% | 33% | 67% | 0% | 0% | 14.1 |
+
+```sh
+node tools/flight/bench.mjs experiments/configs/mpc-baseline.json workers=16
+node tools/flight/run.mjs task=escape-soft-landing controller='{"name":"mpc","optimizer":"hybrid"}' seed=1 preset=nose
+node tools/sim/flight.mjs preset=flat controller='mpc:{}' out=x dur=5 outDir=experiments/runs/soft-mpc   # soft body
+```
+
+On the soft body (smoke test, flat, 5 s, `experiments/runs/soft-mpc/flight-mpc-flat-smoke.json`) the defaults touch
+down at 1.08 m/s, 1.7°, 37 kg, but strike the hull 0.27 s later: the soft body's rear bottoms out, the model gap
+the residual MPPI's soft-body settings work around (`bottom_gate`, slip / ground-yaw terms); not tuned yet.
+
+Reports for the user live in `experiments/reports/<topic>/` (Chinese, versioned): README.md with method, setup,
+results and conclusions, figures as SVG (no plotting dependency), every number traceable to a config and a run
+stamp under `experiments/runs/`.
 
 ## MPPI on the soft body (closed loop)
 

@@ -1,0 +1,404 @@
+{
+ "name": "gas-robust",
+ "task": "escape-soft-landing",
+ "description": "Robustness: strategies (free gas CEM; heave-only coast to 0.9 s; touchdown cap 1.0 m/s; braking reserve 0.8; land) x mismatches unknown to the planner (bottom thrust x0.95/0.9/0.85, 1-2 control steps of command delay, planning step 4 ms; 1 ms = exact model as control). tools/flight/gas/bench.mjs exec block.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "gas|nominal"
+  },
+  {
+   "label": "gas|eta0.95",
+   "exec": {
+    "eta": {
+     "bottom": 0.95
+    }
+   }
+  },
+  {
+   "label": "gas|eta0.9",
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas|eta0.85",
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas|delay1",
+   "exec": {
+    "delay": 1
+   }
+  },
+  {
+   "label": "gas|delay2",
+   "exec": {
+    "delay": 2
+   }
+  },
+  {
+   "label": "gas|plan_dt4ms",
+   "plan_dt": 0.004
+  },
+  {
+   "label": "gas|plan_dt1ms",
+   "plan_dt": 0.001
+  },
+  {
+   "label": "gas-hc0.9|nominal",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "gas-hc0.9|eta0.95",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "exec": {
+    "eta": {
+     "bottom": 0.95
+    }
+   }
+  },
+  {
+   "label": "gas-hc0.9|eta0.9",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-hc0.9|eta0.85",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-hc0.9|delay1",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "exec": {
+    "delay": 1
+   }
+  },
+  {
+   "label": "gas-hc0.9|delay2",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "exec": {
+    "delay": 2
+   }
+  },
+  {
+   "label": "gas-hc0.9|plan_dt4ms",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "plan_dt": 0.004
+  },
+  {
+   "label": "gas-hc0.9|plan_dt1ms",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "plan_dt": 0.001
+  },
+  {
+   "label": "gas-vcap1.0|nominal",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   }
+  },
+  {
+   "label": "gas-vcap1.0|eta0.95",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.95
+    }
+   }
+  },
+  {
+   "label": "gas-vcap1.0|eta0.9",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-vcap1.0|eta0.85",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-vcap1.0|delay1",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   },
+   "exec": {
+    "delay": 1
+   }
+  },
+  {
+   "label": "gas-vcap1.0|delay2",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   },
+   "exec": {
+    "delay": 2
+   }
+  },
+  {
+   "label": "gas-vcap1.0|plan_dt4ms",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   },
+   "plan_dt": 0.004
+  },
+  {
+   "label": "gas-vcap1.0|plan_dt1ms",
+   "objective": {
+    "name": "gas",
+    "v_cap": 1
+   },
+   "plan_dt": 0.001
+  },
+  {
+   "label": "gas-reserve0.8|nominal",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   }
+  },
+  {
+   "label": "gas-reserve0.8|eta0.95",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.95
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.8|eta0.9",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.8|eta0.85",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.8|delay1",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   },
+   "exec": {
+    "delay": 1
+   }
+  },
+  {
+   "label": "gas-reserve0.8|delay2",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   },
+   "exec": {
+    "delay": 2
+   }
+  },
+  {
+   "label": "gas-reserve0.8|plan_dt4ms",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   },
+   "plan_dt": 0.004
+  },
+  {
+   "label": "gas-reserve0.8|plan_dt1ms",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8
+   },
+   "plan_dt": 0.001
+  },
+  {
+   "label": "land|nominal",
+   "objective": "land"
+  },
+  {
+   "label": "land|eta0.95",
+   "objective": "land",
+   "exec": {
+    "eta": {
+     "bottom": 0.95
+    }
+   }
+  },
+  {
+   "label": "land|eta0.9",
+   "objective": "land",
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "land|eta0.85",
+   "objective": "land",
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "land|delay1",
+   "objective": "land",
+   "exec": {
+    "delay": 1
+   }
+  },
+  {
+   "label": "land|delay2",
+   "objective": "land",
+   "exec": {
+    "delay": 2
+   }
+  },
+  {
+   "label": "land|plan_dt4ms",
+   "objective": "land",
+   "plan_dt": 0.004
+  },
+  {
+   "label": "land|plan_dt1ms",
+   "objective": "land",
+   "plan_dt": 0.001
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "record": "none"
+}

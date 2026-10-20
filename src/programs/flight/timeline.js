@@ -1,9 +1,9 @@
 // Sim-time access to a flight log: the soft body's meta.propulsion (coldgas-log@1) or a rigid-twin trajectory
 // (coldgas-traj@1) share the fields used here (t, state[13], comB, tank, u_cmd, valve, thrust). Before the first
-// sample the car is extrapolated along its launch velocity (the drive-in pre-roll, like RecordingPlayer).
+// sample the first state is moved along the drive-in (scene/layout.js `driveIn`, like RecordingPlayer).
 // Also finds the key moments of a flight for the edit and the HUD.
-import { slerp, quatToMat } from '../../core/quat.js';
-import { DECK } from '../../scene/layout.js';
+import { slerp, quatToMat, quatMul } from '../../core/quat.js';
+import { DECK, driveIn } from '../../scene/layout.js';
 import { NU } from '../../flight/contract.js';
 
 export class FlightLog {
@@ -12,6 +12,8 @@ export class FlightLog {
     this.t = log.t; this.n = log.t.length;
     this.duration = duration ?? log.t[this.n - 1];
     this._q0 = [0, 0, 0, 1]; this._q1 = [0, 0, 0, 1]; this._R = new Float64Array(9);
+    const S0 = log.state[0];
+    this.drive = driveIn([S0[0], S0[2]], S0.slice(7, 10));
   }
   locate(t) {
     const T = this.t, n = this.n;
@@ -23,17 +25,32 @@ export class FlightLog {
   }
   /** Linear interpolation of row field `f` (array of arrays) component c. */
   lerp(f, t, c) { const [k, a] = this.locate(t), A = this.log[f]; return A[k][c] * (1 - a) + A[k + 1][c] * a; }
+  /** Drive-in pose at t (null once the log has started). */
+  pre(t) { return t < this.t[0] ? this.drive(t - this.t[0]) : null; }
   p(t, out = [0, 0, 0]) {
-    const S = this.log.state, pre = t < this.t[0] ? t - this.t[0] : 0;
-    for (let c = 0; c < 3; c++) out[c] = this.lerp('state', t, c) + (pre ? S[0][7 + c] * pre : 0);
+    for (let c = 0; c < 3; c++) out[c] = this.lerp('state', t, c);
+    const D = this.pre(t);
+    if (D) { const x = out[0]; out[0] = D.c * x + D.s * out[2] + D.dx; out[2] = -D.s * x + D.c * out[2] + D.dz; }
     return out;
   }
-  v(t, out = [0, 0, 0]) { for (let c = 0; c < 3; c++) out[c] = this.lerp('state', t, 7 + c); return out; }
-  w(t, out = [0, 0, 0]) { for (let c = 0; c < 3; c++) out[c] = this.lerp('state', t, 10 + c); return out; }
+  v(t, out = [0, 0, 0]) {
+    for (let c = 0; c < 3; c++) out[c] = this.lerp('state', t, 7 + c);
+    const D = this.pre(t);
+    if (D) { const x = out[0]; out[0] = D.c * x + D.s * out[2]; out[2] = -D.s * x + D.c * out[2]; }
+    return out;
+  }
+  w(t, out = [0, 0, 0]) {
+    for (let c = 0; c < 3; c++) out[c] = this.lerp('state', t, 10 + c);
+    const D = this.pre(t);
+    if (D) out[1] += D.rate;
+    return out;
+  }
   q(t, out = [0, 0, 0, 1]) {
     const [k, a] = this.locate(t), S = this.log.state;
     for (let c = 0; c < 4; c++) { this._q0[c] = S[k][3 + c]; this._q1[c] = S[k + 1][3 + c]; }
-    return slerp(this._q0, this._q1, a, out);
+    slerp(this._q0, this._q1, a, out);
+    const D = this.pre(t);
+    return D ? quatMul(D.q, out, out) : out;
   }
   comB(t, out = [0, 0, 0]) { for (let c = 0; c < 3; c++) out[c] = this.log.comB ? this.lerp('comB', t, c) : 0; return out; }
   thrust(t, i) { return this.log.thrust ? Math.max(0, this.lerp('thrust', t, i)) : 0; }

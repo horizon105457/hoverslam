@@ -34,9 +34,10 @@ const RUNS = [
   { id: 'replay-mppi-nose', label: 'MPPI 开环回放', sub: '车头俯冲 · Python MPPI 轨迹' },
   { id: 'mppi-nose', label: 'MPPI 闭环 · 软着陆', sub: '车头俯冲 · JS MPPI 在软体上实时重规划' },
   { id: 'mppi-roof', label: 'MPPI 闭环 · 翻滚改出', sub: '倒扣车顶 · JS MPPI 在软体上实时重规划' },
+  { id: 'mpc-roll', label: 'MPC · 跳跃横滚 360°', sub: '四轮平拍 · 纯 MPC（无 PD）在软体上实时重规划' },
 ];
 const runName = id => (id.startsWith('flight-') ? id.slice(7) : id);
-const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c === 'mppi' ? 'MPPI 闭环' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);
+const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c === 'mppi' ? 'MPPI 闭环' : c === 'mpc' ? '纯 MPC（无 PD）' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);
 
 export default class FlightProgram extends Program {
   static meta = { id: 'flight', title: '坠 · 冷气推力着陆' };
@@ -147,6 +148,7 @@ export default class FlightProgram extends Program {
   afterLoad() {
     const success = this.metrics.success !== undefined ? !!this.metrics.success : true;
     this.edit = new FlightEdit(this.log, { success });
+    if (this.edit.roll && this.label) this.label.sub += " · 跳跃 · 横滚 360°";
     const m = this.edit, E = this.log.p(m.tEdge);
     this.view.placeProbes(E[0], new THREE.Vector3(m.L[0], 0, m.L[2]));
     this.restY = this.log.log.state[0][1] - WORLD.deck.top; // COM height of the car standing on its wheels
@@ -237,6 +239,7 @@ export default class FlightProgram extends Program {
     return {
       t, thrust, valve, nom: this.nom.F, tank: tk, m0: L.log.tank[0][0], pc: pc > 2 * WORLD.air.pressure ? pc : 0,
       alt: L.p(t)[1] - this.restY, vy: v[1], speed: Math.hypot(v[0], v[2]), tilt: L.tilt(t), rate: Math.hypot(w[0], w[1], w[2]), phase, verdict,
+      roll: e.roll ? e.roll.at(t) : null,
       title: this.label?.title, sub: this.label?.sub,
     };
   }

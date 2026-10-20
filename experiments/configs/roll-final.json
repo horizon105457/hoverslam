@@ -1,0 +1,76 @@
+{
+ "name": "roll-final",
+ "description": "Barrel roll (jump >= 2 m above the deck edge, 360° about the long axis, soft landing) with the pure MPC `mpc` (no pd): the final settings of experiments/reports/barrel-roll, twin, flat preset, 10 seeds; references: pd and the default pure MPC soft landing (objective land) without a manoeuvre. Soft body: node tools/sim/flight.mjs preset=flat controller='mpc:<this controller without name/label>' out=mpc-roll dur=7.",
+ "_doc_settings": "MPC: horizon 4 s (covers edge -> touchdown ~2.8 s + 1 s on the ground), knots every 0.1 s, linear, 7 wrench modes; hybrid optimizer = CEM 128 samples x 1 iteration at sigma 0.2 (coarse) then 2 iterations at sigma 0.07 (fine) per plan, replan every 2 control steps (40 ms); cold first plan 30 passes; heave exploration x2, roll x0.8. Objective `roll` (src/flight/mpc/objectives/roll.js, every weight spelled out).",
+ "task": "escape-soft-landing",
+ "controllers": [
+  {
+   "name": "pd"
+  },
+  {
+   "name": "mpc",
+   "label": "mpc-land"
+  },
+  {
+   "name": "mpc",
+   "label": "mpc-roll",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 20
+   }
+  }
+ ],
+ "presets": [
+  "flat"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "record": "all",
+ "workers": 8
+}

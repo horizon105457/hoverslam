@@ -1,0 +1,67 @@
+{
+ "name": "roll-presets",
+ "description": "The barrel-roll v1 config on all six launch presets (twin, seeds 1-3): how far the flat-tuned settings carry to launches with kerb kicks (nose dive, roof, side slap, rear, corner).",
+ "task": "escape-soft-landing",
+ "controllers": [
+  {
+   "name": "mpc",
+   "label": "v1",
+   "horizon": 4.0,
+   "first_passes": 30,
+   "cem": {
+    "sigma": 0.2
+   },
+   "channel_scale": {
+    "heave": 2,
+    "pitch": 0.5,
+    "roll": 0.8,
+    "pitch_r": 0.2,
+    "yaw": 0.2,
+    "surge": 0.2,
+    "sway": 0.2
+   },
+   "optimizer": "hybrid",
+   "hybrid": {
+    "stages": [
+     {
+      "type": "cem",
+      "sigma": 0.2,
+      "iters": 1
+     },
+     {
+      "type": "cem",
+      "sigma": 0.07,
+      "iters": 2
+     }
+    ]
+   },
+   "objective": {
+    "name": "roll",
+    "jump_first": true,
+    "w_climb": 3,
+    "w_deck": 2,
+    "w_gas": 0.6,
+    "w_inv": 2,
+    "w_jump": 200,
+    "w_roll_run": 0,
+    "w_wrong": 20
+   }
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "record": "all",
+ "workers": 8,
+ "_doc_defaults": "Objective weights are spelled out in full (the roll objective's defaults were changed to the tuned values after these rounds), so the run reproduces with the current code."
+}

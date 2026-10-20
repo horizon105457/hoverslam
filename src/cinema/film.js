@@ -15,7 +15,8 @@ export function renderFilmFrame(stage, T, evaluate, setScene, { samples = 16, sh
   const cam = stage.camera, w = stage.renderer.domElement.width, h = stage.renderer.domElement.height;
   const right = new THREE.Vector3(), up = new THREE.Vector3();
   stage.renderAccumulated((k, n) => {
-    const ev = evaluate(T + (k / n - 0.5) * shutter);
+    // not before the film starts: evaluate() loops, so frame 0 would blend in the last shot
+    const ev = evaluate(Math.max(0, T + (k / n - 0.5) * shutter));
     setScene(ev.t, T, ev);
     // lens: Vogel disk sample, re-aimed at the focus point
     const focus = ev.focus || ev.tgt, ap = ev.aperture ?? aperture;

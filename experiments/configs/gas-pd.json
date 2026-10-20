@@ -1,0 +1,86 @@
+{
+ "name": "gas-pd",
+ "task": "escape-soft-landing",
+ "description": "Reference only (not MPC): the pd pilot (attitude first, free fall, late braking profile) over brake_frac x td_speed.",
+ "base": {
+  "name": "pd"
+ },
+ "controllers": [
+  {
+   "label": "pd-b0.4-td0.8",
+   "brake_frac": 0.4,
+   "td_speed": 0.8
+  },
+  {
+   "label": "pd-b0.4-td1.5",
+   "brake_frac": 0.4,
+   "td_speed": 1.5
+  },
+  {
+   "label": "pd-b0.5-td0.8",
+   "brake_frac": 0.5,
+   "td_speed": 0.8
+  },
+  {
+   "label": "pd-b0.5-td1.5",
+   "brake_frac": 0.5,
+   "td_speed": 1.5
+  },
+  {
+   "label": "pd-b0.6-td0.8",
+   "brake_frac": 0.6,
+   "td_speed": 0.8
+  },
+  {
+   "label": "pd-b0.6-td1.5",
+   "brake_frac": 0.6,
+   "td_speed": 1.5
+  },
+  {
+   "label": "pd-b0.7-td0.8",
+   "brake_frac": 0.7,
+   "td_speed": 0.8
+  },
+  {
+   "label": "pd-b0.7-td1.5",
+   "brake_frac": 0.7,
+   "td_speed": 1.5
+  },
+  {
+   "label": "pd-b0.8-td0.8",
+   "brake_frac": 0.8,
+   "td_speed": 0.8
+  },
+  {
+   "label": "pd-b0.8-td1.5",
+   "brake_frac": 0.8,
+   "td_speed": 1.5
+  },
+  {
+   "label": "pd-b0.9-td0.8",
+   "brake_frac": 0.9,
+   "td_speed": 0.8
+  },
+  {
+   "label": "pd-b0.9-td1.5",
+   "brake_frac": 0.9,
+   "td_speed": 1.5
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "first"
+}

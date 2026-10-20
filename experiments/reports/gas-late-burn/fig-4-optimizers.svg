@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 692" width="1040" height="692" role="img"><style>
+svg{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.t3{fill:#898781}.grid{stroke:#e1e0d9;stroke-width:1}.axis{stroke:#c3c2b7;stroke-width:1}
+.shade{fill:#0b0b0b;fill-opacity:0.05}.ref{stroke:#52514e;stroke-width:1;stroke-dasharray:4 3;fill:none}
+.ln{fill:none!important;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.band{stroke:none!important;fill-opacity:0.12}
+.mk{stroke:#fcfcfb!important;stroke-width:2}.err{stroke-width:1.5;fill:none!important}
+.s0{stroke:#2a78d6;fill:#2a78d6}.s1{stroke:#eb6834;fill:#eb6834}.s2{stroke:#1baf7a;fill:#1baf7a}.s3{stroke:#eda100;fill:#eda100}
+@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#f0efec}.t2{fill:#c3c2b7}.grid{stroke:#2c2c2a}.axis{stroke:#383835}.shade{fill:#f0efec}.ref{stroke:#c3c2b7}.mk{stroke:#1a1a19!important}.s0{stroke:#3987e5;fill:#3987e5}.s1{stroke:#d95926;fill:#d95926}.s2{stroke:#199e70;fill:#199e70}.s3{stroke:#c98500;fill:#c98500}}
+</style>
+<rect class="bg" width="1040" height="692"/>
+<text class="t1" x="12" y="20" font-size="15" font-weight="600">图 4  优化器族 × 冷启动初值（gas 目标，6 预设 × 3 种子，每点 18 回合）</text>
+<text class="t1" x="56" y="48" font-size="13" font-weight="600">(a) 成功率</text>
+<line class="grid" x1="56" x2="504" y1="308" y2="308"/><text class="t3" x="50" y="311.5" font-size="10" text-anchor="end">0%</text>
+<line class="grid" x1="56" x2="504" y1="252.76" y2="252.76"/><text class="t3" x="50" y="256.26" font-size="10" text-anchor="end">25%</text>
+<line class="grid" x1="56" x2="504" y1="197.52" y2="197.52"/><text class="t3" x="50" y="201.02" font-size="10" text-anchor="end">50%</text>
+<line class="grid" x1="56" x2="504" y1="142.29" y2="142.29"/><text class="t3" x="50" y="145.79" font-size="10" text-anchor="end">75%</text>
+<line class="grid" x1="56" x2="504" y1="87.05" y2="87.05"/><text class="t3" x="50" y="90.55" font-size="10" text-anchor="end">100%</text>
+<text class="t3" x="88" y="323" font-size="10" text-anchor="middle">cem</text>
+<text class="t3" x="152" y="323" font-size="10" text-anchor="middle">mppi</text>
+<text class="t3" x="216" y="323" font-size="10" text-anchor="middle">grad</text>
+<text class="t3" x="280" y="323" font-size="10" text-anchor="middle">xlbfgs</text>
+<text class="t3" x="344" y="323" font-size="10" text-anchor="middle">cem&gt;xlbfgs</text>
+<text class="t3" x="408" y="323" font-size="10" text-anchor="middle">xlbfgs&gt;cem</text>
+<text class="t3" x="472" y="323" font-size="10" text-anchor="middle">mppi&gt;grad</text>
+<line class="axis" x1="56" x2="504" y1="308" y2="308"/>
+<text class="t2" x="280" y="342" font-size="11" text-anchor="middle">优化器（每组 ≈ 400 rollouts / 规划）</text>
+<text class="t2" transform="translate(13,192) rotate(-90)" font-size="11" text-anchor="middle">成功率</text>
+<circle class="mk s0" cx="72.64" cy="87.05" r="4.5"><title>cem @ zero: 1.00 (n=18)</title></circle>
+<circle class="mk s0" cx="136.64" cy="87.05" r="4.5"><title>mppi @ zero: 1.00 (n=18)</title></circle>
+<circle class="mk s0" cx="200.64" cy="258.9" r="4.5"><title>grad @ zero: 0.22 (n=18)</title></circle>
+<circle class="mk s0" cx="264.64" cy="271.17" r="4.5"><title>xlbfgs @ zero: 0.17 (n=18)</title></circle>
+<circle class="mk s0" cx="328.64" cy="87.05" r="4.5"><title>cem&gt;xlbfgs @ zero: 1.00 (n=18)</title></circle>
+<circle class="mk s0" cx="392.64" cy="87.05" r="4.5"><title>xlbfgs&gt;cem @ zero: 1.00 (n=18)</title></circle>
+<circle class="mk s0" cx="456.64" cy="99.32" r="4.5"><title>mppi&gt;grad @ zero: 0.94 (n=18)</title></circle>
+<circle class="mk s1" cx="82.88" cy="123.87" r="4.5"><title>cem @ hover: 0.83 (n=18)</title></circle>
+<circle class="mk s1" cx="146.88" cy="283.45" r="4.5"><title>mppi @ hover: 0.11 (n=18)</title></circle>
+<circle class="mk s1" cx="210.88" cy="197.52" r="4.5"><title>grad @ hover: 0.50 (n=18)</title></circle>
+<circle class="mk s1" cx="274.88" cy="222.07" r="4.5"><title>xlbfgs @ hover: 0.39 (n=18)</title></circle>
+<circle class="mk s1" cx="338.88" cy="209.8" r="4.5"><title>cem&gt;xlbfgs @ hover: 0.44 (n=18)</title></circle>
+<circle class="mk s1" cx="402.88" cy="283.45" r="4.5"><title>xlbfgs&gt;cem @ hover: 0.11 (n=18)</title></circle>
+<circle class="mk s1" cx="466.88" cy="283.45" r="4.5"><title>mppi&gt;grad @ hover: 0.11 (n=18)</title></circle>
+<circle class="mk s2" cx="93.12" cy="172.97" r="4.5"><title>cem @ early: 0.61 (n=18)</title></circle>
+<circle class="mk s2" cx="157.12" cy="246.62" r="4.5"><title>mppi @ early: 0.28 (n=18)</title></circle>
+<circle class="mk s2" cx="221.12" cy="258.9" r="4.5"><title>grad @ early: 0.22 (n=18)</title></circle>
+<circle class="mk s2" cx="285.12" cy="295.72" r="4.5"><title>xlbfgs @ early: 0.06 (n=18)</title></circle>
+<circle class="mk s2" cx="349.12" cy="185.25" r="4.5"><title>cem&gt;xlbfgs @ early: 0.56 (n=18)</title></circle>
+<circle class="mk s2" cx="413.12" cy="271.17" r="4.5"><title>xlbfgs&gt;cem @ early: 0.17 (n=18)</title></circle>
+<circle class="mk s2" cx="477.12" cy="271.17" r="4.5"><title>mppi&gt;grad @ early: 0.17 (n=18)</title></circle>
+<circle class="mk s3" cx="103.36" cy="87.05" r="4.5"><title>cem @ late: 1.00 (n=18)</title></circle>
+<circle class="mk s3" cx="167.36" cy="87.05" r="4.5"><title>mppi @ late: 1.00 (n=18)</title></circle>
+<circle class="mk s3" cx="231.36" cy="209.8" r="4.5"><title>grad @ late: 0.44 (n=18)</title></circle>
+<circle class="mk s3" cx="295.36" cy="185.25" r="4.5"><title>xlbfgs @ late: 0.56 (n=18)</title></circle>
+<circle class="mk s3" cx="359.36" cy="99.32" r="4.5"><title>cem&gt;xlbfgs @ late: 0.94 (n=18)</title></circle>
+<circle class="mk s3" cx="423.36" cy="87.05" r="4.5"><title>xlbfgs&gt;cem @ late: 1.00 (n=18)</title></circle>
+<circle class="mk s3" cx="487.36" cy="87.05" r="4.5"><title>mppi&gt;grad @ late: 1.00 (n=18)</title></circle>
+<line class="ln s0" x1="56" x2="70" y1="66" y2="66"/><text class="t2" x="74" y="69.5" font-size="10">初值 zero</text>
+<line class="ln s1" x1="134" x2="148" y1="66" y2="66"/><text class="t2" x="152" y="69.5" font-size="10">初值 hover</text>
+<line class="ln s2" x1="217.6" x2="231.6" y1="66" y2="66"/><text class="t2" x="235.6" y="69.5" font-size="10">初值 early</text>
+<line class="ln s3" x1="301.2" x2="315.2" y1="66" y2="66"/><text class="t2" x="319.2" y="69.5" font-size="10">初值 late</text>
+<text class="t1" x="576" y="48" font-size="13" font-weight="600">(b) 用气（成功回合，均值 ± 标准差）</text>
+<line class="grid" x1="576" x2="1024" y1="296.73" y2="296.73"/><text class="t3" x="570" y="300.23" font-size="10" text-anchor="end">25</text>
+<line class="grid" x1="576" x2="1024" y1="240.36" y2="240.36"/><text class="t3" x="570" y="243.86" font-size="10" text-anchor="end">50</text>
+<line class="grid" x1="576" x2="1024" y1="184" y2="184"/><text class="t3" x="570" y="187.5" font-size="10" text-anchor="end">75</text>
+<line class="grid" x1="576" x2="1024" y1="127.64" y2="127.64"/><text class="t3" x="570" y="131.14" font-size="10" text-anchor="end">100</text>
+<line class="grid" x1="576" x2="1024" y1="71.27" y2="71.27"/><text class="t3" x="570" y="74.77" font-size="10" text-anchor="end">125</text>
+<text class="t3" x="608" y="323" font-size="10" text-anchor="middle">cem</text>
+<text class="t3" x="672" y="323" font-size="10" text-anchor="middle">mppi</text>
+<text class="t3" x="736" y="323" font-size="10" text-anchor="middle">grad</text>
+<text class="t3" x="800" y="323" font-size="10" text-anchor="middle">xlbfgs</text>
+<text class="t3" x="864" y="323" font-size="10" text-anchor="middle">cem&gt;xlbfgs</text>
+<text class="t3" x="928" y="323" font-size="10" text-anchor="middle">xlbfgs&gt;cem</text>
+<text class="t3" x="992" y="323" font-size="10" text-anchor="middle">mppi&gt;grad</text>
+<line class="axis" x1="576" x2="1024" y1="308" y2="308"/>
+<text class="t2" x="800" y="342" font-size="11" text-anchor="middle">优化器（每组 ≈ 400 rollouts / 规划）</text>
+<text class="t2" transform="translate(533,184) rotate(-90)" font-size="11" text-anchor="middle">用气 (kg)</text>
+<line class="ref" x1="576" x2="1024" y1="291.6" y2="291.6"/><text class="t2" x="1020" y="287.6" font-size="10" text-anchor="end">垂直通道下限（v_td 1.5）</text>
+<line class="err s0" x1="592.64" x2="592.64" y1="264.8" y2="243.12"/>
+<line class="err s0" x1="656.64" x2="656.64" y1="258.4" y2="234.09"/>
+<line class="err s0" x1="720.64" x2="720.64" y1="267.42" y2="221.32"/>
+<line class="err s0" x1="784.64" x2="784.64" y1="253.31" y2="222.73"/>
+<line class="err s0" x1="848.64" x2="848.64" y1="263.39" y2="245.21"/>
+<line class="err s0" x1="912.64" x2="912.64" y1="262.84" y2="238.42"/>
+<line class="err s0" x1="976.64" x2="976.64" y1="257.27" y2="241.25"/>
+<circle class="mk s0" cx="592.64" cy="253.96" r="4.5"><title>cem @ zero: 43.97 (n=18)</title></circle>
+<circle class="mk s0" cx="656.64" cy="246.25" r="4.5"><title>mppi @ zero: 47.39 (n=18)</title></circle>
+<circle class="mk s0" cx="720.64" cy="244.37" r="4.5"><title>grad @ zero: 48.22 (n=18)</title></circle>
+<circle class="mk s0" cx="784.64" cy="238.02" r="4.5"><title>xlbfgs @ zero: 51.04 (n=18)</title></circle>
+<circle class="mk s0" cx="848.64" cy="254.3" r="4.5"><title>cem&gt;xlbfgs @ zero: 43.82 (n=18)</title></circle>
+<circle class="mk s0" cx="912.64" cy="250.63" r="4.5"><title>xlbfgs&gt;cem @ zero: 45.45 (n=18)</title></circle>
+<circle class="mk s0" cx="976.64" cy="249.26" r="4.5"><title>mppi&gt;grad @ zero: 46.05 (n=18)</title></circle>
+<line class="err s1" x1="602.88" x2="602.88" y1="205.83" y2="169.38"/>
+<line class="err s1" x1="666.88" x2="666.88" y1="192.76" y2="162.64"/>
+<line class="err s1" x1="730.88" x2="730.88" y1="217.81" y2="170.57"/>
+<line class="err s1" x1="794.88" x2="794.88" y1="189.9" y2="164.19"/>
+<line class="err s1" x1="858.88" x2="858.88" y1="188.34" y2="167.84"/>
+<line class="err s1" x1="922.88" x2="922.88" y1="207.76" y2="200.9"/>
+<line class="err s1" x1="986.88" x2="986.88" y1="195.68" y2="149.83"/>
+<circle class="mk s1" cx="602.88" cy="187.61" r="4.5"><title>cem @ hover: 73.40 (n=18)</title></circle>
+<circle class="mk s1" cx="666.88" cy="177.7" r="4.5"><title>mppi @ hover: 77.79 (n=18)</title></circle>
+<circle class="mk s1" cx="730.88" cy="194.19" r="4.5"><title>grad @ hover: 70.48 (n=18)</title></circle>
+<circle class="mk s1" cx="794.88" cy="177.05" r="4.5"><title>xlbfgs @ hover: 78.08 (n=18)</title></circle>
+<circle class="mk s1" cx="858.88" cy="178.09" r="4.5"><title>cem&gt;xlbfgs @ hover: 77.62 (n=18)</title></circle>
+<circle class="mk s1" cx="922.88" cy="204.33" r="4.5"><title>xlbfgs&gt;cem @ hover: 65.98 (n=18)</title></circle>
+<circle class="mk s1" cx="986.88" cy="172.76" r="4.5"><title>mppi&gt;grad @ hover: 79.99 (n=18)</title></circle>
+<line class="err s2" x1="613.12" x2="613.12" y1="211.83" y2="144.17"/>
+<line class="err s2" x1="677.12" x2="677.12" y1="134.84" y2="100.11"/>
+<line class="err s2" x1="741.12" x2="741.12" y1="178.03" y2="72.96"/>
+<line class="err s2" x1="869.12" x2="869.12" y1="172.23" y2="102.23"/>
+<line class="err s2" x1="933.12" x2="933.12" y1="130.62" y2="110.08"/>
+<line class="err s2" x1="997.12" x2="997.12" y1="147.29" y2="113.63"/>
+<circle class="mk s2" cx="613.12" cy="178" r="4.5"><title>cem @ early: 77.66 (n=18)</title></circle>
+<circle class="mk s2" cx="677.12" cy="117.47" r="4.5"><title>mppi @ early: 104.51 (n=18)</title></circle>
+<circle class="mk s2" cx="741.12" cy="125.5" r="4.5"><title>grad @ early: 100.95 (n=18)</title></circle>
+<circle class="mk s2" cx="805.12" cy="83.11" r="4.5"><title>xlbfgs @ early: 119.75 (n=18)</title></circle>
+<circle class="mk s2" cx="869.12" cy="137.23" r="4.5"><title>cem&gt;xlbfgs @ early: 95.74 (n=18)</title></circle>
+<circle class="mk s2" cx="933.12" cy="120.35" r="4.5"><title>xlbfgs&gt;cem @ early: 103.23 (n=18)</title></circle>
+<circle class="mk s2" cx="997.12" cy="130.46" r="4.5"><title>mppi&gt;grad @ early: 98.75 (n=18)</title></circle>
+<line class="err s3" x1="623.36" x2="623.36" y1="266.55" y2="244.57"/>
+<line class="err s3" x1="687.36" x2="687.36" y1="262.35" y2="231.16"/>
+<line class="err s3" x1="751.36" x2="751.36" y1="265.63" y2="259.8"/>
+<line class="err s3" x1="815.36" x2="815.36" y1="266.4" y2="240.17"/>
+<line class="err s3" x1="879.36" x2="879.36" y1="267.97" y2="242.09"/>
+<line class="err s3" x1="943.36" x2="943.36" y1="265.37" y2="246.79"/>
+<line class="err s3" x1="1007.36" x2="1007.36" y1="260.44" y2="240.37"/>
+<circle class="mk s3" cx="623.36" cy="255.56" r="4.5"><title>cem @ late: 43.26 (n=18)</title></circle>
+<circle class="mk s3" cx="687.36" cy="246.76" r="4.5"><title>mppi @ late: 47.17 (n=18)</title></circle>
+<circle class="mk s3" cx="751.36" cy="262.71" r="4.5"><title>grad @ late: 40.09 (n=18)</title></circle>
+<circle class="mk s3" cx="815.36" cy="253.28" r="4.5"><title>xlbfgs @ late: 44.27 (n=18)</title></circle>
+<circle class="mk s3" cx="879.36" cy="255.03" r="4.5"><title>cem&gt;xlbfgs @ late: 43.49 (n=18)</title></circle>
+<circle class="mk s3" cx="943.36" cy="256.08" r="4.5"><title>xlbfgs&gt;cem @ late: 43.03 (n=18)</title></circle>
+<circle class="mk s3" cx="1007.36" cy="250.41" r="4.5"><title>mppi&gt;grad @ late: 45.54 (n=18)</title></circle>
+<text class="t1" x="56" y="368" font-size="13" font-weight="600">(c) 主燃烧点火：距触地时间（成功回合）</text>
+<line class="grid" x1="56" x2="504" y1="628" y2="628"/><text class="t3" x="50" y="631.5" font-size="10" text-anchor="end">0</text>
+<line class="grid" x1="56" x2="504" y1="550.5" y2="550.5"/><text class="t3" x="50" y="554" font-size="10" text-anchor="end">1</text>
+<line class="grid" x1="56" x2="504" y1="473" y2="473"/><text class="t3" x="50" y="476.5" font-size="10" text-anchor="end">2</text>
+<line class="grid" x1="56" x2="504" y1="395.5" y2="395.5"/><text class="t3" x="50" y="399" font-size="10" text-anchor="end">3</text>
+<text class="t3" x="88" y="643" font-size="10" text-anchor="middle">cem</text>
+<text class="t3" x="152" y="643" font-size="10" text-anchor="middle">mppi</text>
+<text class="t3" x="216" y="643" font-size="10" text-anchor="middle">grad</text>
+<text class="t3" x="280" y="643" font-size="10" text-anchor="middle">xlbfgs</text>
+<text class="t3" x="344" y="643" font-size="10" text-anchor="middle">cem&gt;xlbfgs</text>
+<text class="t3" x="408" y="643" font-size="10" text-anchor="middle">xlbfgs&gt;cem</text>
+<text class="t3" x="472" y="643" font-size="10" text-anchor="middle">mppi&gt;grad</text>
+<line class="axis" x1="56" x2="504" y1="628" y2="628"/>
+<text class="t2" x="280" y="662" font-size="11" text-anchor="middle">优化器（每组 ≈ 400 rollouts / 规划）</text>
+<text class="t2" transform="translate(13,504) rotate(-90)" font-size="11" text-anchor="middle">点火距触地 (s)</text>
+<line class="ref" x1="56" x2="504" y1="578.43" y2="578.43"/><text class="t2" x="60" y="591.43" font-size="10">垂直通道最优：0.64 s</text>
+<circle class="mk s0" cx="72.64" cy="572.14" r="4.5"><title>cem @ zero: 0.72 (n=18)</title></circle>
+<circle class="mk s0" cx="136.64" cy="560.79" r="4.5"><title>mppi @ zero: 0.87 (n=18)</title></circle>
+<circle class="mk s0" cx="200.64" cy="549.18" r="4.5"><title>grad @ zero: 1.02 (n=18)</title></circle>
+<circle class="mk s0" cx="264.64" cy="595.37" r="4.5"><title>xlbfgs @ zero: 0.42 (n=18)</title></circle>
+<circle class="mk s0" cx="328.64" cy="571.62" r="4.5"><title>cem&gt;xlbfgs @ zero: 0.73 (n=18)</title></circle>
+<circle class="mk s0" cx="392.64" cy="573.35" r="4.5"><title>xlbfgs&gt;cem @ zero: 0.71 (n=18)</title></circle>
+<circle class="mk s0" cx="456.64" cy="569.02" r="4.5"><title>mppi&gt;grad @ zero: 0.76 (n=18)</title></circle>
+<circle class="mk s1" cx="82.88" cy="535.27" r="4.5"><title>cem @ hover: 1.20 (n=18)</title></circle>
+<circle class="mk s1" cx="146.88" cy="510.36" r="4.5"><title>mppi @ hover: 1.52 (n=18)</title></circle>
+<circle class="mk s1" cx="210.88" cy="609.48" r="4.5"><title>grad @ hover: 0.24 (n=18)</title></circle>
+<circle class="mk s1" cx="274.88" cy="587.83" r="4.5"><title>xlbfgs @ hover: 0.52 (n=18)</title></circle>
+<circle class="mk s1" cx="402.88" cy="435.57" r="4.5"><title>xlbfgs&gt;cem @ hover: 2.48 (n=18)</title></circle>
+<circle class="mk s2" cx="93.12" cy="458.37" r="4.5"><title>cem @ early: 2.19 (n=18)</title></circle>
+<circle class="mk s2" cx="157.12" cy="436.51" r="4.5"><title>mppi @ early: 2.47 (n=18)</title></circle>
+<circle class="mk s2" cx="221.12" cy="576.19" r="4.5"><title>grad @ early: 0.67 (n=18)</title></circle>
+<circle class="mk s2" cx="285.12" cy="594.21" r="4.5"><title>xlbfgs @ early: 0.44 (n=18)</title></circle>
+<circle class="mk s2" cx="349.12" cy="428.67" r="4.5"><title>cem&gt;xlbfgs @ early: 2.57 (n=18)</title></circle>
+<circle class="mk s2" cx="413.12" cy="416.61" r="4.5"><title>xlbfgs&gt;cem @ early: 2.73 (n=18)</title></circle>
+<circle class="mk s2" cx="477.12" cy="395.58" r="4.5"><title>mppi&gt;grad @ early: 3.00 (n=18)</title></circle>
+<circle class="mk s3" cx="103.36" cy="569.5" r="4.5"><title>cem @ late: 0.75 (n=18)</title></circle>
+<circle class="mk s3" cx="167.36" cy="563.08" r="4.5"><title>mppi @ late: 0.84 (n=18)</title></circle>
+<circle class="mk s3" cx="231.36" cy="570.81" r="4.5"><title>grad @ late: 0.74 (n=18)</title></circle>
+<circle class="mk s3" cx="295.36" cy="550.23" r="4.5"><title>xlbfgs @ late: 1.00 (n=18)</title></circle>
+<circle class="mk s3" cx="359.36" cy="572.1" r="4.5"><title>cem&gt;xlbfgs @ late: 0.72 (n=18)</title></circle>
+<circle class="mk s3" cx="423.36" cy="569.74" r="4.5"><title>xlbfgs&gt;cem @ late: 0.75 (n=18)</title></circle>
+<circle class="mk s3" cx="487.36" cy="566.49" r="4.5"><title>mppi&gt;grad @ late: 0.79 (n=18)</title></circle>
+<text class="t1" x="576" y="368" font-size="13" font-weight="600">(d) 每回合 rollouts（千）</text>
+<line class="grid" x1="576" x2="1024" y1="628" y2="628"/><text class="t3" x="570" y="631.5" font-size="10" text-anchor="end">0</text>
+<line class="grid" x1="576" x2="1024" y1="566" y2="566"/><text class="t3" x="570" y="569.5" font-size="10" text-anchor="end">20</text>
+<line class="grid" x1="576" x2="1024" y1="504" y2="504"/><text class="t3" x="570" y="507.5" font-size="10" text-anchor="end">40</text>
+<line class="grid" x1="576" x2="1024" y1="442" y2="442"/><text class="t3" x="570" y="445.5" font-size="10" text-anchor="end">60</text>
+<line class="grid" x1="576" x2="1024" y1="380" y2="380"/><text class="t3" x="570" y="383.5" font-size="10" text-anchor="end">80</text>
+<text class="t3" x="608" y="643" font-size="10" text-anchor="middle">cem</text>
+<text class="t3" x="672" y="643" font-size="10" text-anchor="middle">mppi</text>
+<text class="t3" x="736" y="643" font-size="10" text-anchor="middle">grad</text>
+<text class="t3" x="800" y="643" font-size="10" text-anchor="middle">xlbfgs</text>
+<text class="t3" x="864" y="643" font-size="10" text-anchor="middle">cem&gt;xlbfgs</text>
+<text class="t3" x="928" y="643" font-size="10" text-anchor="middle">xlbfgs&gt;cem</text>
+<text class="t3" x="992" y="643" font-size="10" text-anchor="middle">mppi&gt;grad</text>
+<line class="axis" x1="576" x2="1024" y1="628" y2="628"/>
+<text class="t2" x="800" y="662" font-size="11" text-anchor="middle">优化器（每组 ≈ 400 rollouts / 规划）</text>
+<text class="t2" transform="translate(533,504) rotate(-90)" font-size="11" text-anchor="middle">rollouts / 回合 (k)</text>
+<circle class="mk s0" cx="592.64" cy="531.56" r="4.5"><title>cem @ zero: 31.11 (n=18)</title></circle>
+<circle class="mk s0" cx="656.64" cy="531.33" r="4.5"><title>mppi @ zero: 31.18 (n=18)</title></circle>
+<circle class="mk s0" cx="720.64" cy="534.6" r="4.5"><title>grad @ zero: 30.13 (n=18)</title></circle>
+<circle class="mk s0" cx="784.64" cy="517.3" r="4.5"><title>xlbfgs @ zero: 35.71 (n=18)</title></circle>
+<circle class="mk s0" cx="848.64" cy="506.64" r="4.5"><title>cem&gt;xlbfgs @ zero: 39.15 (n=18)</title></circle>
+<circle class="mk s0" cx="912.64" cy="535.89" r="4.5"><title>xlbfgs&gt;cem @ zero: 29.71 (n=18)</title></circle>
+<circle class="mk s0" cx="976.64" cy="508.64" r="4.5"><title>mppi&gt;grad @ zero: 38.50 (n=18)</title></circle>
+<circle class="mk s1" cx="602.88" cy="475.1" r="4.5"><title>cem @ hover: 49.32 (n=18)</title></circle>
+<circle class="mk s1" cx="666.88" cy="462.7" r="4.5"><title>mppi @ hover: 53.32 (n=18)</title></circle>
+<circle class="mk s1" cx="730.88" cy="509.99" r="4.5"><title>grad @ hover: 38.07 (n=18)</title></circle>
+<circle class="mk s1" cx="794.88" cy="498.75" r="4.5"><title>xlbfgs @ hover: 41.69 (n=18)</title></circle>
+<circle class="mk s1" cx="858.88" cy="427.17" r="4.5"><title>cem&gt;xlbfgs @ hover: 64.78 (n=18)</title></circle>
+<circle class="mk s1" cx="922.88" cy="480.25" r="4.5"><title>xlbfgs&gt;cem @ hover: 47.66 (n=18)</title></circle>
+<circle class="mk s1" cx="986.88" cy="421.72" r="4.5"><title>mppi&gt;grad @ hover: 66.54 (n=18)</title></circle>
+<circle class="mk s2" cx="613.12" cy="476.62" r="4.5"><title>cem @ early: 48.83 (n=18)</title></circle>
+<circle class="mk s2" cx="677.12" cy="463.69" r="4.5"><title>mppi @ early: 53.00 (n=18)</title></circle>
+<circle class="mk s2" cx="741.12" cy="512.19" r="4.5"><title>grad @ early: 37.36 (n=18)</title></circle>
+<circle class="mk s2" cx="805.12" cy="482.21" r="4.5"><title>xlbfgs @ early: 47.03 (n=18)</title></circle>
+<circle class="mk s2" cx="869.12" cy="429.37" r="4.5"><title>cem&gt;xlbfgs @ early: 64.07 (n=18)</title></circle>
+<circle class="mk s2" cx="933.12" cy="478.14" r="4.5"><title>xlbfgs&gt;cem @ early: 48.34 (n=18)</title></circle>
+<circle class="mk s2" cx="997.12" cy="424.93" r="4.5"><title>mppi&gt;grad @ early: 65.51 (n=18)</title></circle>
+<circle class="mk s3" cx="623.36" cy="532.09" r="4.5"><title>cem @ late: 30.94 (n=18)</title></circle>
+<circle class="mk s3" cx="687.36" cy="532.19" r="4.5"><title>mppi @ late: 30.91 (n=18)</title></circle>
+<circle class="mk s3" cx="751.36" cy="538.87" r="4.5"><title>grad @ late: 28.75 (n=18)</title></circle>
+<circle class="mk s3" cx="815.36" cy="535.61" r="4.5"><title>xlbfgs @ late: 29.80 (n=18)</title></circle>
+<circle class="mk s3" cx="879.36" cy="510.71" r="4.5"><title>cem&gt;xlbfgs @ late: 37.84 (n=18)</title></circle>
+<circle class="mk s3" cx="943.36" cy="538" r="4.5"><title>xlbfgs&gt;cem @ late: 29.03 (n=18)</title></circle>
+<circle class="mk s3" cx="1007.36" cy="508.07" r="4.5"><title>mppi&gt;grad @ late: 38.69 (n=18)</title></circle>
+<text class="t3" x="12" y="685" font-size="10.5">gas-optim 20261020-220943；图例见 (a)</text>
+</svg>

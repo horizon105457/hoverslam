@@ -1,0 +1,79 @@
+{
+ "name": "gas-coast",
+ "task": "escape-soft-landing",
+ "description": "Core sweep: forced free fall (every valve closed, plan and execution) for `coast` s after arming, then free CEM MPC with the gas objective.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "coast-0",
+   "coast": 0
+  },
+  {
+   "label": "coast-0.1",
+   "coast": 0.1
+  },
+  {
+   "label": "coast-0.2",
+   "coast": 0.2
+  },
+  {
+   "label": "coast-0.3",
+   "coast": 0.3
+  },
+  {
+   "label": "coast-0.4",
+   "coast": 0.4
+  },
+  {
+   "label": "coast-0.5",
+   "coast": 0.5
+  },
+  {
+   "label": "coast-0.6",
+   "coast": 0.6
+  },
+  {
+   "label": "coast-0.7",
+   "coast": 0.7
+  },
+  {
+   "label": "coast-0.8",
+   "coast": 0.8
+  },
+  {
+   "label": "coast-0.9",
+   "coast": 0.9
+  },
+  {
+   "label": "coast-1",
+   "coast": 1
+  },
+  {
+   "label": "coast-1.1",
+   "coast": 1.1
+  },
+  {
+   "label": "coast-1.2",
+   "coast": 1.2
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "all"
+}

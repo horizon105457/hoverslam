@@ -1,0 +1,49 @@
+{
+ "name": "gas-objective",
+ "task": "escape-soft-landing",
+ "description": "Objective bias: the lead's land objective vs the unbiased gas objective (same CEM, defaults), plus land without its w_stop term and gas with land-like in-air attitude shaping.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "land",
+   "objective": "land"
+  },
+  {
+   "label": "land-nostop",
+   "objective": {
+    "name": "land",
+    "w_stop": 0
+   }
+  },
+  {
+   "label": "gas"
+  },
+  {
+   "label": "gas-airshape",
+   "objective": {
+    "name": "gas",
+    "air_tilt": 3,
+    "air_rate": 0.05
+   }
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "all"
+}

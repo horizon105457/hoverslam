@@ -1,0 +1,310 @@
+{
+ "name": "gas-robust2",
+ "task": "escape-soft-landing",
+ "description": "Robustness against a thrust shortfall: stronger braking reserve (w_reserve 20 / 100), a derated planning model (plan with umax.bottom 0.85, execute x1/0.85: full thrust stays available to replanning), cap 0.5 m/s, land; bottom thrust x1 / 0.9 / 0.85 unknown to the planner.",
+ "base": {
+  "name": "mpc",
+  "objective": "gas"
+ },
+ "controllers": [
+  {
+   "label": "gas|nominal",
+   "exec": {}
+  },
+  {
+   "label": "gas|eta0.9",
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas|eta0.85",
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.8-w20|nominal",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8,
+    "w_reserve": 20
+   },
+   "exec": {}
+  },
+  {
+   "label": "gas-reserve0.8-w20|eta0.9",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8,
+    "w_reserve": 20
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.8-w20|eta0.85",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8,
+    "w_reserve": 20
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.7-w20|nominal",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.7,
+    "w_reserve": 20
+   },
+   "exec": {}
+  },
+  {
+   "label": "gas-reserve0.7-w20|eta0.9",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.7,
+    "w_reserve": 20
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.7-w20|eta0.85",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.7,
+    "w_reserve": 20
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.8-w100|nominal",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8,
+    "w_reserve": 100
+   },
+   "exec": {}
+  },
+  {
+   "label": "gas-reserve0.8-w100|eta0.9",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8,
+    "w_reserve": 100
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-reserve0.8-w100|eta0.85",
+   "objective": {
+    "name": "gas",
+    "reserve": 0.8,
+    "w_reserve": 100
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-derate0.85|nominal",
+   "umax": {
+    "bottom": 0.85
+   },
+   "exec": {
+    "gain": {
+     "bottom": 1.1764705882352942
+    }
+   }
+  },
+  {
+   "label": "gas-derate0.85|eta0.9",
+   "umax": {
+    "bottom": 0.85
+   },
+   "exec": {
+    "gain": {
+     "bottom": 1.1764705882352942
+    },
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-derate0.85|eta0.85",
+   "umax": {
+    "bottom": 0.85
+   },
+   "exec": {
+    "gain": {
+     "bottom": 1.1764705882352942
+    },
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-hc0.9-derate0.85|nominal",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "umax": {
+    "bottom": 0.85
+   },
+   "exec": {
+    "gain": {
+     "bottom": 1.1764705882352942
+    }
+   }
+  },
+  {
+   "label": "gas-hc0.9-derate0.85|eta0.9",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "umax": {
+    "bottom": 0.85
+   },
+   "exec": {
+    "gain": {
+     "bottom": 1.1764705882352942
+    },
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-hc0.9-derate0.85|eta0.85",
+   "optimizer": [
+    {
+     "type": "xmask",
+     "heave_until": 0.9
+    },
+    {
+     "type": "cem"
+    }
+   ],
+   "umax": {
+    "bottom": 0.85
+   },
+   "exec": {
+    "gain": {
+     "bottom": 1.1764705882352942
+    },
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "gas-vcap0.5|nominal",
+   "objective": {
+    "name": "gas",
+    "v_cap": 0.5
+   },
+   "exec": {}
+  },
+  {
+   "label": "gas-vcap0.5|eta0.9",
+   "objective": {
+    "name": "gas",
+    "v_cap": 0.5
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "gas-vcap0.5|eta0.85",
+   "objective": {
+    "name": "gas",
+    "v_cap": 0.5
+   },
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  },
+  {
+   "label": "land|nominal",
+   "objective": "land",
+   "exec": {}
+  },
+  {
+   "label": "land|eta0.9",
+   "objective": "land",
+   "exec": {
+    "eta": {
+     "bottom": 0.9
+    }
+   }
+  },
+  {
+   "label": "land|eta0.85",
+   "objective": "land",
+   "exec": {
+    "eta": {
+     "bottom": 0.85
+    }
+   }
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "record": "none"
+}

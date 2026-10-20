@@ -14,7 +14,9 @@ spec/*.json  ── language-neutral facts (world, presets, thrusters, vehicle, 
    │                                                                                             │
    ├─ src/flight/         rigid 6-DOF cold-gas twin (fast, JS)  ⇆ parity ⇆  python/coldgas/  (fast, Py)
    │     propulsion.js     reference propulsion model                      env / MPC / PPO / bench
-   │     contract.js       state / controller / trajectory contract        experiments/ (configs, runs)
+   │     contract.js       state / controller / trajectory contract        experiments/ (configs, runs, reports)
+   │     mpc/              pure MPC `mpc` (JS only, no base pilot): schedule param, planner, optimizers
+   │                       (sampling mppi/cem, gradient, hybrid), objectives (land, roll, gas)
    │
    ├─ src/softbody/       XPBD node-beam crash solver (slow, high fidelity, JS only)
    │     solver.js         + `sim.actuators[]` hook for external forces (thrusters)
@@ -84,6 +86,44 @@ reproducible from (spec hash, task, controller config, seed). See `experiments/R
 Rules: edit only what you own; need a change elsewhere → note it as a request for the lead (or wrap/extend in
 your own area); no new npm dependencies; never commit or rewrite git state; dev servers per stream on their own
 port (lead 5173, install 5174, flight-viewer 5175) and never stop someone else's process.
+
+## MPC round (2026-10-20 evening): two experiments in parallel
+
+The lead added the pure MPC framework `src/flight/mpc/` (registry name `mpc`, JS only; see its `index.js` header and
+`experiments/README.md` "Pure MPC"). No pd anywhere in it: attitude, braking and manoeuvres come from the
+optimised command schedule alone. Baseline (`experiments/configs/mpc-baseline.json`, 18 episodes): mpc-cem 100 %
+success at 46 kg vs pd 72 % at 48 kg. Two experiment streams build on it; the scene, the soft body, the twins'
+physics and the core MPC files are frozen for both (report needed changes instead of making them):
+
+| work stream | owns (may create/edit) |
+|---|---|
+| lead | `src/flight/mpc/{index,param,planner}.js`, `src/flight/mpc/defaults.json`, `src/flight/mpc/optim/{index,noise,mppi,cem,grad}.js`, `src/flight/mpc/objectives/{index,land}.js`, `src/flight/controllers/**`, `tools/flight/{bench,run}.mjs`, docs, everything not listed below |
+| barrel-roll (jump + 360° roll about the long axis + soft landing, twin and soft body) | `src/flight/mpc/objectives/roll.js`, `experiments/configs/roll-*.json`, `experiments/reports/barrel-roll/**`, `tools/flight/roll/**`, `public/sims/flight-mpc-roll*.sim`, `experiments/runs/roll-*`, `experiments/runs/soft-roll*`; one entry in `RUNS` of `src/programs/flight/index.js` |
+| gas-study (is "free fall, then burn late" the gas-optimal soft landing? gradient / sampling / hybrid MPC) | `src/flight/mpc/objectives/gas.js`, `src/flight/mpc/optim/extra.js` (+ new files `src/flight/mpc/optim/x-*.js`), `experiments/configs/gas-*.json`, `experiments/reports/gas-late-burn/**`, `tools/flight/gas/**`, `experiments/runs/gas-*`, `experiments/runs/soft-gas*` |
+
+Same rules as below (no commits, no new dependencies, no git state changes, never stop someone else's process);
+twin experiments need no dev server; soft-body runs are plain Node (`tools/sim/flight.mjs`). Nobody renders films
+or touches `src/**` outside their files while the other stream runs (the user's Vite server on 5173 reloads).
+
+Outcome (reports in `experiments/reports/`): **barrel-roll** — `objectives/roll.js` + `roll-final.json` (hybrid
+cem→cem, 4 s horizon): twin flat 10/10 (19/20 on seeds 1-20, 15/18 over all presets untuned), climb 2.3 m, roll
+361°, ~90 kg; soft body `public/sims/flight-mpc-roll.sim` succeeds (1.24 m/s, 1.5°, no hull contact), 4/6 over
+soft-body variants. **gas-late-burn** — braking itself is bang-bang optimal (twin reference 27.3 kg, earlier
+ignition costs more), but only for the lift: attitude must be fixed first (full coast > 0.3 s collapses success);
+best MPC = lift-only coast 0.9 s, 39.9 kg 30/30; pd with saturated late braking 35.3 kg (MPC never finds it);
+late burns have no thrust margin (−10 % thrust: 0-17 % success; planning at 85 % thrust fixes it for +4.5 kg);
+sampling (cem 100 %, mppi 100 %) ≫ gradient (grad 22 %, L-BFGS 17-83 %), gradient polish never saved gas.
+
+MPC backlog from that round (lead):
+- promote a time-varying cold-start schedule (`optim/x-stages.js` `xinit`) into `param.initial` (both streams'
+  main remaining failure is a bad cold first plan) and a plan/execution-mismatch hook (gas study wraps the
+  controller in `tools/flight/gas/lib.mjs`; `tools/sim/flight.mjs` has no such hook)
+- planning is not real time: cold first plan 6-7 s (11.5 k rollouts), then 140-190 ms per plan vs the 40 ms replan
+  period (fine offline, the soft body waits)
+- stop rollouts after the task's hold window (halves episode time); heave mode is solved at the full-tank COM
+  (~0.66 kN·m of pitch at full heave after ~45 kg); `slip2` scores 180° slip as 0
+- soft body: the pure MPC keeps 1-2 kN of bottom thrust after touchdown (the soft body sits 1-2° tilted, the twin
+  level) and most twin-good touchdowns strike the hull 0.15-0.3 s later (rear bottoming, slip): the known gap
 
 ## Integration backlog (from the first parallel round, 2026-10-20)
 

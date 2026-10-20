@@ -19,7 +19,7 @@ export class FlightHUD {
   resize(w, h) { if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; } }
 
   /**
-   * @param s {t, thrust[], valve[], nom[], tank:{m,T,p}, m0, pc, pset, alt, vy, tilt, rate, speed, phase,
+   * @param s {t, thrust[], valve[], nom[], tank:{m,T,p}, m0, pc, pset, alt, vy, tilt, rate, speed, phase, roll (deg or null),
    *           verdict: null | {success, vs, tilt, rate, hull, crit}, title, sub, letterbox}
    */
   draw(s) {
@@ -67,6 +67,7 @@ export class FlightHUD {
       ['垂直速度', `${s.vy >= 0 ? '+' : '−'}${Math.abs(s.vy).toFixed(2)} m/s`],
       ['水平速度', `${(s.speed * 3.6).toFixed(0)} km/h`],
       ['倾角', `${s.tilt.toFixed(1)}°`],
+      ...(s.roll != null ? [['横滚（累计）', `${s.roll.toFixed(0)}°`]] : []),
       ['角速度', `${s.rate.toFixed(2)} rad/s`],
       ['气瓶压力', `${(s.tank.p / 1e6).toFixed(1)} MPa`],
       ['气体温度', `${s.tank.T.toFixed(0)} K`],
