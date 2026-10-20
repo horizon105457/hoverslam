@@ -27,6 +27,9 @@ export function createPD(cfg = {}) {
   return {
     name: 'pd', config: c,
     reset({ task: t } = {}) { task = t || null; holdT = 0; landing = !(task && task.target); },
+    /** Episode memory (hover hold timer, landing flag): MPPI copies the real pilot's into its rollout pilot. */
+    get memory() { return { holdT, landing }; },
+    set memory(m) { holdT = m.holdT; landing = m.landing; },
     act(s) {
       const u = new Float64Array(NU);
       if (!s.armed) return u;

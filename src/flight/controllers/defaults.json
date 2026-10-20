@@ -12,6 +12,18 @@
     "hover_kh": 1.5,
     "hover_vmax": 2.0
   },
+  "mppi": {
+    "_doc": "Sampling MPC (JS src/flight/controllers/mppi.js, Python coldgas/controllers/mppi.py, same algorithm, same noise stream, parity-tested). Every `replan` control steps: K = samples command sequences (piecewise constant over `knot` s, residuals on the pd pilot if base = 'pd', Gaussian noise `sigma` from mulberry32) are rolled out for `horizon` s on a rigid twin with integrator step plan_dt, and the nominal moves to their softmax-weighted mean (temperature relative to the cost spread). w_* / v_ok / curb_lookahead: planning cost (the task's own reward and success still score the episode).",
+    "samples": 128, "horizon": 0.8, "knot": 0.1, "replan": 2, "sigma": 0.3, "temperature": 0.05, "plan_dt": 0.002, "base": "pd", "seed": 0,
+    "w_crash": 60.0, "w_vy": 6.0, "v_ok": 1.0, "w_td_tilt": 40.0, "w_td_rate": 3.0, "w_tilt": 0.3, "w_rate": 0.01,
+    "w_gas": 0.3, "w_stop": 0.5, "w_curb": 8.0, "w_pad": 2.0, "w_height": 0.5, "curb_lookahead": 1.0,
+    "w_alt": 0.05, "w_res": 0.5, "w_deadline": 20.0,
+    "_doc_soft": "Additions for the soft body (0 / 2 / 0 = the original cost): w_slip per step and w_td_slip at touchdown on sin^2 of the slip angle between the body heading and the horizontal velocity (counted above 2 m/s; the soft body scrapes its hull when it lands or rolls sideways, the twin's tyres do not); curb_steps probes of the kerb lookahead (at la*i/curb_steps) and curb_margin metres around each probe (the car's footprint, not just its COM); once a rollout has touched down, w_gnd_slip * sin^2(slip) + w_gnd_yaw * (body yaw rate)^2 per step (the kit car is 70 % rear-heavy: on the soft body it spins out ~1 s after landing, the twin barely does, so the closed loop has to pay for damping it).",
+    "w_slip": 0.0, "w_td_slip": 0.0, "curb_steps": 2, "curb_margin": 0.0, "w_gnd_slip": 0.0, "w_gnd_yaw": 0.0,
+    "_doc_gate": "bottom_gate (m, 0 = off): the residual on the four bottom nozzles is scaled by min(1, h / bottom_gate) (h = body-origin height above the street, 0 on the ground), in the rollouts and in the executed command, so the base pilot alone flies the last metres and the touchdown (base_pd: pd setting overrides of that pilot, e.g. a softer td_speed). On the soft body a 1-2 deg nose-up touchdown (harmless on the twin, so the planner does not care) lands the heavy rear first and pitches the rear floor into the street.",
+    "bottom_gate": 0.0,
+    "base_pd": {}
+  },
   "zero": {},
   "replay": {},
   "mlp": {}

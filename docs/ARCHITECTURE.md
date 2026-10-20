@@ -112,8 +112,15 @@ Open issues:
   still touches down at 0.93 m/s, but the higher, rear-heavy car then oversteers out of control ~1.5 s later
   (yaw rate 0.9 rad/s, ESP jets saturated, control arms snap). To adopt it: retune the `ap` ground mode, port
   preload + stops to the twins, make `level` the default, re-settle, re-run every recording.
-- open-loop replay of rigid-twin MPPI plans diverges on the soft body (model gap): closed-loop MPC on the soft
-  body needs a JS MPPI or a learned policy (`mlp`) instead of `replay`
+- closed-loop MPC on the soft body: done. `mppi` now exists in JS (`src/flight/controllers/mppi.js`), bit-identical
+  to Python (shared mulberry32 noise, sequential reductions; parity scenarios `*-mppi-*`), and replans every 60 ms
+  from `ThrusterRig`'s state estimate (`public/sims/flight-mppi-{nose,roof}.sim`: 0.51 / 0.61 m/s, level, no hull
+  strike all run; open-loop replay: 6.7 m/s, tumbling). The Python cost alone is not enough on the soft body: the
+  run needs the opt-in soft-body settings of `experiments/configs/mppi-soft-landing.json` `mppi-soft` (slip and
+  ground-yaw terms, 2 s kerb lookahead with a footprint margin, bottom residual faded out below 3 m so pd flies the
+  touchdown, base pd `td_speed` 0.5). Open: corner preset still strikes 0.2 s after touchdown; the soft body's rear
+  bottoms out where the twin's stiff bump stop does not (model gap behind most of these terms); MPPI only shifts
+  its nominal by whole knots, so with `replan` < `knot` it never shifts (same in Python, kept for parity)
 - PPO solves hover-hold (from a pd warm start) but not escape-soft-landing yet (brakes too late)
 - the soft body has no brakes or rolling resistance: after landing the car rolls on at launch speed
 - `renderFilmFrame` shutter samples straddle shot cuts (one blended frame per cut)

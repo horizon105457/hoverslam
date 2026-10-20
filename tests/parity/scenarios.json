@@ -18,6 +18,11 @@
     { "id": "escape-pd-nose", "task": "escape-soft-landing", "preset": "nose", "seed": 5, "controller": "pd" },
     { "id": "escape-pd-roof", "task": "escape-soft-landing", "preset": "roof", "seed": 6, "controller": "pd" },
     { "id": "pad-pd", "task": "precision-pad", "seed": 7, "controller": "pd" },
-    { "id": "tumble-pd", "task": "tumble-recovery", "seed": 8, "controller": "pd" }
+    { "id": "tumble-pd", "task": "tumble-recovery", "seed": 8, "controller": "pd" },
+    { "id": "escape-mppi-roof", "task": "escape-soft-landing", "preset": "roof", "seed": 1, "controller": { "name": "mppi", "samples": 12, "horizon": 0.6, "knot": 0.1, "replan": 3 } },
+    { "id": "pad-mppi", "task": "precision-pad", "preset": "flat", "seed": 7, "controller": { "name": "mppi", "samples": 10, "horizon": 0.5, "knot": 0.1, "replan": 4, "plan_dt": 0.004 } },
+    { "id": "hover-mppi", "task": "hover-hold", "seed": 2, "controller": { "name": "mppi", "samples": 8, "horizon": 0.4, "knot": 0.1, "replan": 5 } },
+    { "id": "escape-mppi-soft-nose", "task": "escape-soft-landing", "preset": "nose", "seed": 2, "controller": { "name": "mppi", "samples": 10, "horizon": 0.6, "knot": 0.15, "replan": 3, "curb_lookahead": 2, "curb_steps": 8, "curb_margin": 1.5, "w_td_tilt": 400, "w_td_rate": 10, "w_slip": 0.3, "w_td_slip": 10, "w_gnd_slip": 5, "w_gnd_yaw": 1, "bottom_gate": 3, "base_pd": { "td_speed": 0.5 } } },
+    { "id": "free-mppi-raw", "init": { "type": "state", "p": [-20, 6, 12], "q": [0.2, 0.1, -0.1, 0.969535971], "v": [-8, -2, 2], "w": [0.4, 0.2, -0.3] }, "seed": 4, "controller": { "name": "mppi", "base": "none", "samples": 12, "horizon": 0.5, "knot": 0.05, "replan": 2, "sigma": 0.4 }, "duration": 1.5 }
   ]
 }

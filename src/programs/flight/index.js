@@ -32,9 +32,11 @@ const RUNS = [
   { id: 'pd-nose', label: 'pd · 着陆后翻车', sub: '车头俯冲 · 孪生 pd（无航向控制）' },
   { id: 'pd-roof', label: 'pd · 着陆后翻车', sub: '倒扣车顶 · 孪生 pd（无航向控制）' },
   { id: 'replay-mppi-nose', label: 'MPPI 开环回放', sub: '车头俯冲 · Python MPPI 轨迹' },
+  { id: 'mppi-nose', label: 'MPPI 闭环 · 软着陆', sub: '车头俯冲 · JS MPPI 在软体上实时重规划' },
+  { id: 'mppi-roof', label: 'MPPI 闭环 · 翻滚改出', sub: '倒扣车顶 · JS MPPI 在软体上实时重规划' },
 ];
 const runName = id => (id.startsWith('flight-') ? id.slice(7) : id);
-const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);
+const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c === 'mppi' ? 'MPPI 闭环' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);
 
 export default class FlightProgram extends Program {
   static meta = { id: 'flight', title: '坠 · 冷气推力着陆' };

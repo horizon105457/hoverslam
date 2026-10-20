@@ -1,4 +1,4 @@
-"""MPPI (model-predictive path integral control) on the batched twin. Python only.
+"""MPPI (model-predictive path integral control) on the batched twin; mirror of src/flight/controllers/mppi.js.
 
 A Controller like the others: act(FlightState) -> u_cmd. Every `replan` control steps the state is loaded into K
 planning lanes (Twin.load_state), K perturbed command sequences are rolled out for `horizon` seconds and the
@@ -9,26 +9,29 @@ steer the landing point away from kerbs, saves gas); base='none' plans raw valve
 
 The planning model may use a coarser integrator step (plan_dt) than the real twin: that is model mismatch on
 purpose (speed), the executed physics is always the reference twin.
+
+JS parity: settings and defaults come from src/flight/controllers/defaults.json ('mppi'); the exploration noise is
+mulberry32 (Mulberry32.gauss_array, the stream of rng.js gauss()); every reduction over lanes / knots / nozzles is a
+sequential sum in that order and the softmax uses the portable exp, so a plan is bit-identical to the JS one
+(tests/parity scenario escape-mppi-*).
 """
 from __future__ import annotations
 
 import numpy as np
 
+from . import DEFAULTS as _ALL
 from .pd import PD
+from .. import fmath
 from ..contract import NU, CONTROL_DT, GROUPS
 from ..obs import height_np
 from ..propulsion import Propulsion
+from ..rng import Mulberry32
 from ..spec import WORLD, PROPULSION
 from ..state import batch_of, from_twin
 from ..twin import Twin
 from ..world import street_level, GROUND
 
-DEFAULTS = {'samples': 128, 'horizon': 0.8, 'knot': 0.1, 'replan': 2, 'sigma': 0.3, 'temperature': 0.05,
-            'plan_dt': 0.002, 'base': 'pd', 'seed': 0,
-            # cost weights (planning cost; the benchmark still scores the task's own reward / success)
-            'w_crash': 60.0, 'w_vy': 6.0, 'v_ok': 1.0, 'w_td_tilt': 40.0, 'w_td_rate': 3.0, 'w_tilt': 0.3, 'w_rate': 0.01,
-            'w_gas': 0.3, 'w_stop': 0.5, 'w_curb': 8.0, 'w_pad': 2.0, 'w_height': 0.5, 'curb_lookahead': 1.0,
-            'w_alt': 0.05, 'w_res': 0.5, 'w_deadline': 20.0}
+DEFAULTS = {k: v for k, v in _ALL['mppi'].items() if not k.startswith('_')}
 
 
 class MPPI:
@@ -48,10 +51,11 @@ class MPPI:
     def reset(self, task=None, seed=None):
         c = self.config
         self.task = task
-        self.rng = np.random.default_rng(c['seed'] if seed is None else (int(c['seed']) * 1000003 + int(seed)))
+        # + 1: mulberry32 maps seed 0 to 1, so episode seeds 0 and 1 would share a noise stream
+        self.rng = Mulberry32((int(c['seed']) if seed is None else int(c['seed']) * 1000003 + int(seed)) + 1)
         self.plan = Twin(self.K, arm=(task or {}).get('arm', 'start'), dt=c['plan_dt'])
-        self.base = PD() if c['base'] == 'pd' else None
-        self.base_real = PD() if c['base'] == 'pd' else None
+        self.base = PD(**c['base_pd']) if c['base'] == 'pd' else None
+        self.base_real = PD(**c['base_pd']) if c['base'] == 'pd' else None
         if self.base:
             self.base.reset_batch(self.K, task)
             self.base_real.reset(task=task)
@@ -77,38 +81,59 @@ class MPPI:
             self.since = 0
         j = min(self.since // self.knot, self.nk - 1)
         self.since += 1
-        return np.clip(ub[0] + self.U[j], 0.0, 1.0)
+        return np.clip(ub[0] + self.U[j] * self._gate(s)[0], 0.0, 1.0)
 
     # -------------------------------------------------------------------------------------------------
     def _plan(self, s):
         c, K, H, tw = self.config, self.K, self.H, self.plan
-        noise = self.rng.normal(0.0, c['sigma'], (K, self.nk, NU))
+        noise = self.rng.gauss_array(K * self.nk * NU).reshape(K, self.nk, NU) * c['sigma']
         noise[0] = 0.0  # always evaluate the current nominal
         V = self.U[None] + noise
         tw.load_state(s, 0)
         if self.base:
             self.base.hold_t[:] = self.base_real.hold_t[0]
             self.base.landing[:] = self.base_real.landing[0]
-        cost = c['w_res'] * np.mean(V * V, axis=(1, 2))  # residual effort (keeps MPPI close to the base when it can)
+        VV, acc = V * V, np.zeros(K)
+        for j in range(self.nk):  # sequential sums (JS order), not numpy's pairwise mean
+            for i in range(NU):
+                acc = acc + VV[:, j, i]
+        cost = c['w_res'] * (acc / (self.nk * NU))  # residual effort (keeps MPPI close to the base when it can)
         td0, m_prev = tw.td.copy(), tw.prop.m.copy()
         alive = np.ones(K, dtype=bool)
         T = self.task or {}
         for h in range(H):
             bs = from_twin(tw)
             ub = self.base.act_batch(bs) if self.base else 0.0
-            u = np.clip(ub + V[:, min(h // self.knot, self.nk - 1)], 0.0, 1.0)
+            u = np.clip(ub + V[:, min(h // self.knot, self.nk - 1)] * self._gate(bs), 0.0, 1.0)
             tw.step(u)
             cost += self._step_cost(tw, m_prev, td0, alive, h, T)
             m_prev = tw.prop.m.copy()
         cost += self._terminal_cost(tw, alive, T)
         # softmax weights with a temperature relative to the spread of the costs
-        cmin = cost.min()
-        lam = c['temperature'] * max(float(np.mean(cost) - cmin), 1e-6)
-        w = np.exp(-(cost - cmin) / lam)
-        w /= w.sum()
-        self.U = np.clip(np.tensordot(w, V, axes=1), -1.0, 1.0)
+        cmin, tot = float(cost.min()), 0.0
+        for x in cost.tolist():
+            tot += x
+        lam = c['temperature'] * max(tot / K - cmin, 1e-6)
+        w = fmath.exp_np(np.maximum(-(cost - cmin) / lam, -700.0))  # portable exp (clamped to its exact range)
+        ws = 0.0
+        for x in w.tolist():
+            ws += x
+        w = w / ws
+        acc = np.zeros((self.nk, NU))
+        for k in range(K):  # sequential weighted mean (JS order), not BLAS
+            acc = acc + w[k] * V[k]
+        self.U = np.clip(acc, -1.0, 1.0)
         self.plans += 1
         self.last_cost = float(cost[0]), float(cmin)
+
+    def _gate(self, bs):
+        """(N, NU) residual weights: 1, or min(1, h / bottom_gate)+ on the bottom nozzles (mppi.js gate()).
+        x * 1.0 is exact, so multiplying the other nozzles by 1 matches JS, which leaves them alone."""
+        G = np.ones((len(bs['p']), NU))
+        if self.config['bottom_gate']:
+            g = height_np(bs['p'], bs['q'], bs['comB']) / self.config['bottom_gate']
+            G[:, GROUPS['bottom']] = np.where(g > 1, 1.0, np.where(g > 0, g, 0.0))[:, None]
+        return G
 
     def _step_cost(self, tw, m_prev, td0, alive, h, T):
         c, S = self.config, tw.S
@@ -125,6 +150,8 @@ class MPPI:
             tt = 2 * (d[3] * d[3] + d[5] * d[5])
             rr = d[10] * d[10] + d[11] * d[11] + d[12] * d[12]
             ctd = c['w_vy'] * np.maximum(vy - c['v_ok'], 0.0) ** 2 + c['w_td_tilt'] * tt + c['w_td_rate'] * rr
+            if c['w_td_slip']:
+                ctd = ctd + c['w_td_slip'] * slip2(d[3], d[4], d[5], d[6], d[7], d[9])
             if T.get('pad'):
                 dx, dz = d[0] - T['pad']['center'][0], d[2] - T['pad']['center'][2]
                 ctd = ctd + c['w_pad'] * (dx * dx + dz * dz)
@@ -136,6 +163,11 @@ class MPPI:
             cost = cost + alive * self.base.landing * ~tw.td * c['w_alt'] * np.maximum(hb, 0.0)
         else:  # descent progress: being up in the air costs, so hovering out the horizon is never optimal
             cost = cost + alive * ~tw.td * c['w_alt'] * np.maximum(hb, 0.0)
+        if c['w_slip']:  # heading on the travel direction (soft body)
+            cost = cost + alive * c['w_slip'] * slip2(S[3], S[4], S[5], S[6], S[7], S[9])
+        if c['w_gnd_slip'] or c['w_gnd_yaw']:  # on the wheels: ESP by thrust against the soft body's spin-out
+            g = c['w_gnd_slip'] * slip2(S[3], S[4], S[5], S[6], S[7], S[9]) + c['w_gnd_yaw'] * (S[11] * S[11])
+            cost = cost + np.where(alive & tw.td, g, 0.0)
         alive &= ~crash
         return cost
 
@@ -153,9 +185,16 @@ class MPPI:
         a_req = np.where(vy < 0, vy * vy / (2 * np.maximum(hb - 0.3, 0.05)), 0.0)
         cost = np.where(~tw.td, c['w_stop'] * np.maximum(a_req - a_av, 0.0) + c['w_deadline'] * late, 0.0)
         # kerbs ahead: where will the COM be after curb_lookahead seconds of rolling / flying straight on?
-        la = c['curb_lookahead']
-        x1, z1 = S[0] + S[7] * la, S[2] + S[9] * la
-        on_curb = (street_level(x1, z1) > GROUND['y']) | (street_level(S[0] + S[7] * 0.5 * la, S[2] + S[9] * 0.5 * la) > GROUND['y'])
+        # (probes at la*i/n, each with a footprint margin m; n = 2, m = 0 is the original COM check at la/2 and la)
+        la, n, m = c['curb_lookahead'], int(c['curb_steps']), c['curb_margin']
+        on_curb = np.zeros(self.K, dtype=bool)
+        for i in range(n, 0, -1):
+            f = la * i / n
+            x1, z1 = S[0] + S[7] * f, S[2] + S[9] * f
+            on_curb |= street_level(x1, z1) > GROUND['y']
+            if m > 0:
+                for dx, dz in ((m, 0.0), (-m, 0.0), (0.0, m), (0.0, -m)):
+                    on_curb |= street_level(x1 + dx, z1 + dz) > GROUND['y']
         cost = cost + c['w_curb'] * on_curb
         if T.get('pad') and c['w_pad']:
             # ballistic landing-point estimate for vehicles still in the air
@@ -163,3 +202,13 @@ class MPPI:
             dx, dz = S[0] + S[7] * t_hit - T['pad']['center'][0], S[2] + S[9] * t_hit - T['pad']['center'][2]
             cost = cost + np.where(~tw.td, 0.5 * c['w_pad'] * (dx * dx + dz * dz), 0.0)
         return alive * cost
+
+
+def slip2(qx, qy, qz, qw, vx, vz):
+    """sin^2 of the slip angle (body heading vs horizontal velocity), 0 below 2 m/s or with the nose near vertical;
+    mppi.js slip2() (only + - * /)."""
+    fx, fz = 2 * (qx * qz + qy * qw), 1 - 2 * (qx * qx + qy * qy)
+    vv, ff = vx * vx + vz * vz, fx * fx + fz * fz
+    cr = fz * vx - fx * vz
+    with np.errstate(all='ignore'):
+        return np.where((vv > 4) & (ff > 0.25), cr * cr / (ff * vv), 0.0)

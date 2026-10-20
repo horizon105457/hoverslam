@@ -216,7 +216,9 @@ For a preset (`speed` km/h, `angle` deg, `spin` = [pitch, yaw, roll] rad/s, `lea
   16 digits. Trajectories, policies and benchmark results record it; consumers warn on mismatch.
 - **RNG** for task randomisation: mulberry32 (as in `src/softbody/solver.js`) seeded with `seed >>> 0`; draws in the
   order the task lists them (preset index first, then the `randomize` keys in file order), `uniform(a, b) =
-  a + (b − a)·r()`.
+  a + (b − a)·r()`. Seed 0 is mapped to 1 (`seed >>> 0 || 1`), so episode seeds 0 and 1 draw the same initial
+  condition. Standard normals (MPPI noise): `gauss() = Σ₁₂ r() − 6` (Irwin–Hall; the sum of twelve multiples of
+  2⁻³² is exact, so JS `rng.js` and numpy `Mulberry32.gauss_array` agree bit for bit).
 - **FlightState** (what controllers see; twin or soft-body estimate): `{t, p[3], q[4], v[3], w[3] (body),
   comB[3], tank: {m, T, p}, valve[10], armed, phase: 'deck'|'air'|'ground'}` (§1 frames; `t` from the episode start).
   The twin adds `pc`, `thrust`, `step`; controllers must not need them.
@@ -227,8 +229,11 @@ For a preset (`speed` km/h, `angle` deg, `spin` = [pitch, yaw, roll] rad/s, `lea
   `{name, ...settings}`; defaults live in `src/flight/controllers/defaults.json` (read by both). Registry:
   `zero`; `pd` (attitude + braking-profile autopilot on the bottom nozzles, uses only `+ − × ÷ √`, bit-identical in
   both languages); `replay` (`{traj}` or `{file}`: plays `u_cmd[round(t/dt)]`, zeros after the end); `mlp`
-  (`{policy}` or `{file}`: runs a `coldgas-policy@1`); Python only: `mppi` (sampling MPC on the batched twin, see
-  `coldgas/controllers/mppi.py`) and PPO-trained policies exported as `coldgas-policy@1`.
+  (`{policy}` or `{file}`: runs a `coldgas-policy@1`); `mppi` (sampling MPC, residual on `pd`, rollouts on a twin
+  loaded from the FlightState (`RigidTwin.loadState` / `Twin.load_state`) with integrator step `plan_dt`; noise
+  from `gauss()` seeded `seed·1000003 + episode seed + 1`, reductions summed sequentially, softmax through the
+  portable `exp`, so the two languages are bit-identical; settings and cost in `defaults.json` `mppi`). Python
+  only: PPO-trained policies exported as `coldgas-policy@1`.
 - **Policy** `coldgas-policy@1` (JSON): `{format, spec_hash, model, task, obs: {format: 'coldgas-obs@1', names[],
   mean[], std[], clip}, layers: [{W[out][in], b[out], act: 'tanh'|'relu'|'linear'}], action: {transform:
   'clip01'|'tanh01'}, meta: {...}}`. Evaluation: `x = clip((o − mean)/std, −clip, clip)` with `o` the task's

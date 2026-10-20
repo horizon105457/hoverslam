@@ -1,0 +1,16 @@
+{
+  "name": "mppi-soft-landing",
+  "description": "Escape + soft landing on the rigid twin, 6 presets x 10 seeds (1..10: mulberry32 maps seed 0 to 1, so seeds 0 and 1 draw the same initial condition). pd vs MPPI with the baseline settings vs MPPI with the soft-body settings flown closed loop on the soft body (public/sims/flight-mppi-*.sim): slip and ground yaw terms, 2 s / 8-probe kerb lookahead with a footprint margin, stiff touchdown tilt / rate weights, bottom residual faded out below 3 m and a softer base pd (td_speed 0.5). Runs identically in JS (node tools/flight/bench.mjs, ~2.5 s / episode) and Python (python -m coldgas.bench, ~18 s / episode): MPPI is bit-identical across the twins.",
+  "task": "escape-soft-landing",
+  "controllers": [
+    { "name": "pd" },
+    { "name": "mppi", "samples": 96, "horizon": 1.5, "knot": 0.15, "replan": 3, "sigma": 0.3, "plan_dt": 0.002, "base": "pd" },
+    { "name": "mppi", "label": "mppi-soft", "samples": 96, "horizon": 1.5, "knot": 0.15, "replan": 3, "sigma": 0.3, "plan_dt": 0.002, "base": "pd",
+      "curb_lookahead": 2, "curb_steps": 8, "curb_margin": 1.5, "w_td_tilt": 400, "w_td_rate": 10, "w_slip": 0.3, "w_td_slip": 10,
+      "w_gnd_slip": 5, "w_gnd_yaw": 1, "bottom_gate": 3, "base_pd": { "td_speed": 0.5 } }
+  ],
+  "presets": ["flat", "nose", "rear", "side", "roof", "corner"],
+  "seeds": { "start": 1, "count": 10 },
+  "record": "first",
+  "workers": 8
+}

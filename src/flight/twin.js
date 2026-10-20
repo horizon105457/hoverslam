@@ -48,9 +48,10 @@ const NB = BOXES.length;
  *  {type:'state', p, q, v, w, gas?, valve?, leftDeck?, kick?: {spin_w: [3]}}  explicit (tests, soft-body hand-off)
  */
 export class RigidTwin {
-  constructor({ arm = 'start' } = {}) {
+  /** dt: integrator step override for planning models only (MPPI, like coldgas.twin.Twin(dt=)); never for parity. */
+  constructor({ arm = 'start', dt = null } = {}) {
     this.arm = arm;
-    this.dt = DT; this.nsub = SUBSTEPS; this.g = WORLD.gravity;
+    this.dt = dt ?? DT; this.nsub = dt == null ? SUBSTEPS : pyRound(PROPULSION.control.dt / dt); this.g = WORLD.gravity;
     this.prop = new Propulsion(PROPULSION, WORLD.air.pressure);
     this.mass = new MassModel(PROPULSION, GENERATED.massprops);
     const W = VEHICLE.wheels, H = VEHICLE.hull, C = MODEL.contact;
@@ -381,6 +382,34 @@ export class RigidTwin {
     this.k++;
   }
 
+  /**
+   * Plan from a state estimate (mirror of coldgas.twin.Twin.load_state): restores what a FlightState carries; tank
+   * p/T follow the blowdown polytrope from m, mass properties come from the model, the kick is over, a vehicle in
+   * phase 'ground' counts as touched down (snapshot = this state), no hull strike yet.
+   */
+  loadState(s) {
+    const P = this.prop, reg = PROPULSION.regulator;
+    this.p.set(s.p); this.q.set(s.q); this.v.set(s.v); this.w.set(s.w);
+    const m = +s.tank.m, rho = m / P.V;
+    P.m = m;
+    P.p = P.K * rho ** P.spec.tank.polytropic_n;
+    P.T = rho > 0 ? P.p / (rho * P.R) : +s.tank.T;
+    P.valve.set(s.valve); P.thrust.fill(0); P.mdot.fill(0);
+    const pc = Math.min(reg.p_set, P.p - reg.dp_min);
+    P.pc = pc > 2 * P.pa ? pc : 0;
+    this.mass.at(m, this.mp);
+    this.k = pyRound(s.t / this.dt);
+    this.kickState = 2; this.kickLeft = 0;
+    const ph = s.phase;
+    this.leftDeck = true; this.armed = !!s.armed; this.airborne = ph !== 'deck';
+    this.touchdown = ph === 'ground' ? { t: this.k * this.dt, p: Array.from(this.p), q: Array.from(this.q), v: Array.from(this.v), w: Array.from(this.w), wheels: 0 } : null;
+    this.hullStrike = null; this.peakSf = 0; this.dropout = P.pc < reg.p_set;
+    this.stepFlags = { any: false, street: false, deck: false, other: false, hull: false };
+    this.init ||= { type: 'state' }; // a fresh twin (never reset) behaves like Python's default lane at k = 0
+    this.phase = ph; this.mgas = P.m; this.events = [];
+    return this;
+  }
+
   // ---------------------------------------------------------------------------------------------- views
   get t() { return this.k * this.dt; }
 
@@ -399,6 +428,12 @@ export class RigidTwin {
     out.set(this.p, 0); out.set(this.q, 3); out.set(this.v, 7); out.set(this.w, 10);
     return out;
   }
+}
+
+/** Python's round() (half to even), for integers derived from settings that must match coldgas exactly. */
+export function pyRound(x) {
+  const r = Math.round(x);
+  return r - x === 0.5 && r % 2 !== 0 ? r - 1 : r;
 }
 
 /** Solve the general 3x3 system J d = r (row-major J) by cofactors. */
