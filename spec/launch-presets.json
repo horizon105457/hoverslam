@@ -1,0 +1,13 @@
+{
+  "_doc": "Launch presets (was PRESETS in layout.js). speed km/h; angle = heading toward the deck edge (deg); spin = angular kick from the broken kerb in car axes [pitch(+nose down), yaw, roll(+right side up)] rad/s, applied over kick.dur seconds once the centre of mass passes deck.halfWidth - kick.trigger; lead = seconds from t=0 until the centre of mass is 0.9 m short of the deck edge (it reaches the edge ~0.2 s later, the kick triggers 0.6 m before the edge). joints/strength only affect the soft body.",
+  "kick": { "dur": 0.12, "trigger": 0.6 },
+  "defaults": { "lead": 0.55, "strength": 1, "joints": 1 },
+  "presets": {
+    "nose":   { "label": "车头俯冲", "speed": 72, "angle": 14, "spin": [1.6, -0.15, -0.25], "seed": 11, "joints": 0.55 },
+    "roof":   { "label": "倒扣车顶", "speed": 70, "angle": 15, "spin": [0.25, -0.25, -2.45], "seed": 12, "joints": 0.55 },
+    "side":   { "label": "侧面拍击", "speed": 66, "angle": 16, "spin": [0.1, -0.2, -1.2], "seed": 13, "joints": 0.55 },
+    "rear":   { "label": "车尾坠地", "speed": 62, "angle": 13, "spin": [-1.35, -0.1, -0.25], "seed": 14, "joints": 0.55 },
+    "corner": { "label": "角部翻滚", "speed": 78, "angle": 17, "spin": [1.05, -0.9, -1.55], "seed": 15, "joints": 0.55 },
+    "flat":   { "label": "四轮平拍", "speed": 64, "angle": 14, "spin": [0.05, 0, -0.05], "seed": 16, "joints": 0.55 }
+  }
+}

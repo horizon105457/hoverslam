@@ -1,0 +1,14 @@
+{
+  "name": "baseline-soft-landing",
+  "description": "Escape + soft landing from every launch preset: no thrust vs the pd autopilot vs MPPI (residual on pd) on the rigid twin. 3 seeds per preset (task randomisation of speed, angle and kick strength).",
+  "task": "escape-soft-landing",
+  "controllers": [
+    { "name": "zero" },
+    { "name": "pd" },
+    { "name": "mppi", "samples": 96, "horizon": 1.5, "knot": 0.15, "replan": 3, "sigma": 0.3, "plan_dt": 0.002, "base": "pd" }
+  ],
+  "presets": ["flat", "nose", "rear", "side", "roof", "corner"],
+  "seeds": { "start": 0, "count": 3 },
+  "record": "all",
+  "workers": 6
+}

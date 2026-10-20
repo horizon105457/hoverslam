@@ -1,0 +1,53 @@
+{
+  "_doc": "Cold-gas thruster kit for the MINI EV, modelled on the Tesla Roadster (2nd gen) 'Rocket' trim: 10 SpaceX-style cold-gas thrusters fed from COPV air bottles. All positions/directions are in the CAR BODY FRAME (lattice rest frame: +X right, +Y up, +Z forward, metres, origin on the ground under the car centre). Nozzle order below IS the action-vector order (index 0..9) everywhere: controllers, recordings, trajectories, UI. Thrust acts along -exhaust (the gas leaves along `exhaust`). Throat diameter is primary; thrust and mass flow are derived by the reference model in spec/README.md. `_approx` keys are informative only.",
+  "version": 1,
+  "gas": { "name": "air", "gamma": 1.4, "R": 287.05 },
+  "tank": {
+    "_doc": "Six Type-IV COPVs on one manifold, treated as a single gas volume. Polytropic blowdown p*V^n = const per unit mass with n between isothermal (1.0) and adiabatic (gamma).",
+    "p0": 30.0e6,
+    "T0": 293.15,
+    "polytropic_n": 1.25,
+    "bottles": [
+      { "id": "C1", "center": [0, 0.49, -1.30], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C2", "center": [0, 0.76, -1.30], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C3", "center": [0, 0.49, -1.04], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C4", "center": [0, 0.76, -1.04], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C5", "center": [0, 0.49, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C6", "center": [0, 0.76, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 }
+    ],
+    "_approx": { "volume_total_m3": 0.3504, "gas_mass0_kg": 124.9 }
+  },
+  "regulator": {
+    "_doc": "Feed pressure to every valve: p_c = min(p_set, p_tank - dp_min), never below ambient.",
+    "p_set": 6.0e6,
+    "dp_min": 0.3e6,
+    "manifold": [0, 0.40, -0.62]
+  },
+  "valve": {
+    "_doc": "Proportional valves. Commanded opening u_cmd in [0,1] at the control rate; actual opening follows a first-order lag; commands below `deadband` close the valve.",
+    "tau_open": 0.015,
+    "tau_close": 0.010,
+    "deadband": 0.02
+  },
+  "control": { "dt": 0.02 },
+  "nozzles": [
+    { "id": "B_FL", "group": "bottom", "label": "底部 左前", "mount": [-0.45, 0.225,  0.55], "exit": [-0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
+    { "id": "B_FR", "group": "bottom", "label": "底部 右前", "mount": [ 0.45, 0.225,  0.55], "exit": [ 0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
+    { "id": "B_RL", "group": "bottom", "label": "底部 左后", "mount": [-0.45, 0.225, -0.95], "exit": [-0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
+    { "id": "B_RR", "group": "bottom", "label": "底部 右后", "mount": [ 0.45, 0.225, -0.95], "exit": [ 0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0314, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 7000 } },
+    { "id": "R_UL", "group": "rear", "label": "尾部 左上", "mount": [-0.42, 0.80, -1.553], "exit": [-0.42, 0.80, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
+    { "id": "R_UR", "group": "rear", "label": "尾部 右上", "mount": [ 0.42, 0.80, -1.553], "exit": [ 0.42, 0.80, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
+    { "id": "R_LL", "group": "rear", "label": "尾部 左下", "mount": [-0.42, 0.40, -1.551], "exit": [-0.42, 0.40, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
+    { "id": "R_LR", "group": "rear", "label": "尾部 右下", "mount": [ 0.42, 0.40, -1.551], "exit": [ 0.42, 0.40, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
+    { "id": "S_L", "group": "side", "label": "侧面 左", "mount": [-0.737, 0.28, -0.20], "exit": [-0.79, 0.28, -0.20], "exhaust": [-1, 0, 0], "throat_diameter": 0.0205, "expansion_ratio": 8, "mass": 1.0, "_approx": { "thrust_N": 3000 } },
+    { "id": "S_R", "group": "side", "label": "侧面 右", "mount": [ 0.737, 0.28, -0.20], "exit": [ 0.79, 0.28, -0.20], "exhaust": [ 1, 0, 0], "throat_diameter": 0.0205, "expansion_ratio": 8, "mass": 1.0, "_approx": { "thrust_N": 3000 } }
+  ],
+  "hardware": [
+    { "id": "plumbing", "label": "调压阀/歧管/管路", "mass": 18, "center": [0, 0.40, -0.62] }
+  ],
+  "references": [
+    "https://techcrunch.com/2026/10/15/tesla-reveals-spacex-powered-roadster-that-flies-and-falls-with-style/",
+    "https://aviationweek.com/aerospace/emerging-technologies/tesla-demos-flying-roadster-powered-spacex-cold-gas-thrusters",
+    "https://www.explainx.ai/blog/tesla-flying-roadster-cold-gas-thrusters-how-it-works-what-was-shown-2026"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "precision-pad",
+  "version": 1,
+  "title": "定点着陆",
+  "summary": "As escape-soft-landing, and the touchdown point (centre of mass projected to the street) must be inside a landing pad painted on the street below the gap.",
+  "extends": "escape-soft-landing",
+  "pad": { "center": [-22, 0, 16], "radius": 1.5 },
+  "success": { "max_pad_distance": 1.5 },
+  "reward": { "terminal_pad_distance_per_m": -1.0 },
+  "metrics": ["pad_distance"]
+}

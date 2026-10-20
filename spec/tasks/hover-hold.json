@@ -1,0 +1,13 @@
+{
+  "id": "hover-hold",
+  "version": 1,
+  "title": "悬停保持",
+  "summary": "Benchmark / sanity task. The car starts at rest on the street, takes off, holds the target height for `hold` seconds within tolerance, then lands softly. Exercises the gas budget and regulator drop-out.",
+  "initial": { "type": "rest", "position": [-30, 0, 12], "heading_deg": 180, "randomize": { "yaw_deg": [-10, 10] } },
+  "arm": "start",
+  "horizon": 8.0,
+  "target": { "height": 2.0, "tolerance": 0.25, "hold": 2.0 },
+  "success": { "max_vertical_speed": 1.5, "max_tilt_deg": 10, "hull_strike": false },
+  "reward": { "height_error_per_m": -0.1, "tilt_per_rad_after_edge": -0.05, "gas_per_kg": -0.02, "terminal_success": 10, "terminal_hull_strike": -10, "terminal_timeout": -10 },
+  "metrics": ["success", "hold_time", "rms_height_error", "gas_used_kg", "touchdown_vertical_speed"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "ppo-hover-eval",
+  "description": "Hover-hold: no thrust vs pd vs the latest PPO policy (python -m coldgas.ppo --task hover-hold --bc-steps 204800 --log-std -2 --lr 1e-4; runs/ppo-hover-hold/latest is a symlink to the newest run). Seeds 100+ are outside the training stream.",
+  "task": "hover-hold",
+  "controllers": [
+    { "name": "zero" },
+    { "name": "pd" },
+    { "name": "mlp", "label": "ppo", "policy": "../runs/ppo-hover-hold/latest/policy.json" }
+  ],
+  "presets": null,
+  "seeds": { "start": 100, "count": 20 },
+  "record": "first",
+  "workers": 4
+}

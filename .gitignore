@@ -4,7 +4,14 @@ dist/
 renders/
 *.MOV
 *.mov
-image.png
+image*.png
 # precomputed runs: regenerate with `npm run precompute:all` (~4 min)
 public/sims/
 .DS_Store
+# experiment outputs (benchmarks, trajectories, trained policies): reproducible from configs
+experiments/runs/
+# python
+python/.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/

@@ -1,0 +1,18 @@
+{
+  "_doc": "Default settings of the shared controllers (JS src/flight/controllers, Python coldgas.controllers read this same file). A controller config {name, ...overrides} is merged over these. Changing a value changes pd trajectories: regenerate the parity goldens.",
+  "pd": {
+    "_doc": "Heuristic autopilot on the four bottom nozzles. Attitude: alpha = att_kp * e - att_kd * w (e = body-up to world-up rotation, magnitude sin(tilt), growing to 2 when inverted), torque = I alpha, min-norm allocation with non-negativity shift. Vertical: track v_ref(h) = -sqrt(td_speed^2 + 2 brake_frac a_max (h - flare_height)+) (escape) or a height hold (hover tasks); collective only while cos(tilt) > tilt_cut.",
+    "att_kp": 30.0,
+    "att_kd": 9.0,
+    "td_speed": 0.8,
+    "flare_height": 0.5,
+    "brake_frac": 0.6,
+    "kv": 8.0,
+    "tilt_cut": 0.5,
+    "hover_kh": 1.5,
+    "hover_vmax": 2.0
+  },
+  "zero": {},
+  "replay": {},
+  "mlp": {}
+}

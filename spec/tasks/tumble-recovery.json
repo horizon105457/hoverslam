@@ -1,0 +1,11 @@
+{
+  "id": "tumble-recovery",
+  "version": 1,
+  "title": "翻滚改出",
+  "summary": "Hard spin presets only. The car must be upright (tilt below the limit, angular rate below the limit) before its centre of mass drops below `recover_by_height`, then land as in escape-soft-landing.",
+  "extends": "escape-soft-landing",
+  "initial": { "type": "launch", "presets": ["roof", "corner", "side"], "randomize": { "speed_kmh": [-4, 4], "angle_deg": [-1, 1], "spin_scale": [1.0, 1.35] } },
+  "recover_by_height": 2.5,
+  "success": { "recover_tilt_deg": 15, "recover_angular_rate": 1.5 },
+  "metrics": ["recovered", "recover_time", "recover_height"]
+}

@@ -1,0 +1,54 @@
+{
+  "_doc": "Rigid-body (flight twin) model of the MINI EV. Mass properties of the bare car come from the soft-body lattice (generated/vehicle-massprops.json); the propulsion kit (propulsion.json: bottles, nozzles, hardware) and the gas are added on top at run time. Contact and aero parameters below are the twin's own (the soft body has its own physics). Body frame as in propulsion.json.",
+  "version": 1,
+  "wheels": {
+    "_doc": "Wheel centres/radius come from generated/vehicle-massprops.json `wheels`. Each wheel: vertical suspension spring-damper with travel limits, tyre point contact at the bottom of the wheel, rolls freely along its heading (rolling resistance crr), friction mu across.",
+    "spring_k": 30000,
+    "damper_c": 2600,
+    "travel": 0.11,
+    "bump_k": 400000,
+    "tyre_mu": 1.0,
+    "crr": 0.015
+  },
+  "hull": {
+    "_doc": "Penalty contact points on the body shell (car body frame). Contact of any of these with the ground or a collider counts as a hull strike (crash) for the tasks.",
+    "points": [
+      [-0.76, 0.2, 1.6], [0.76, 0.2, 1.6], [-0.76, 0.2, -1.6], [0.76, 0.2, -1.6],
+      [-0.7, 1.68, 0.45], [0.7, 1.68, 0.45], [-0.7, 1.68, -1.4], [0.7, 1.68, -1.4],
+      [-0.79, 0.8, 1.55], [0.79, 0.8, 1.55], [-0.79, 0.8, -1.6], [0.79, 0.8, -1.6],
+      [-0.79, 0.8, -0.2], [0.79, 0.8, -0.2], [-0.7, 1.1, 1.55], [0.7, 1.1, 1.55],
+      [-0.7, 1.35, -1.55], [0.7, 1.35, -1.55], [0, 1.7, -0.4], [0, 0.2, -0.2]
+    ],
+    "k": 400000,
+    "c": 9000,
+    "mu": 0.55
+  },
+  "aero": {
+    "_doc": "Quadratic drag per body axis: F_i = -0.5 * rho * CdA_i * |v_i| * v_i with v in body axes (x right, y up, z forward).",
+    "CdA": [2.6, 3.3, 0.75]
+  },
+  "integrator": {
+    "_doc": "Both twins must use exactly this fixed step; see spec/README.md for the update order.",
+    "dt": 0.001
+  },
+  "twin": {
+    "_doc": "Structural constants of the rigid flight twin (not vehicle facts). Semantics in spec/README.md section 5. Changing anything here changes trajectories: bump `model` and regenerate the parity goldens (npm run flight:goldens).",
+    "model": "coldgas-rigid@1",
+    "contact": {
+      "_doc": "v_reg: friction regularisation speed (m/s): Coulomb friction mu*N*v/max(|v|, v_reg), so resting contacts neither creep nor chatter. wheel_min_h: a wheel takes load only while its axle is within acos(wheel_min_h) of horizontal (car on its side -> hull points). street_top_max: boxes whose top is below this height are street (touchdown surfaces).",
+      "v_reg": 0.1,
+      "wheel_min_h": 0.5,
+      "street_top_max": 1.0
+    },
+    "placement": {
+      "_doc": "Static suspension equilibrium at launch / rest: fixed-iteration Newton on (COM height, tilt about world x, tilt about world z) with forward-difference Jacobian.",
+      "iterations": 30,
+      "fd_step": 1e-07
+    },
+    "limits": {
+      "_doc": "Episode safety net: below floor_y or beyond max_range (horizontal distance of the COM from the launch point) the episode ends as out_of_bounds.",
+      "floor_y": -2.0,
+      "max_range": 400
+    }
+  }
+}

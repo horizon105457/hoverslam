@@ -8,8 +8,15 @@ import { Matrix4, Vector3 } from 'three';
 
 // STRUCT/SPOKE: rigid-plastic lattice beams; `fy` holds the yield strain, `tear` the rupture plastic strain.
 // WELD/JOINT/SUSP: compliant connectors that snap once stretched by more than `tear` metres.
-// SPRING: suspension coil-over, soft within +-tear metres of travel, rigid bump/rebound stop beyond.
+// SPRING: suspension coil-over, soft within +-tear metres of travel, rigid bump/rebound stop beyond (snaps beyond
+// `fy` newtons); with a levelled suspension (CrashSim `level`) preloaded and with the SPRING.bump / rebound stops.
 export const BEAM = { STRUCT: 0, WELD: 1, JOINT: 2, SPOKE: 3, SUSP: 4, SPRING: 5 };
+// Coil-overs, two per wheel (one per axle node); travel and stops measured along the spring from its modelled
+// length. Unloaded springs let the car sag 5-11 cm, but the GLB is modelled at ride height with only 29 mm (rear)
+// / 34 mm (front) between tyres and arch lips: at rest the tyres sit inside the arches. The levelled suspension
+// (opt-in, CrashSim `level`) preloads the springs to hold that height under the static load and stops the bump
+// about where a tyre meets its arch (springs lean 30-40 deg: wheel travel ~ spring / 0.82), see levelSprings.
+export const SPRING = { k: 14e3, travel: 0.11, bump: 0.03, rebound: 0.02, breakF: 20e3 };
 const JOINT_GIVE = 0.007; // m of (low-passed) stretch at which a bolt / hinge / clip lets go
 
 // Piece table. mass in kg, ey = yield strain of the lattice beams, tear = plastic strain at rupture,
@@ -543,7 +550,7 @@ export function buildCar(meshes, { h = 0.065, seed = 7 } = {}) {
         if (nb.length) { addBeam(a, nb[0][0], 14e3, 0.009, BEAM.SUSP, 0.009 / 14e3); mounts.add(nb[0][0]); }
       }
       const top = nearby(ax - side * 0.22, cy + 0.36, cz, 0.3, isBody);
-      if (top.length) { addBeam(a, top[0][0], 20e3, 0.11, BEAM.SPRING, 1 / 14e3); mounts.add(top[0][0]); }
+      if (top.length) { addBeam(a, top[0][0], SPRING.breakF, SPRING.travel, BEAM.SPRING, 1 / SPRING.k); mounts.add(top[0][0]); }
     }
   }
 

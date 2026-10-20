@@ -1,0 +1,10 @@
+{
+  "name": "pd-precision-pad",
+  "description": "precision-pad: no thrust vs the pd autopilot, presets drawn by the task from the seed (12 seeds).",
+  "task": "precision-pad",
+  "controllers": [{ "name": "zero" }, { "name": "pd" }],
+  "presets": null,
+  "seeds": { "start": 0, "count": 12 },
+  "record": "first",
+  "workers": 4
+}

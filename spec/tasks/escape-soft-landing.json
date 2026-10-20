@@ -1,0 +1,32 @@
+{
+  "id": "escape-soft-landing",
+  "version": 1,
+  "title": "高架逃逸 · 软着陆",
+  "summary": "The car leaves the viaduct through the parapet gap with a launch preset (incl. the kerb kick). Use the thrusters to arrive on the street on all four wheels, slowly and level, without a hull strike.",
+  "initial": {
+    "type": "launch",
+    "presets": ["flat", "nose", "rear", "side", "roof", "corner"],
+    "randomize": { "speed_kmh": [-6, 6], "angle_deg": [-2, 2], "spin_scale": [0.8, 1.2] }
+  },
+  "arm": "edge",
+  "horizon": 6.0,
+  "touchdown": "first contact of any wheel or hull point with the street (y < 1 m collider or the ground plane) after leaving the deck",
+  "success": {
+    "max_vertical_speed": 2.0,
+    "max_tilt_deg": 12,
+    "max_angular_rate": 1.0,
+    "hull_strike": false,
+    "upright_hold": 1.0
+  },
+  "reward": {
+    "_doc": "Per control step unless marked terminal (spec/README.md section 8). terminal_timeout applies when the horizon ends before a landing (or the car leaves the play area), so hovering until the clock runs out is not a strategy. Implementations must match exactly (parity-tested).",
+    "gas_per_kg": -0.02,
+    "tilt_per_rad_after_edge": -0.05,
+    "terminal_success": 10,
+    "terminal_hull_strike": -10,
+    "terminal_vertical_speed_per_mps": -1.0,
+    "terminal_tilt_per_rad": -2.0,
+    "terminal_timeout": -10
+  },
+  "metrics": ["success", "touchdown_vertical_speed", "touchdown_horizontal_speed", "touchdown_tilt_deg", "touchdown_angular_rate", "peak_accel_g", "hull_strike", "gas_used_kg", "landing_point"]
+}

@@ -1,0 +1,58 @@
+// Thrust-assisted escape on the soft body: a launch preset with the cold-gas kit, closed loop through a
+// Controller, written as public/sims/flight-<out>.sim (recording + meta.propulsion log + meta.flight summary).
+// usage: node tools/sim/flight.mjs preset=flat controller=ap out=soft [dur=6 hz=100 task=escape-soft-landing
+//        armDelay=0 seed= speed= spinScale=1 gas=1 logHz=100 level=0]
+//   controller: ap | ap:{gains} | zero | pd | pd:{json} | replay:<traj.json> | mlp:<policy.json> | {json config}
+//               (src/programs/flight/controllers.js; all but ap come from the flight-twin registry)
+//   level=1: levelled suspension + free-spinning wheels (CrashSim `level`, opt-in model update; settles itself)
+//   replay: the launch (preset, speed, angle, spin, lead) is taken from the trajectory's `init` so the open-loop
+//           commands meet the same initial condition the twin saw (preset= is then ignored)
+import fs from 'fs';
+import { loadCarNode } from '../lib/car.mjs';
+import { parseArgs } from '../lib/args.mjs';
+import { readSettled, writeSim } from '../lib/sims.mjs';
+import { repo } from '../lib/paths.mjs';
+import { CrashSim } from '../../src/softbody/solver.js';
+import { RecordingEncoder, finalMeta } from '../../src/softbody/recording.js';
+import { ThrusterRig } from '../../src/softbody/actuators.js';
+import { makeController } from '../../src/programs/flight/controllers.js';
+import { PRESETS } from '../../src/scene/layout.js';
+import { TASKS } from '../../src/core/spec.js';
+
+const args = parseArgs();
+const ctlSpec = args.controller || 'ap';
+const load = async p => JSON.parse(fs.readFileSync(p.startsWith('/') && !fs.existsSync(p) ? repo(p) : p, 'utf8'));
+const { controller, traj } = await makeController(ctlSpec, { load });
+const init = traj?.init?.type === 'launch' ? traj.init : null;
+const preset = init?.preset || args.preset || 'flat', P = PRESETS[preset];
+if (!P) throw new Error(`unknown preset ${preset}`);
+const name = `flight-${args.out || `${preset}-${ctlSpec.split(/[:{]/)[0]}`}`;
+const task = TASKS[args.task || (typeof traj?.task === 'string' ? traj.task : null) || 'escape-soft-landing'];
+const car = await loadCarNode({ h: 0.065 });
+const settled = readSettled('public/assets/settled-coldgas.bin', car);
+const spinScale = +(args.spinScale || 1);
+const sc = {
+  ...P, spin: P.spin.map(s => s * spinScale), ...(args.speed ? { speed: +args.speed } : {}), ...(args.seed ? { seed: +args.seed } : {}),
+  ...(init ? { speed: init.speed, angle: init.angle, spin: init.spin, lead: init.lead ?? P.lead } : {}),
+  strength: +(args.s || P.strength || 1), joints: +(args.j || P.joints || 1), recordHz: +(args.hz || 100), duration: +(args.dur || 6),
+  ...(+args.level ? { level: true } : {}),
+};
+const sim = new CrashSim(car, sc);
+const rig = new ThrusterRig(car, { controller, controllerName: controller.name || ctlSpec, task, armDelay: +(args.armDelay || 0), logHz: +(args.logHz || 100), seed: sc.seed });
+rig.attach(sim);
+if (args.gas) { rig.prop.m = rig.prop.m0 * +args.gas; rig.prop.step(new Float64Array(10), 0); rig.applyMass(sim, +args.gas); } // partly filled tank
+sim.setup(sc.level ? null : settled); // the cached pose is the unlevelled one
+const enc = new RecordingEncoder(car);
+const frames = [];
+let k = 0;
+const t0 = Date.now();
+frames.push(enc.encode(sim, true));
+sim.run(sc.duration, s => {
+  k++; frames.push(enc.encode(s, k % 4 === 0));
+  if (k % 25 === 0) process.stdout.write(`\r${name} t=${s.time.toFixed(2)} y=${rig.state.p[1].toFixed(2)} vy=${rig.state.v[1].toFixed(2)} tilt=${(rig.state.tilt * 57.3 || 0).toFixed(1)} gas=${rig.prop.m.toFixed(1)} ${rig.state.phase} ${((Date.now() - t0) / 1000).toFixed(0)}s   `);
+});
+const flight = { ...rig.summary(sim), preset, spinScale, init: init || null, replayOf: traj ? { file: ctlSpec.slice(7), producer: traj.producer, controller: traj.controller, seed: traj.seed, metrics: traj.metrics } : null, computeSeconds: (Date.now() - t0) / 1000, settled: sc.level ? 'levelled (own settle)' : 'settled-coldgas.bin' };
+const meta = finalMeta(sim, enc, { name, label: `${P.label} · ${flight.controller}`, propulsion: rig.propulsionLog(), flight });
+const size = writeSim(name, meta, frames);
+console.log(`\n${name}: ${frames.length} frames gz ${(size.gz / 1e6).toFixed(1)} MB in ${flight.computeSeconds.toFixed(0)} s`);
+console.log(JSON.stringify({ metrics: flight.metrics, damage: flight.damage, events: flight.events.map(e => `${e.type}@${e.t.toFixed(2)}`) }, null, 1));

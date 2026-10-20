@@ -1,0 +1,23 @@
+{
+  "_doc": "Parity scenarios run by both twins (python -m coldgas.parity make|check, node tests/parity/make.mjs|check.mjs). init: RigidTwin.reset() init (no task, arm 'start', fixed duration) or task + seed (+ preset) through the task tracker. controller 'random' = mulberry32(seed) valve sequence: per control step and nozzle, a = r(); u = a < p_on ? r() : 0. Checkers replay the golden's u_cmd for 'random', and run the controller itself otherwise.",
+  "scenarios": [
+    { "id": "free-tumble-random", "init": { "type": "state", "p": [0, 150, 0], "q": [0.3, -0.2, 0.5, 0.787400787], "v": [5, 2, -3], "w": [1.2, -0.7, 2.1] }, "controller": { "name": "random", "seed": 11, "p_on": 0.5 }, "duration": 3.0 },
+    { "id": "free-coast-spin", "init": { "type": "state", "p": [0, 150, 0], "q": [0, 0, 0, 1], "v": [0, 0, 0], "w": [0.5, 3.0, 1.5] }, "controller": "zero", "duration": 4.0 },
+    { "id": "free-blowdown", "init": { "type": "state", "p": [0, 150, 0], "q": [0, 0, 0, 1], "v": [0, 0, 0], "w": [0, 0, 0] }, "controller": { "name": "random", "seed": 5, "p_on": 1.0 }, "duration": 2.5 },
+    { "id": "launch-flat", "task": "escape-soft-landing", "preset": "flat", "seed": 3, "controller": "zero" },
+    { "id": "launch-nose", "task": "escape-soft-landing", "preset": "nose", "seed": 3, "controller": "zero" },
+    { "id": "launch-rear", "task": "escape-soft-landing", "preset": "rear", "seed": 3, "controller": "zero" },
+    { "id": "launch-side", "task": "escape-soft-landing", "preset": "side", "seed": 3, "controller": "zero" },
+    { "id": "launch-roof", "task": "escape-soft-landing", "preset": "roof", "seed": 3, "controller": "zero" },
+    { "id": "launch-corner", "task": "escape-soft-landing", "preset": "corner", "seed": 3, "controller": "zero" },
+    { "id": "launch-corner-random", "task": "escape-soft-landing", "preset": "corner", "seed": 4, "controller": { "name": "random", "seed": 21, "p_on": 0.4 } },
+    { "id": "land-wheels", "init": { "type": "state", "p": [-20, 1.6, 10], "q": [0, 0.3826834324, 0, 0.9238795325], "v": [-4, -3, 1], "w": [0, 0, 0] }, "controller": "zero", "duration": 3.0 },
+    { "id": "land-hull", "init": { "type": "state", "p": [-20, 2.2, 10], "q": [0, 0, 0.5735764364, 0.8191520443], "v": [2, -2, 0], "w": [0.3, 0, 0.6] }, "controller": "zero", "duration": 2.5 },
+    { "id": "rest-parked", "init": { "type": "rest", "x": -30, "z": 12, "heading_deg": 183 }, "controller": "zero", "duration": 3.0 },
+    { "id": "hover-pd", "task": "hover-hold", "seed": 2, "controller": "pd" },
+    { "id": "escape-pd-nose", "task": "escape-soft-landing", "preset": "nose", "seed": 5, "controller": "pd" },
+    { "id": "escape-pd-roof", "task": "escape-soft-landing", "preset": "roof", "seed": 6, "controller": "pd" },
+    { "id": "pad-pd", "task": "precision-pad", "seed": 7, "controller": "pd" },
+    { "id": "tumble-pd", "task": "tumble-recovery", "seed": 8, "controller": "pd" }
+  ]
+}

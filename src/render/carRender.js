@@ -110,7 +110,8 @@ function patchMaterial(mat, uniforms, kind) {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = GLSL_COMMON + shader.vertexShader
       .replace('#include <beginnormal_vertex>', `${GLSL_DEFORM}\n  vec3 objectNormal = normalize(cofF * normal);\n#ifdef USE_TANGENT\n  vec3 objectTangent = vec3( tangent.xyz );\n#endif`)
-      .replace('#include <begin_vertex>', 'vec3 transformed = defPos;');
+      .replace('#include <begin_vertex>', 'vec3 transformed = defPos;')
+      .replace('#include <shadowmap_vertex>', SHADOW_VERTEX);
     let fs = GLSL_FRAG_COMMON + shader.fragmentShader;
     fs = fs.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n  if (vHide > 0.02) discard;');
     // damage: crumple + scraped finish
@@ -226,6 +227,67 @@ function alignWinding(P, N, index, i0, i1, vo) {
   }
 }
 
+// The source normals are also broken along most panel edges (door, bumper, hood and lamp borders): the last
+// row of outer-skin vertices carries the normal of the hem behind it, pointing into the car, so a triangle
+// interpolates between opposite normals and alignWinding flips it or not depending on which corners won. The
+// edge strips then shaded alternately light and dark: sawtooth / dotted lines along every seam. A corner whose
+// normal is more than 60 deg off its own (orientation-corrected) face gets a split vertex with the average of
+// those faces' normals instead (per vertex and dominant face direction, so the strip stays smooth).
+const BAD_CORNER = 0.5; // cos 60 deg
+function repairNormals(m) {
+  const P = m.pos, N = m.nrm, I = m.index, nv = P.length / 3;
+  const fixes = [], acc = new Map();
+  for (let i = 0; i < I.length; i += 3) {
+    const a = I[i] * 3, b = I[i + 1] * 3, c = I[i + 2] * 3;
+    const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2];
+    const vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+    let gx = uy * vz - uz * vy, gy = uz * vx - ux * vz, gz = ux * vy - uy * vx;
+    const l = Math.hypot(gx, gy, gz);
+    if (l < 1e-14) continue;
+    gx /= l; gy /= l; gz /= l;
+    const d0 = gx * N[a] + gy * N[a + 1] + gz * N[a + 2], d1 = gx * N[b] + gy * N[b + 1] + gz * N[b + 2], d2 = gx * N[c] + gy * N[c + 1] + gz * N[c + 2];
+    // face orientation from the corners that do lie along the face normal (all three if none does)
+    let s = 0, any = false;
+    for (const d of [d0, d1, d2]) if (d >= BAD_CORNER || d <= -BAD_CORNER) { s += d; any = true; }
+    if (!any) s = d0 + d1 + d2;
+    const o = s < 0 ? -1 : 1;
+    if (d0 * o >= BAD_CORNER && d1 * o >= BAD_CORNER && d2 * o >= BAD_CORNER) continue;
+    gx *= o; gy *= o; gz *= o;
+    const ax = Math.abs(gx), ay = Math.abs(gy), az = Math.abs(gz);
+    const dir = ax >= ay && ax >= az ? (gx > 0 ? 0 : 1) : ay >= az ? (gy > 0 ? 2 : 3) : (gz > 0 ? 4 : 5);
+    [d0, d1, d2].forEach((d, k) => {
+      if (d * o >= BAD_CORNER) return;
+      const key = I[i + k] * 6 + dir;
+      let e = acc.get(key);
+      if (!e) acc.set(key, (e = [I[i + k], 0, 0, 0, nv + acc.size]));
+      e[1] += gx * l; e[2] += gy * l; e[3] += gz * l; // area weighted
+      fixes.push(i + k, key);
+    });
+  }
+  if (!fixes.length) return m;
+  const n2 = nv + acc.size;
+  const pos = new Float32Array(n2 * 3), nrm = new Float32Array(n2 * 3), aTet = new Float32Array(n2), aBary = new Float32Array(n2 * 3);
+  pos.set(P); nrm.set(N); aTet.set(m.aTet); aBary.set(m.aBary);
+  for (const [src, x, y, z, v] of acc.values()) {
+    const l = Math.hypot(x, y, z) || 1;
+    for (let k = 0; k < 3; k++) { pos[v * 3 + k] = P[src * 3 + k]; aBary[v * 3 + k] = m.aBary[src * 3 + k]; }
+    nrm[v * 3] = x / l; nrm[v * 3 + 1] = y / l; nrm[v * 3 + 2] = z / l;
+    aTet[v] = m.aTet[src];
+  }
+  const index = Uint32Array.from(I);
+  for (let f = 0; f < fixes.length; f += 2) index[fixes[f]] = acc.get(fixes[f + 1])[4];
+  return { pos, nrm, aTet, aBary, index };
+}
+
+// Shadow lookups are offset along the vertex normal (normalBias) to avoid acne. Many panels' normals point
+// into the car (their shading is fine: every material is double-sided), which pushed the lookup inside the
+// body: sunlit hatch, bumpers, hood and roof shadowed themselves in fine diagonal stripes. Offset towards the
+// sun instead (minus the depth gradient of the shadow matrix): a sunlit side is always the one facing it.
+const SHADOW_VERTEX = THREE.ShaderChunk.shadowmap_vertex.replace(
+  'shadowWorldNormal * directionalLightShadows[ i ].shadowNormalBias',
+  'shadowWorldNormal * ( dot( shadowWorldNormal, vec3( directionalShadowMatrix[ i ][ 0 ][ 2 ], directionalShadowMatrix[ i ][ 1 ][ 2 ], directionalShadowMatrix[ i ][ 2 ][ 2 ] ) ) > 0.0 ? - 1.0 : 1.0 ) * directionalLightShadows[ i ].shadowNormalBias');
+if (SHADOW_VERTEX === THREE.ShaderChunk.shadowmap_vertex) console.warn('carRender: shadowmap_vertex changed, sun-facing normal bias not applied');
+
 function materialKind(mat) {
   const n = mat.name || '';
   if (/^Glass|clear cover|optical clear|Optics/.test(n) || mat.transmission > 0.3) return 'glass';
@@ -275,7 +337,8 @@ export class CarRenderer {
       byMat.get(mat).push(m);
     }
     this.materials = [];
-    for (const [srcMat, list] of byMat) {
+    for (const [srcMat, raw] of byMat) {
+      const list = raw.map(m => ({ ...repairNormals(m), group: m.group }));
       let nv = 0, ni = 0;
       for (const m of list) { nv += m.pos.length / 3; ni += m.index.length; }
       const pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3), tet = new Float32Array(nv), bar = new Float32Array(nv * 3), grp = new Float32Array(nv);
@@ -327,6 +390,9 @@ export class CarRenderer {
    */
   attachGTAO(gtao) {
     const mat = gtao.normalMaterial.clone();
+    // double-sided: some panels (hatch, rear bumper) are wound inward after alignWinding; a front-sided normal
+    // pass dropped them from the AO buffer and the AO of whatever lies behind showed through the panel
+    mat.side = THREE.DoubleSide;
     mat.onBeforeCompile = shader => {
       Object.assign(shader.uniforms, this.uniforms);
       shader.vertexShader = GLSL_COMMON + shader.vertexShader

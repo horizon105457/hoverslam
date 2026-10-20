@@ -1,0 +1,28 @@
+{
+  "_doc": "Viaduct set dimensions (metres, +Y up). Source of truth for src/scene/layout.js and both flight twins. Colliders derived from this are written to generated/colliders.json by `npm run spec`.",
+  "deck": {
+    "top": 9.2,
+    "halfWidth": 8.6,
+    "slab": 0.32,
+    "girderDepth": 2.1,
+    "boxHalf": 3.6,
+    "x0": -260,
+    "x1": 260,
+    "parapetH": 1.05,
+    "parapetW": 0.5,
+    "gap": [-7, 9]
+  },
+  "piers": { "spacing": 32, "offset": 6, "w": 1.8, "d": 2.4, "z": 0 },
+  "ground": {
+    "roadHalf": [-17, 26],
+    "curbH": 0.16,
+    "sidewalk": [26, 30.5],
+    "greenBelt": [30.5, 37],
+    "sidewalkN": [-21.5, -17],
+    "greenBeltN": [-28, -21.5],
+    "cross": [-64, -16],
+    "medianHalf": 1.1
+  },
+  "gravity": 9.81,
+  "air": { "density": 1.204, "pressure": 101325 }
+}

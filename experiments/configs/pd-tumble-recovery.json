@@ -1,0 +1,10 @@
+{
+  "name": "pd-tumble-recovery",
+  "description": "tumble-recovery: no thrust vs the pd autopilot, presets drawn by the task from the seed (12 seeds).",
+  "task": "tumble-recovery",
+  "controllers": [{ "name": "zero" }, { "name": "pd" }],
+  "presets": null,
+  "seeds": { "start": 0, "count": 12 },
+  "record": "first",
+  "workers": 4
+}
