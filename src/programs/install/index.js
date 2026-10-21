@@ -6,6 +6,7 @@
 // size comes from spec/propulsion.json; thrust numbers from the reference propulsion model.
 //
 // Film: `film.render(T)` is a pure function of film time T (choreo.js); realtime playback uses the same pose.
+// Params: T=<film s> (start time), paused, nohud (no HUD / labels: clean plates for a compositor, 直到用计算机模拟 00 B3).
 import * as THREE from 'three';
 import { Program } from '../../app/program.js';
 import { Transport } from '../../app/transport.js';

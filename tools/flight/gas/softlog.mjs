@@ -1,13 +1,15 @@
 // Telemetry of a soft-body flight recording for film overlays (gas gauge, thrust bars): the thrust log meta.propulsion
 // resampled at `fps` from t0, plus the landing summary. Columns: t (sim s), y (world height of the body origin, m; at rest
 // on the street ≈ 0.56), vy (vertical speed, m/s, + up), Fb (bottom group thrust, N), F (all nozzles, N), gas (kg used
-// since t = 0), tank (kg left), valve_bottom (largest bottom opening 0..1).
-// usage: node tools/flight/gas/softlog.mjs public/sims/flight-<run>.sim out=<file.json> [fps=30 t0=0 t1=end]
+// since t = 0), tank (kg left), valve_bottom (largest bottom opening 0..1); valves=1 adds valve (the 10 openings 0..1)
+// and thrust (the 10 nozzle thrusts, N), in spec/propulsion.json nozzle order (B_FL B_FR B_RL B_RR, R_*, S_L S_R).
+// usage: node tools/flight/gas/softlog.mjs public/sims/flight-<run>.sim out=<file.json> [fps=30 t0=0 t1=end valves=1]
 import fs from 'fs';
 import zlib from 'zlib';
 import { parseArgs } from '../../lib/args.mjs';
 import { unpackRecording } from '../../../src/softbody/recording.js';
 import { GROUPS, NU } from '../../../src/flight/contract.js';
+import { PROPULSION } from '../../../src/core/spec.js';
 
 const a = parseArgs(), file = Object.keys(a).find(k => a[k] === true && k.endsWith('.sim'));
 if (!file || !a.out) throw new Error('usage: node tools/flight/gas/softlog.mjs <flight-*.sim> out=<json> [fps=30 t0=0 t1=end]');
@@ -27,8 +29,9 @@ for (let t = t0; t <= t1 + 1e-9; t += 1 / fps) rows.push({
   Fb: Math.round(at(L.thrust, t, r => sum(r, GROUPS.bottom))), F: Math.round(at(L.thrust, t, r => sum(r, all))),
   gas: +(L.tank[0][0] - at(L.tank, t, r => r[0])).toFixed(2), tank: +at(L.tank, t, r => r[0]).toFixed(2),
   valve_bottom: +at(L.valve, t, r => Math.max(...GROUPS.bottom.map(i => r[i]))).toFixed(3),
+  ...(a.valves ? { valve: all.map(i => +at(L.valve, t, r => r[i]).toFixed(3)), thrust: all.map(i => Math.round(at(L.thrust, t, r => r[i]))) } : {}),
 });
-const out = { format: 'fall-telemetry@1', source: file, fps, t0, controller: meta.flight.controller, controllerConfig: meta.flight.controllerConfig ?? null,
+const out = { format: 'fall-telemetry@1', source: file, fps, t0, ...(a.valves ? { nozzles: PROPULSION.nozzles.map(n => n.id) } : {}), controller: meta.flight.controller, controllerConfig: meta.flight.controllerConfig ?? null,
   metrics: meta.flight.metrics, events: meta.flight.events, gas0: L.tank[0][0], rows };
 fs.writeFileSync(a.out, JSON.stringify(out));
 console.log(`${rows.length} rows -> ${a.out} (gas ${meta.flight.metrics.gas_used_kg.toFixed(1)} kg, touchdown ${meta.flight.metrics.touchdown_t?.toFixed(2)} s)`);

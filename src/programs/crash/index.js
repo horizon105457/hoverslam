@@ -1,5 +1,6 @@
 // Crash viewer (program "crash", the default): precomputed or live soft-body runs of the six launch presets,
 // with the director edit, free / follow cameras, HUD, procedural audio and offline film export.
+// Params: preset=roof|nose|side|rear|corner|flat, mode=director|free|follow, T=<film s>, paused, kiosk.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Program } from '../../app/program.js';
