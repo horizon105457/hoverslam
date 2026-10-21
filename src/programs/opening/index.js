@@ -1,6 +1,6 @@
 // Opening film shots (program "opening"): pick one with ?shot=<id>. Each shot is a self-contained film
 // (`film = {total, render(T), describe()}`) rendered with tools/film/film.mjs:
-//   node tools/film/film.mjs program=opening q=shot=ghosts out=../renders/ghosts.mp4 port=5176
+//   node tools/film/film.mjs program=opening q=shot=ghosts port=<p> out=renders/ghosts.mp4   (film: 直到用计算机模拟 段落/00_开头)
 //   ghosts  hundreds of rigid-twin launches off the viaduct at once, drawn as translucent ghosts + trails
 // Look-dev: devcam=px,py,pz,tx,ty,tz[,fov] fixes the camera (world coordinates), devt=<sim s> fixes sim time.
 import { Program } from '../../app/program.js';

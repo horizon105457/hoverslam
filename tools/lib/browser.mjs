@@ -1,6 +1,6 @@
 // Headless Chrome (system install, GPU) pointed at the running dev server.
 // Base URL: `url=` argument, else $APP_URL, else http://127.0.0.1:$PORT (default 5173). Several dev servers
-// can run side by side (`npx vite --port 5174`): pass port=5174 to the tools.
+// can run side by side (`FREEZE=1 npm run dev -- --port 5177`): pass port=5177 to the tools.
 import { chromium } from 'playwright-core';
 
 export function appBase(args = {}) {
