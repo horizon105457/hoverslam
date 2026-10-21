@@ -245,20 +245,19 @@ export default class ValvesProgram extends SlamProgram {
     return { t: this.tF, pos, tgt: focus, focus, fov, aperture: 0.002, shake: 0, roll: 0 };
   }
 
-  /** After the cut: on the street ahead of the landing spot, looking back up at the edge (the drop comes at the lens),
-   *  then tilting down with the ghost and pushing in so that it lands big in frame.
-   *  dc0 (wide, at the cut) = ahead, lateral (outer side), height, focus blend (0 landing spot .. 1 the car), fov;
-   *  dc1 (close, at the touchdown) = ahead, lateral, height, focus lift over the ghost's centre, fov. */
+  /** After the cut: on the street ahead of the landing spot, looking back up at the edge. It opens on a long lens on the
+   *  car (the ghost about to leave it fills a good part of the frame), tracks the ghost down a beat behind it (it leads
+   *  downwards in frame) and pushes in while the lens widens, so that it lands big in frame.
+   *  dc0 (at the cut) = ahead, lateral (outer side), height, fov; dc1 (at the touchdown) = ahead, lateral, height,
+   *  focus lift over the ghost's centre, fov; lag = how far (s) the tracking runs behind the ghost. */
   dropCam(T) {
-    const a = (P.get('dc0') || '15,1.5,1.8,0.24,39').split(',').map(Number), b = (P.get('dc1') || '8.2,1.1,1.45,0.12,33').split(',').map(Number);
+    const a = (P.get('dc0') || '15,1.5,1.8,21').split(',').map(Number), b = (P.get('dc1') || '8.2,1.1,1.45,0.12,33').split(',').map(Number);
     const L = this.dropP1, side = v3(this.fwd.z, 0, -this.fwd.x);
-    const u = smooth(rng(T, TL.cut + num('dcp0', 0.3), TL.drop[1] + num('dcp1', 0.25)));   // push in
-    const w = smooth(rng(T, TL.cut + num('dcf0', 0.2), TL.cut + num('dcf1', 1.5)));        // focus over to the ghost
+    const u = smooth(rng(T, TL.cut + num('dcp0', 0.25), TL.drop[1] + num('dcp1', 0.25)));   // push in, lens widening
     const lerp = (x, y) => x + (y - x) * u;
     const pos = L.clone().addScaledVector(this.fwd, lerp(a[0], b[0])).addScaledVector(side, lerp(a[1], b[1])); pos.y = lerp(a[2], b[2]);
-    const D = this.dropAt(T), gc = v3(0, 0.62 + b[3], 0).applyQuaternion(D.q).add(D.pos);
-    const focus = L.clone().add(v3(0, 0.6, 0)).lerp(this.A, a[3]).lerp(gc, w);
-    return { t: this.tF, pos, tgt: focus, focus, fov: lerp(a[4], b[4]), aperture: 0.002, shake: 0, roll: 0 };
+    const D = this.dropAt(T - num('lag', 0.14)), gc = v3(0, 0.62 + b[3] * u, 0).applyQuaternion(D.q).add(D.pos);
+    return { t: this.tF, pos, tgt: gc, focus: gc, fov: lerp(a[3], b[4]), aperture: 0.002, shake: 0, roll: 0 };
   }
 
   pose(T) {
