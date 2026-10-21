@@ -2,26 +2,98 @@
   "_doc": "Rigid-body (flight twin) model of the MINI EV. Mass properties of the bare car come from the soft-body lattice (generated/vehicle-massprops.json); the propulsion kit (propulsion.json: bottles, nozzles, hardware) and the gas are added on top at run time. Contact and aero parameters below are the twin's own (the soft body has its own physics). Body frame as in propulsion.json.",
   "version": 1,
   "wheels": {
-    "_doc": "Wheel centres/radius come from generated/vehicle-massprops.json `wheels`. Each wheel: vertical suspension spring-damper with travel limits, tyre point contact at the bottom of the wheel, rolls freely along its heading (rolling resistance crr), friction mu across.",
-    "spring_k": 30000,
-    "damper_c": 2600,
-    "travel": 0.11,
-    "bump_k": 400000,
-    "tyre_mu": 1.0,
-    "crr": 0.015
+    "_doc": "Wheel centres/radius come from generated/vehicle-massprops.json `wheels`. Each wheel: vertical suspension spring-damper with travel limits, tyre point contact at the bottom of the wheel, rolls freely along its heading (rolling resistance crr), friction mu across. Every value here except toe may be a number (all four wheels) or [front, rear] (front = wheels whose centre has z > 0). Past `travel` the bump stop adds bump_k*e + bump_k2*e^2 - bump_c*v_y (e = compression beyond travel, v_y = vertical tyre-point velocity); bump_c = bump_k2 = 0 is the v1 model. toe: static toe per wheel [FL, FR, RL, RR] (massprops wheel order), rad, + = front edge of the wheel turned to the car's right (the tyre's rolling / lateral axes turn by it about the vertical). toe_compliance (rad/N, number or [front, rear]): compliance steer delta_c = -toe_compliance * F_lat of that wheel in the previous integrator step (F_lat in tyre axes, + = towards the wheel's right), so positive compliance steers the wheel to reduce its lateral force (understeer on the front axle, oversteer on the rear). toe = 0 and toe_compliance = 0 are the v1 model (spec/README.md 5.5, 5.11).",
+    "spring_k": [17026, 49893],
+    "damper_c": [4448.4, 5074.2],
+    "travel": [0.12915, 0.10108],
+    "bump_k": [1454900, 680730],
+    "bump_c": 352.64,
+    "bump_k2": 171560,
+    "tyre_mu": [0.83937, 1.5267],
+    "crr": 0.060088,
+    "toe": [-0.019938, 0.011844, 0.0014217, -0.019446],
+    "toe_compliance": [2.9109e-05, 1.6394e-05]
+  },
+  "tyre": {
+    "_doc": "Lateral tyre force (spec/README.md 5.11). model 'coulomb' (v1): -tyre_mu*mu*N*v_l/max(|v_l|, v_reg). model 'slip': slip s = v_l/max(|v_t|, v_slip_min), sigma = c_alpha*s/(tyre_mu*mu), F_lat = -tyre_mu*mu*N*sigma/sqrt(1 + sigma^2) (linear -c_alpha*N*s for small slip, saturating at the friction limit). c_alpha (1/rad, per unit load) and v_slip_min (m/s) may be [front, rear]. Unused while model is 'coulomb'. slide (in [0, 1], number or [front, rear]; with wheel_spin.enabled): a wheel that slips longitudinally blends its lateral force towards isotropic Coulomb sliding along the slip velocity, f_l = (1 - xi) f_l + xi (-tyre_mu*mu*N*v_l/max(|(v_t + omega*r, v_l)|, v_reg)) with xi = slide*sigma_x^2/(1 + sigma_x^2) (sigma_x the longitudinal slip of wheel_spin): a locked / ABS-braked or spinning-up tyre then grips the same per unit load front and rear, like the soft body's sliding tyre nodes, instead of keeping the c_alpha ratio; 0 = off (the coldgas-rigid@2 model).",
+    "model": "slip",
+    "c_alpha": [23.85, 3.375],
+    "v_slip_min": 0.64112,
+    "slide": 0.42711
+  },
+  "wheel_spin": {
+    "_doc": "Optional wheel spin-up (spec/README.md 5.11). enabled false (v1): massless free-rolling wheels, rolling resistance crr as a contact force. enabled true: each wheel carries a spin omega (internal twin state, not part of the 13-float state), longitudinal slip force F = -tyre_mu*mu*N*sat((v_t + omega*r)/v_long_sat) (combined with the slip-model lateral force on one friction circle), wheel inertia `inertia` (kg m^2) with rolling resistance as a torque. Unknown spin: launch/rest start rolling-matched; an explicit state starts at init.wheel_spin, else spin_ratio_air x rolling-matched; loadState by phase (air: spin_ratio_air x matched, else matched). Unloaded wheels lose spin at `decay` (1/s). slip_ratio_sat (kappa, >= 0): the saturation velocity of a loaded wheel becomes max(v_long_sat, kappa*|v_t|) (v_t = rolling speed along the tyre), i.e. above v_long_sat/kappa the longitudinal force saturates at a slip ratio of kappa instead of a fixed slip velocity, so a wheel braked at the ABS slip bound (spec/drive.json) keeps lateral grip on the friction circle; 0 = off (the coldgas-rigid@2 model). inertia, v_long_sat and slip_ratio_sat may be [front, rear].",
+    "enabled": true,
+    "inertia": 0.8009,
+    "v_long_sat": 0.076513,
+    "slip_ratio_sat": 0.0073467,
+    "spin_ratio_air": 0.57,
+    "decay": 0
+  },
+  "failure": {
+    "_doc": "Wheel overload criterion (spec/README.md 5.11): first substep after the deck run with a wheel's normal force N > wheel_normal_max (N), |F_lat| > wheel_lat_max (N) or lateral impulse since touchdown (integral of |F_lat| dt) > wheel_lat_impulse_max (N s) -> event wheel_overload; tasks that forbid hull strikes count it as a failure. null = off (v1).",
+    "wheel_normal_max": null,
+    "wheel_lat_max": null,
+    "wheel_lat_impulse_max": null
   },
   "hull": {
     "_doc": "Penalty contact points on the body shell (car body frame). Contact of any of these with the ground or a collider counts as a hull strike (crash) for the tasks.",
     "points": [
-      [-0.76, 0.2, 1.6], [0.76, 0.2, 1.6], [-0.76, 0.2, -1.6], [0.76, 0.2, -1.6],
-      [-0.7, 1.68, 0.45], [0.7, 1.68, 0.45], [-0.7, 1.68, -1.4], [0.7, 1.68, -1.4],
-      [-0.79, 0.8, 1.55], [0.79, 0.8, 1.55], [-0.79, 0.8, -1.6], [0.79, 0.8, -1.6],
-      [-0.79, 0.8, -0.2], [0.79, 0.8, -0.2], [-0.7, 1.1, 1.55], [0.7, 1.1, 1.55],
-      [-0.7, 1.35, -1.55], [0.7, 1.35, -1.55], [0, 1.7, -0.4], [0, 0.2, -0.2]
+      [-0.7, 1.68, 0.45],
+      [0.7, 1.68, 0.45],
+      [-0.7, 1.68, -1.4],
+      [0.7, 1.68, -1.4],
+      [-0.79, 0.8, 1.55],
+      [0.79, 0.8, 1.55],
+      [-0.79, 0.8, -1.6],
+      [0.79, 0.8, -1.6],
+      [-0.79, 0.8, -0.2],
+      [0.79, 0.8, -0.2],
+      [-0.7, 1.1, 1.55],
+      [0.7, 1.1, 1.55],
+      [-0.7, 1.35, -1.55],
+      [0.7, 1.35, -1.55],
+      [0, 1.7, -0.4]
     ],
     "k": 400000,
     "c": 9000,
-    "mu": 0.55
+    "mu": 0.55,
+    "_floor_doc": "Optional extra underbody points (body frame) after `points`, with their own penalty stiffness / damping / friction (null = k / c / mu above). They are hull points in every respect (hull strike, event point index = len(points) + i).",
+    "floor_points": [
+      [-0.583, 0.2083, -1.569],
+      [0.721, 0.2173, -1.562],
+      [0.649, 0.2013, -1.562],
+      [-0.52, 0.2063, -1.557],
+      [-0.708, 0.2113, -1.556],
+      [-0.782, 0.2053, -1.369],
+      [0.78, 0.2043, -1.364],
+      [0.786, 0.2023, -1.299],
+      [0.066, 0.1873, -1.246],
+      [0.586, 0.1873, -1.246],
+      [-0.581, 0.1883, -1.232],
+      [0.596, 0.1873, -0.722],
+      [0.597, 0.1873, -0.524],
+      [-0.321, 0.1873, -0.39],
+      [0.785, 0.2013, -0.267],
+      [-0.783, 0.2023, -0.265],
+      [0.789, 0.2023, -0.199],
+      [-0.586, 0.1873, 0.058],
+      [0.597, 0.1873, 1.171],
+      [0.584, 0.1873, 1.225],
+      [-0.578, 0.1873, 1.226],
+      [-0.13, 0.1873, 1.227],
+      [0.782, 0.2033, 1.297],
+      [-0.774, 0.2023, 1.357],
+      [0.717, 0.2033, 1.491],
+      [-0.78, 0.2083, 1.492],
+      [-0.707, 0.2063, 1.548],
+      [0.715, 0.2173, 1.554],
+      [-0.641, 0.2033, 1.555],
+      [0.525, 0.2013, 1.563]
+    ],
+    "floor_k": null,
+    "floor_c": null,
+    "floor_mu": null
   },
   "aero": {
     "_doc": "Quadratic drag per body axis: F_i = -0.5 * rho * CdA_i * |v_i| * v_i with v in body axes (x right, y up, z forward).",
@@ -33,7 +105,7 @@
   },
   "twin": {
     "_doc": "Structural constants of the rigid flight twin (not vehicle facts). Semantics in spec/README.md section 5. Changing anything here changes trajectories: bump `model` and regenerate the parity goldens (npm run flight:goldens).",
-    "model": "coldgas-rigid@1",
+    "model": "coldgas-rigid@3",
     "contact": {
       "_doc": "v_reg: friction regularisation speed (m/s): Coulomb friction mu*N*v/max(|v|, v_reg), so resting contacts neither creep nor chatter. wheel_min_h: a wheel takes load only while its axle is within acos(wheel_min_h) of horizontal (car on its side -> hull points). street_top_max: boxes whose top is below this height are street (touchdown surfaces).",
       "v_reg": 0.1,
@@ -50,5 +122,8 @@
       "floor_y": -2.0,
       "max_range": 400
     }
+  },
+  "_calibration": {
+    "_doc": "coldgas-rigid@3 (2026-10-21, drive round): wheels / tyre / wheel_spin / hull fitted jointly to both designed soft-body landing sets (tools/flight/touchdown: experiments/runs/touchdown-doe/20261021-020006, connector give factor 1, and 20261021-083616, the flight value 0.55 with the kit's rear control arms x2; same lattice physics until something breaks) and 12 of 16 soft-body drive tests (tools/flight/drive: coasting, ABS braking, steer steps, brake + steer; experiments/runs/drive-doe/arms1, 4 held out), tools/flight/calib/fit.mjs (CMA-ES, drive_w 3) -> experiments/runs/calib/fit-drive. New fitted terms: wheel_spin.slip_ratio_sat (longitudinal slip against kappa |v_t|) and tyre.slide (blend towards isotropic Coulomb with the longitudinal slip: the soft tyre slides along its slip velocity when braked or spinning up, which keeps the kit car yaw-stable under ABS braking). Drive tests, spec@2 -> this: RMS speed 0.92 -> 0.50 m/s, lateral speed 0.42 -> 0.26 m/s, yaw rate 0.171 -> 0.094 rad/s, heading 7.1 -> 3.2 deg (straight ABS braking from 20 m/s: heading +13.6 -> +1.7 deg, soft body +3.8). Touchdown held-out sets (new / old run), spec@2 -> this: wheel-centre height 1.47 -> 1.40 / 2.02 -> 1.89 cm, lateral speed 0.74 -> 0.42 / 0.77 -> 0.39 m/s, yaw rate 0.115 -> 0.129 / 0.187 -> 0.181 rad/s, longitudinal load 773 -> 556 / 789 -> 582 N, normal load 1.55 -> 1.74 / 1.59 -> 1.73 kN, lateral load 1.12 -> 1.60 / 1.19 -> 1.59 kN (the Coulomb-like impact grip of the slide term; kinematics matter for planning, load criteria are calibrated on the twin's own loads). toe / toe_compliance are effective values (front toe-out ~0.9 deg, rear right toe-in 1.1 deg reproduce the soft body's yaw drift; the settled lattice's static toe is 0.24 / 0.04 / 0.015 / 0.20 deg). Previous model coldgas-rigid@2: the values of commit-time spec (fit experiments/runs/calib/fit2). Wheel failure is not a twin event (failure = null): the failure criteria calibrated on the same data live in the MPC objective (src/flight/mpc/objectives/land.js), see experiments/reports/drive-brakes-steering."
   }
 }

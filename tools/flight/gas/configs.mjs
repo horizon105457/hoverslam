@@ -11,7 +11,7 @@ const C = {};
 // late-burn cold start (heave only): closed until 1.0 s after arming, full 1.05-1.45 s (the vertical optimum of the
 // reference ignites ~1.05 s after arming and burns ~0.6 s), closed after
 const LATE = { type: 'xinit', schedule: { heave: [[0, 0], [1.0, 0], [1.05, 1], [1.45, 1], [1.5, 0]] } };
-const HOVER = [0.42, 0, 0, 0, 0, 0, 0], EARLY = [0.7, 0, 0, 0, 0, 0, 0]; // heave 0.42 ≈ weight (pitch-free 26.6 kN max)
+const HOVER = [0.42, 0, 0, 0, 0, 0, 0], EARLY = [0.7, 0, 0, 0, 0, 0, 0]; // heave 0.42 ≈ weight on the 2026-10-20 layout (heave 1 = 26.6 kN; 33.8 kN since the bottom pairs moved: ≈ 0.33)
 
 C['gas-objective'] = {
   description: 'Objective bias: the lead\'s land objective vs the unbiased gas objective (same CEM, defaults), plus land without its w_stop term and gas with land-like in-air attitude shaping.',

@@ -4,8 +4,8 @@ import { ColdGasEnv } from './env.js';
 import { createController } from './controllers/index.js';
 import { TrajRecorder } from './traj.js';
 
-export function runEpisode({ task, controller = 'zero', seed = 0, preset = null, init = null, record = true, specHash = null }) {
-  const env = new ColdGasEnv(task, { seed, preset });
+export function runEpisode({ task, controller = 'zero', seed = 0, preset = null, init = null, record = true, specHash = null, vehicle = null }) {
+  const env = new ColdGasEnv(task, { seed, preset, vehicle });
   const ctrl = typeof controller === 'object' && controller.act ? controller : createController(controller);
   env.reset(seed, init ? { init } : {});
   ctrl.reset({ task: env.task, seed });
@@ -17,7 +17,7 @@ export function runEpisode({ task, controller = 'zero', seed = 0, preset = null,
     if (rec) rec.sample(env.twin);
     const u = ctrl.act(s, info);
     const [, , term, trunc, inf] = env.step(u);
-    if (rec) rec.applied(env.twin.u);
+    if (rec) rec.applied(env.twin.u, env.twin.ud);
     info = inf; done = term || trunc;
     if (done) metrics = inf.metrics;
   }

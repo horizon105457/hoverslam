@@ -15,7 +15,7 @@ import { ControlParam } from './param.js';
 import { Planner } from './planner.js';
 import { createOptimizer } from './optim/index.js';
 import { createObjective } from './objectives/index.js';
-import { NU, CONTROL_DT } from '../contract.js';
+import { CONTROL_DT, GROUPS, DRIVE_IDX } from '../contract.js';
 import { mulberry32 } from '../rng.js';
 
 const BLOCKS = ['mppi', 'cem', 'grad', 'hybrid'];
@@ -31,7 +31,7 @@ export function mpcSettings(cfg = {}) {
 export function createMPC(cfg = {}) {
   const c = mpcSettings(cfg);
   const param = new ControlParam(c), theta = new Float64Array(param.dim);
-  let obj = null, planner = null, opt = null, since = 1e9, tArm = null;
+  let obj = null, planner = null, opt = null, since = 1e9, tArm = null, tGround = null;
   const ctl = { name: 'mpc', config: c, param, plans: 0, evals: 0, planMs: 0, lastCost: null, trace: null, theta };
 
   ctl.reset = ({ task, seed } = {}) => {
@@ -41,7 +41,7 @@ export function createMPC(cfg = {}) {
     planner = new Planner(c, param, obj, task || null);
     opt = createOptimizer(c.optimizer, c, { rng, nv: param.nv });
     param.initial(c.init, theta);
-    since = 1e9; tArm = null;
+    since = 1e9; tArm = null; tGround = null;
     ctl.objective = obj; ctl.planner = planner; ctl.optimizer = opt;
     ctl.plans = 0; ctl.evals = 0; ctl.planMs = 0; ctl.lastCost = null; ctl.trace = c.trace ? [] : null;
   };
@@ -49,13 +49,15 @@ export function createMPC(cfg = {}) {
   ctl.act = (s) => {
     if (!obj) ctl.reset({});
     obj.observe(s);
-    const out = new Float64Array(NU);
+    const out = new Float64Array(param.na);
     if (!s.armed) return out; // never plan on the deck: the planning twin would arm at once
     if (tArm === null) tArm = s.t;
+    if (tGround === null && s.phase === 'ground') tGround = s.t;
+    const cutAt = c.ground_cut == null || tGround === null ? null : tGround + c.ground_cut;
     if (since >= c.replan) {
       if (since < 1e9) param.shift(theta, since * CONTROL_DT);
       const t0 = performance.now(), e0 = planner.evals;
-      planner.begin(s, tArm + c.coast);
+      planner.begin(s, tArm + c.coast, cutAt);
       let r = opt.solve(theta, planner);
       // cold start: the first plan has no warm start worth the name, give it extra passes
       for (let k = 1; k < (ctl.plans ? 1 : c.first_passes); k++) r = opt.solve(theta, planner);
@@ -66,6 +68,8 @@ export function createMPC(cfg = {}) {
     }
     param.command(theta, since * CONTROL_DT, out);
     if (s.t < tArm + c.coast - 1e-9) out.fill(0);
+    if (cutAt !== null && s.t >= cutAt - 1e-9) for (const i of GROUPS.bottom) out[i] = 0;
+    if (param.drive && !c.drive_air && tGround === null) { out[DRIVE_IDX.brake] = 0; out[DRIVE_IDX.steer] = 0; } // drive from the real touchdown on
     since++;
     return out;
   };
@@ -73,7 +77,7 @@ export function createMPC(cfg = {}) {
   /** Predicted rollout of the current plan from state s (analysis / plots): per control step t, p, q, v, w, u, gas. */
   ctl.predict = (s) => {
     const rows = [];
-    planner.begin(s, tArm === null ? -Infinity : tArm + c.coast);
+    planner.begin(s, tArm === null ? -Infinity : tArm + c.coast, c.ground_cut == null || tGround === null ? null : tGround + c.ground_cut);
     planner.rollout(theta, (h, tw, u, cost) => rows.push({ t: tw.k * tw.dt, p: Array.from(tw.p), q: Array.from(tw.q), v: Array.from(tw.v), w: Array.from(tw.w), u: Array.from(u), gas: tw.prop.m, cost }));
     planner.evals--; // not part of the controller's budget
     return rows;

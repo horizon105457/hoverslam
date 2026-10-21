@@ -22,6 +22,8 @@ WORLD = _load('world.json')
 LAUNCH = _load('launch-presets.json')
 PROPULSION = _load('propulsion.json')
 VEHICLE = _load('vehicle.json')
+#: brakes and steering: two action channels after the nozzles (spec/README.md 5.13)
+DRIVE = _load('drive.json')
 GENERATED = {'massprops': _load('generated/vehicle-massprops.json'), 'colliders': _load('generated/colliders.json')}
 #: raw task specs by id (``extends`` is NOT resolved here; see coldgas.tasks)
 TASKS = {t['id']: t for t in (_load(f'tasks/{p.name}') for p in sorted((SPEC_DIR / 'tasks').glob('*.json')))}

@@ -8,12 +8,12 @@
     "T0": 293.15,
     "polytropic_n": 1.25,
     "bottles": [
-      { "id": "C1", "center": [0, 0.49, -1.30], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
-      { "id": "C2", "center": [0, 0.76, -1.30], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
-      { "id": "C3", "center": [0, 0.49, -1.04], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
-      { "id": "C4", "center": [0, 0.76, -1.04], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
-      { "id": "C5", "center": [0, 0.49, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
-      { "id": "C6", "center": [0, 0.76, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 }
+      { "id": "C1", "center": [0, 0.49, -1.04], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C2", "center": [0, 0.76, -1.04], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C3", "center": [0, 0.49, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C4", "center": [0, 0.76, -0.78], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C5", "center": [0, 0.49, -0.52], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 },
+      { "id": "C6", "center": [0, 0.76, -0.52], "axis": [1, 0, 0], "length": 1.10, "diameter": 0.26, "volume": 0.0584, "dry_mass": 26 }
     ],
     "_approx": { "volume_total_m3": 0.3504, "gas_mass0_kg": 145.7 }
   },
@@ -21,7 +21,7 @@
     "_doc": "Feed pressure to every valve: p_c = min(p_set, p_tank - dp_min), never below ambient.",
     "p_set": 6.0e6,
     "dp_min": 0.3e6,
-    "manifold": [0, 0.40, -0.62]
+    "manifold": [0, 0.40, -0.36]
   },
   "valve": {
     "_doc": "Proportional valves. Commanded opening u_cmd in [0,1] at the control rate; actual opening follows a first-order lag; commands below `deadband` close the valve.",
@@ -31,10 +31,10 @@
   },
   "control": { "dt": 0.02 },
   "nozzles": [
-    { "id": "B_FL", "group": "bottom", "label": "底部 左前", "mount": [-0.45, 0.225,  0.55], "exit": [-0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
-    { "id": "B_FR", "group": "bottom", "label": "底部 右前", "mount": [ 0.45, 0.225,  0.55], "exit": [ 0.45, 0.17,  0.55], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
-    { "id": "B_RL", "group": "bottom", "label": "底部 左后", "mount": [-0.45, 0.225, -0.95], "exit": [-0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
-    { "id": "B_RR", "group": "bottom", "label": "底部 右后", "mount": [ 0.45, 0.225, -0.95], "exit": [ 0.45, 0.17, -0.95], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
+    { "id": "B_FL", "group": "bottom", "label": "底部 左前", "mount": [-0.45, 0.225,  0.41], "exit": [-0.45, 0.17,  0.41], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
+    { "id": "B_FR", "group": "bottom", "label": "底部 右前", "mount": [ 0.45, 0.225,  0.41], "exit": [ 0.45, 0.17,  0.41], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
+    { "id": "B_RL", "group": "bottom", "label": "底部 左后", "mount": [-0.45, 0.225, -1.09], "exit": [-0.45, 0.17, -1.09], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
+    { "id": "B_RR", "group": "bottom", "label": "底部 右后", "mount": [ 0.45, 0.225, -1.09], "exit": [ 0.45, 0.17, -1.09], "exhaust": [0, -1, 0], "throat_diameter": 0.0352, "expansion_ratio": 8, "mass": 1.6, "_approx": { "thrust_N": 8700 } },
     { "id": "R_UL", "group": "rear", "label": "尾部 左上", "mount": [-0.42, 0.80, -1.553], "exit": [-0.42, 0.80, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
     { "id": "R_UR", "group": "rear", "label": "尾部 右上", "mount": [ 0.42, 0.80, -1.553], "exit": [ 0.42, 0.80, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
     { "id": "R_LL", "group": "rear", "label": "尾部 左下", "mount": [-0.42, 0.40, -1.551], "exit": [-0.42, 0.40, -1.62], "exhaust": [0, 0, -1], "throat_diameter": 0.0265, "expansion_ratio": 8, "mass": 1.3, "_approx": { "thrust_N": 5000 } },
@@ -43,8 +43,14 @@
     { "id": "S_R", "group": "side", "label": "侧面 右", "mount": [ 0.737, 0.28, -0.20], "exit": [ 0.79, 0.28, -0.20], "exhaust": [ 1, 0, 0], "throat_diameter": 0.0205, "expansion_ratio": 8, "mass": 1.0, "_approx": { "thrust_N": 3000 } }
   ],
   "hardware": [
-    { "id": "plumbing", "label": "调压阀/歧管/管路", "mass": 18, "center": [0, 0.40, -0.62] }
+    { "id": "plumbing", "label": "调压阀/歧管/管路", "mass": 18, "center": [0, 0.40, -0.36] }
   ],
+  "suspension": {
+    "_doc": "Heavy-duty rear coil-overs that come with the kit (soft body, src/softbody/actuators.js applyMass): the rear spring rate is the car's (src/car/carPrep.js SPRING.k) times rear_spring_scale, so the rear axle, carrying ~66 % of the loaded car, sags like the front instead of resting on its bump stops. Scale = rear / front corner load at half a burn (365 / 186 kg). The bare car (crash presets) keeps its springs; the flight twin's suspension is its own (spec/vehicle.json).",
+    "rear_spring_scale": 2.0,
+    "_arm_doc": "Heavy-duty rear control arms (2026-10-21): the give of the rear wheels' control-arm connectors (src/car/carPrep.js SUSP beams, `tear` = stretch at which an arm lets go, before the preset's `joints` factor) times rear_arm_give_scale. With the stiff rear springs the stock rear arms snapped on the `flat` launch when the car leaves the deck (2 arms on the rear left); with x2 they hold. Front arms stay stock.",
+    "rear_arm_give_scale": 2.0
+  },
   "references": [
     "https://techcrunch.com/2026/10/15/tesla-reveals-spacex-powered-roadster-that-flies-and-falls-with-style/",
     "https://aviationweek.com/aerospace/emerging-technologies/tesla-demos-flying-roadster-powered-spacex-cold-gas-thrusters",

@@ -8,7 +8,7 @@ import { runEpisode } from '../../src/flight/run.js';
 import { createController } from '../../src/flight/controllers/index.js';
 import { TrajRecorder } from '../../src/flight/traj.js';
 import { mulberry32 } from '../../src/flight/rng.js';
-import { NU, CONTROL_DT } from '../../src/flight/contract.js';
+import { NU, NA, CONTROL_DT, DRIVE_IDX } from '../../src/flight/contract.js';
 import { specHash } from '../../src/flight/spechash.js';
 
 export const PARITY = path.dirname(fileURLToPath(import.meta.url));
@@ -27,22 +27,46 @@ export function randomValves({ seed = 1, p_on = 0.5 } = {}) {
   };
 }
 
+/**
+ * Scenario drive overlay (spec/README.md 5.13): `drive` = [[t_start, brake, steer], ...], piecewise constant from each
+ * t_start on, written into action entries NU, NU + 1 on top of whatever the controller returns (before the first
+ * t_start the controller's own action is passed through). Mirror: python/coldgas/parity.py WithDrive.
+ */
+export function withDrive(ctrl, drive) {
+  if (!drive) return ctrl;
+  return {
+    name: ctrl.name, config: ctrl.config,
+    reset(o) { ctrl.reset(o); },
+    act(s, info) {
+      const u = ctrl.act(s, info);
+      let seg = null;
+      for (const d of drive) if (s.t >= d[0] - 1e-9) seg = d;
+      if (!seg) return u;
+      const out = new Float64Array(NA);
+      for (let i = 0, n = Math.min(u.length, NA); i < n; i++) out[i] = u[i];
+      out[DRIVE_IDX.brake] = seg[1]; out[DRIVE_IDX.steer] = seg[2];
+      return out;
+    },
+  };
+}
+
 export async function runScenario(sc, golden = null) {
   const c = sc.controller;
-  const ctrl = c && c.name === 'random' ? (golden ? createController({ name: 'replay', traj: golden }) : randomValves(c)) : createController(c);
+  // 'random' re-runs replay the golden's u_cmd and drive_cmd; the overlay then writes the same drive commands again
+  const ctrl = withDrive(c && c.name === 'random' ? (golden ? createController({ name: 'replay', traj: golden }) : randomValves(c)) : createController(c), sc.drive);
   const hash = await specHash();
   let traj;
   if (sc.task) {
-    traj = runEpisode({ task: sc.task, controller: ctrl, seed: sc.seed ?? 0, preset: sc.preset ?? null, specHash: hash }).traj;
+    traj = runEpisode({ task: sc.task, controller: ctrl, seed: sc.seed ?? 0, preset: sc.preset ?? null, specHash: hash, vehicle: sc.vehicle ?? null }).traj;
   } else {
-    const tw = new RigidTwin({ arm: 'start' });
+    const tw = new RigidTwin({ arm: 'start', vehicle: sc.vehicle ?? null });
     tw.reset(sc.init);
     ctrl.reset({ task: null, seed: sc.seed ?? 0 });
     const rec = new TrajRecorder({ task: null, controller: c, seed: sc.seed ?? null, init: sc.init });
     for (let k = 0, n = Math.round(sc.duration / CONTROL_DT); k < n; k++) {
       rec.sample(tw);
       tw.step(ctrl.act(tw.state));
-      rec.applied(tw.u);
+      rec.applied(tw.u, tw.ud);
     }
     rec.sample(tw);
     traj = rec.finish({ events: tw.events, metrics: {}, spec_hash: hash });
@@ -51,14 +75,17 @@ export async function runScenario(sc, golden = null) {
   return traj;
 }
 
-export const GROUPS = { p: ['state', 0, 3], q: ['state', 3, 7], v: ['state', 7, 10], w: ['state', 10, 13], comB: ['comB', 0, 3], tank_m: ['tank', 0, 1], tank_T: ['tank', 1, 2], tank_p: ['tank', 2, 3], valve: ['valve', 0, NU], thrust: ['thrust', 0, NU], u_cmd: ['u_cmd', 0, NU] };
+export const GROUPS = { p: ['state', 0, 3], q: ['state', 3, 7], v: ['state', 7, 10], w: ['state', 10, 13], comB: ['comB', 0, 3], tank_m: ['tank', 0, 1], tank_T: ['tank', 1, 2], tank_p: ['tank', 2, 3], valve: ['valve', 0, NU], thrust: ['thrust', 0, NU], u_cmd: ['u_cmd', 0, NU], drive: ['drive', 0, 2], drive_cmd: ['drive_cmd', 0, 2] };
 
 export function compare(golden, mine) {
   const n = Math.min(golden.n, mine.n), contact = (golden.contact || []).slice(0, n).map(x => x !== 0);
-  const evs = t => JSON.stringify(t.events.map(e => [e.type, e.t]));
-  const rep = { rows: [golden.n, mine.n], groups: {}, events_equal: evs(golden) === evs(mine) };
+  // events: type, t and every payload field (wheel mask, hull point, overloaded wheel / quantity), keys sorted
+  const evs = t => JSON.stringify(t.events.map(e => [e.type, e.t, ...Object.keys(e).filter(k => k !== 'type' && k !== 't').sort().map(k => [k, e[k]])]));
+  const rep = { rows: [golden.n, mine.n], groups: {}, events_equal: evs(golden) === evs(mine), missing: [] };
   for (const [g, [key, a, b]] of Object.entries(GROUPS)) {
     const out = { free: { abs: 0, rel: 0 }, contact: { abs: 0, rel: 0 } };
+    rep.groups[g] = out;
+    if (!golden[key] || !mine[key]) { if (golden[key] || mine[key]) rep.missing.push(g); continue; } // optional columns (drive: 5.13)
     for (let j = a; j < b; j++) {
       let scale = 1e-300;
       for (let k = 0; k < n; k++) scale = Math.max(scale, Math.abs(golden[key][k][j]));
@@ -67,7 +94,6 @@ export function compare(golden, mine) {
         o.abs = Math.max(o.abs, d); o.rel = Math.max(o.rel, d / scale);
       }
     }
-    rep.groups[g] = out;
   }
   let md = 0;
   for (const [k, v] of Object.entries(golden.metrics || {})) {
@@ -77,7 +103,7 @@ export function compare(golden, mine) {
     else if (v !== w) md = Infinity;
   }
   rep.metrics_rel = md;
-  rep.ok = rep.rows[0] === rep.rows[1] && rep.events_equal && md <= TOL.contact && Object.values(rep.groups).every(v => v.free.rel <= TOL.free && v.contact.rel <= TOL.contact);
+  rep.ok = rep.rows[0] === rep.rows[1] && rep.events_equal && !rep.missing.length && md <= TOL.contact && Object.values(rep.groups).every(v => v.free.rel <= TOL.free && v.contact.rel <= TOL.contact);
   return rep;
 }
 

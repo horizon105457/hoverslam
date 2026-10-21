@@ -1,0 +1,19 @@
+{
+  "_doc": "The v1 rigid-twin contact model (coldgas-rigid@1, before the 2026-10-21 calibration) as a parameter override for RigidTwin({vehicle}) / Twin(vehicle=) (spec/README.md 5.11, 5.12): scalar suspension, Coulomb tyres, no wheel spin, no toe, the original 20 hull points, no floor points. With it the twins reproduce the coldgas-rigid@1 trajectories bit for bit (python/tests/test_twin_v2.py against v1-reference.json). Every contact parameter is given explicitly, so it does not depend on the spec's fitted values.",
+  "wheels": { "spring_k": 30000, "damper_c": 2600, "travel": 0.11, "bump_k": 400000, "bump_c": 0, "bump_k2": 0, "tyre_mu": 1.0, "crr": 0.015, "toe": [0, 0, 0, 0], "toe_compliance": 0 },
+  "tyre": { "model": "coulomb" },
+  "wheel_spin": { "enabled": false },
+  "failure": { "wheel_normal_max": null, "wheel_lat_max": null, "wheel_lat_impulse_max": null },
+  "hull": {
+    "points": [
+      [-0.76, 0.2, 1.6], [0.76, 0.2, 1.6], [-0.76, 0.2, -1.6], [0.76, 0.2, -1.6],
+      [-0.7, 1.68, 0.45], [0.7, 1.68, 0.45], [-0.7, 1.68, -1.4], [0.7, 1.68, -1.4],
+      [-0.79, 0.8, 1.55], [0.79, 0.8, 1.55], [-0.79, 0.8, -1.6], [0.79, 0.8, -1.6],
+      [-0.79, 0.8, -0.2], [0.79, 0.8, -0.2], [-0.7, 1.1, 1.55], [0.7, 1.1, 1.55],
+      [-0.7, 1.35, -1.55], [0.7, 1.35, -1.55], [0, 1.7, -0.4], [0, 0.2, -0.2]
+    ],
+    "k": 400000, "c": 9000, "mu": 0.55, "floor_points": [], "floor_k": null, "floor_c": null, "floor_mu": null
+  },
+  "aero": { "CdA": [2.6, 3.3, 0.75] },
+  "twin": { "contact": { "v_reg": 0.1, "wheel_min_h": 0.5 }, "placement": { "iterations": 30, "fd_step": 1e-07 } }
+}

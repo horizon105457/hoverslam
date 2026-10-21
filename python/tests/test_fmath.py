@@ -26,6 +26,16 @@ console.log(JSON.stringify(out));""")
     assert (fmath.exp_np(A[:, 0]) == A[:, 3]).all()
     assert (fmath.acos_np(A[:, 2]) == A[:, 6]).all()
     assert (fmath.tanh_np(A[:, 1] / 4) == A[:, 7]).all()
+    assert (fmath.sin_np(A[:, 1]) == A[:, 4]).all() and (fmath.cos_np(A[:, 1]) == A[:, 5]).all()  # incl. |x| > pi/4
+
+
+def test_vectorised_sin_cos_small_angles():
+    """sin_np / cos_np (steer angles, |x| <= pi/4 on the kernel path) equal the scalar ports bit for bit."""
+    r = Mulberry32(7)
+    x = np.array([(r() - 0.5) * 1.6 for _ in range(20000)] + [0.0, -0.0, 1e-9, -3e-9, 0.3, 0.78125, 0.7853981633974483, 0.79])
+    bs = np.array([bits(fmath.sin(v)) for v in x])
+    bc = np.array([bits(fmath.cos(v)) for v in x])
+    assert (fmath.sin_np(x).view(np.int64) == bs).all() and (fmath.cos_np(x).view(np.int64) == bc).all()
 
 
 def test_ports_are_accurate():

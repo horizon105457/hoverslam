@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .contract import NU
+from .contract import NU, NA
 from .obs import Observer
 from .state import from_twin
 from .tasks import load_task, sample_initial, TaskTracker
@@ -21,13 +21,14 @@ def _subset(s: dict, idx) -> dict:
 
 
 class BatchColdGasEnv:
-    def __init__(self, task='escape-soft-landing', n: int = 64, seed: int = 0, preset: str | None = None, auto_reset: bool = True):
+    def __init__(self, task='escape-soft-landing', n: int = 64, seed: int = 0, preset: str | None = None, auto_reset: bool = True,
+                 vehicle: dict | None = None):
         self.task = load_task(task) if isinstance(task, str) or 'initial' not in task else task
         self.N, self.seed0, self.preset, self.auto_reset = n, seed, preset, auto_reset
-        self.twin = Twin(n, arm=self.task.get('arm', 'start'))
+        self.twin = Twin(n, arm=self.task.get('arm', 'start'), vehicle=vehicle)  # vehicle: parameter override (fitting)
         self.trackers = [TaskTracker(self.task) for _ in range(n)]
         self.observer = Observer(self.task, n)
-        self.obs_size, self.nu = self.observer.size, NU
+        self.obs_size, self.nu, self.na = self.observer.size, NU, NA  # valves / full action incl. drive (5.13)
         self.episode = np.zeros(n, dtype=np.int64)
         self.seeds = np.zeros(n, dtype=np.int64)
         self.inits = [None] * n
@@ -53,7 +54,7 @@ class BatchColdGasEnv:
         return self.observer.observe(from_twin(self.twin)), {'seed': self.seeds.copy()}
 
     def step(self, u):
-        self.twin.step(np.asarray(u, dtype=np.float64).reshape(self.N, NU))
+        self.twin.step(np.asarray(u, dtype=np.float64).reshape(self.N, -1))  # (N, NU) or (N, NA)
         rew = np.zeros(self.N)
         term = np.zeros(self.N, dtype=bool)
         trunc = np.zeros(self.N, dtype=bool)

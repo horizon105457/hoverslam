@@ -18,9 +18,12 @@
 //              spins out ~1.5 s after landing at 70 km/h), so a ground mode keeps damping yaw and holding the
 //              heading on the travel direction with the side / rear jets (ESP by thrust) while it rolls fast;
 //              a hard touchdown (crash sensor: > crashVs m/s down or > crashTilt deg) shuts every valve for good
+//   brakes     (spec/drive.json, since 2026-10-21) ground mode brakes fully from brakeAfter s after the touchdown on
+//              (the car's ABS keeps the wheels rolling); straight braking is yaw-stable on the soft body (it stops
+//              from 20 m/s in ~2.4 s / 31 m, heading within 4°), so the steering stays centred
 import { PROPULSION, GENERATED, WORLD } from '../../core/spec.js';
 import { Propulsion } from '../../flight/propulsion.js';
-import { NU } from '../../flight/contract.js';
+import { NU, NA, DRIVE_IDX } from '../../flight/contract.js';
 import { quatToMat } from '../../core/quat.js';
 
 const G = WORLD.gravity;
@@ -53,6 +56,7 @@ export class Autopilot {
     wF: 1.0, wT: 3.0, wYaw: 1.0, wLat: 0.03, wFwd: 0.3, reg: 0.002,
     road: true, klat: 1.5, kpsi: 2.5, wSide: 0.6,
     esp: true, kgy: 5.0, kgpsi: 3.0, crashVs: 3.5, crashTilt: 30,
+    brakes: true, brakeAfter: 0.15,
   };
   /** @param opts gains (see DEFAULTS) */
   constructor(opts = {}) {
@@ -64,11 +68,11 @@ export class Autopilot {
     this.d = Z.map(z => z.exhaust.map(v => -v));       // thrust axis (body)
     this.x = Z.map(z => z.exit);
     this.f = new Float64Array(NU);
-    this.u = new Float64Array(NU);
+    this.u = new Float64Array(NA); // valves, then brake / steer (DRIVE_IDX)
     this.F1 = new Float64Array(NU);
     this._R = new Float64Array(9);
   }
-  reset({ task } = {}) { this.task = task; this.touched = false; this.crashed = false; this.f.fill(0); }
+  reset({ task } = {}) { this.task = task; this.touched = false; this.crashed = false; this.tTouch = null; this.f.fill(0); this.u.fill(0); }
 
   /** Full-open thrust of every nozzle for the current tank state (model v1: F = s·F1). */
   fullThrust(tank) {
@@ -94,14 +98,15 @@ export class Autopilot {
     const R = quatToMat(s.q, this._R);
     const gB = [R[3], R[4], R[5]]; // world up in body axes (row 1 of R)
     if (s.phase === 'ground' && !this.touched) {
-      this.touched = true;
+      this.touched = true; this.tTouch = s.t;
       this.crashed = -s.v[1] > o.crashVs || Math.acos(Math.max(-1, Math.min(1, gB[1]))) * 180 / Math.PI > o.crashTilt;
     }
     const mp = vehicleMassProps(s.tank.m), I = mp.I, m = mp.m;
     const vh = Math.hypot(s.v[0], s.v[2]);
     if (this.touched) {
-      // ground mode: yaw damping + heading hold only, wheels down and upright
-      if (!o.esp || this.crashed || vh < 3 || gB[1] < 0.8) { this.u.fill(0); this.f.fill(0); return this.u; }
+      // ground mode: brakes, yaw damping + heading hold only, wheels down and upright
+      this.u[DRIVE_IDX.brake] = o.brakes && s.t >= this.tTouch + o.brakeAfter ? 1 : 0;
+      if (!o.esp || this.crashed || vh < 3 || gB[1] < 0.8) { this.u.fill(0, 0, NU); this.f.fill(0); return this.u; }
       const ty = I[1][1] * (o.kgpsi * this.slip(s, R) - o.kgy * s.w[1]);
       return this.allocate(s, [0, 0, 0, 0, ty, 0], [o.wLat, o.wF, o.wFwd, 0, o.wYaw, 0]);
     }

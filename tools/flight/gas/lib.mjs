@@ -14,15 +14,18 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const DEG = 180 / Math.PI, G = WORLD.gravity;
 export const FB_NOM = bottomThrustNominal(); // ≈ 34.9 kN: all four bottom valves open, regulated feed, full tank
 export const BOTTOM = GROUPS.bottom;
-// The kit is rear-heavy: the COM (z ≈ -0.43 m full, -0.34 m empty) lies well behind the centroid of the bottom
-// nozzles (z = 0.55 / -0.95 -> -0.20), so all four valves open pitch the car at ~9 rad/s². Pitch-free heave keeps
-// the rear pair open and the front pair at r = (c_z - z_rear) / (z_front - c_z) (≈ 0.53 full): the largest
-// vertical thrust that leaves the attitude alone is FB_NOM (1 + r) / 2 ≈ 26.6 kN (T/W ≈ 2.4), not 34.9 kN.
+// The kit is rear-heavy: the COM (z ≈ -0.43 m full, -0.35 m empty) moves forward as the rear bottles empty. The
+// bottom pairs (z = 0.34 / -1.16, centroid -0.41 = the COM after ~45 kg) bracket it, so pitch-free heave throttles
+// the pair with the longer arm: the front one to (c_z - z_rear) / (z_front - c_z) while the COM is behind the
+// centroid (≈ 0.94 full), the rear one to the inverse once it is ahead (≈ 0.93 after 90 kg). The largest vertical
+// thrust that leaves the attitude alone is ≈ 33.7-34.9 kN over the burn (T/W ≈ 3.0-3.2), all four open 34.9 kN.
+// (The gas-late-burn report ran on the 2026-10-20 layout, pairs at 0.55 / -0.95: front ≈ 0.53, 26.6 kN, T/W 2.4.)
 const ZB = BOTTOM.map(i => PROPULSION.nozzles[i].exit[2]), ZF = Math.max(...ZB), ZR = Math.min(...ZB);
 export const FRONT = BOTTOM.filter(i => PROPULSION.nozzles[i].exit[2] === ZF), REAR = BOTTOM.filter(i => PROPULSION.nozzles[i].exit[2] === ZR);
-export const heaveRatio = cz => Math.min(1, Math.max(0, (cz - ZR) / (ZF - cz)));
+/** Pitch-free [front, rear] pair openings (the larger one 1) about the COM z cz. */
+export const heaveShares = cz => [Math.min(1, Math.max(0, (cz - ZR) / (ZF - cz))), Math.min(1, Math.max(0, (ZF - cz) / (cz - ZR)))];
 /** Pitch-free heave at level u about the COM z cz: valves into out (others untouched). */
-export function heaveInto(out, u, cz) { const r = heaveRatio(cz); for (const i of REAR) out[i] = u; for (const i of FRONT) out[i] = u * r; return out; }
+export function heaveInto(out, u, cz) { const [f, r] = heaveShares(cz); for (const i of REAR) out[i] = u * r; for (const i of FRONT) out[i] = u * f; return out; }
 
 export const stamp = () => { const d = new Date(), p = x => String(x).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
 export const readJSON = f => JSON.parse(fs.readFileSync(f, 'utf8'));

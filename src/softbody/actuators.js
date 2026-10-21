@@ -38,17 +38,26 @@
 //     kit: { dry, gas0, total0 } (kg) }
 //   Plume pose at time t: rigid fit of the mount nodes' recorded positions to their rest positions (share
 //   weighted), applied to `exit` / `exhaust`. Intensity: `thrust` (linear in time between samples).
+//   drive_cmd[n][2] (brake 0..1, steer -1..1 commanded), drive[n][2] (brake pressure 0..1, steer angle rad),
+//   wheel_spin[n][4] (rad/s relative to the body, + rolling forward; FL FR RL RR) — brakes / steering: ./drive.js
 // `meta.flight` (see ThrusterRig.summary): controller, task, events [{t, type}], metrics (landing), damage.
-import { PROPULSION, TASKS } from '../core/spec.js';
+// Drive: a controller output longer than NU carries the brake / steer commands (spec/drive.json channels, indices
+// NU, NU + 1); forced to 0 while unarmed like the valves. Kerb: a vehicle node touching a sidewalk / median box.
+import { PROPULSION, DRIVE } from '../core/spec.js';
 import { Propulsion } from '../flight/propulsion.js';
+import { loadTask } from '../flight/tasks.js';
 import { NU, CONTROL_DT, NOZZLE_IDS } from '../flight/contract.js';
 import { quatToMat, quatMul, quatNorm } from '../core/quat.js';
 import { DECK } from '../scene/layout.js';
+import { BEAM } from '../car/carPrep.js';
+import { SoftDrive } from './drive.js';
 
 const CLUSTER = 128;     // body nodes per nozzle mount (~12 kg of lattice: spreads a bottom nozzle's 8.7 kN without denting the floor)
 const AXIAL = 0.35;      // weight of depth along the thrust line when ranking mount nodes
 const PROP_EVERY = 8;    // substeps per propulsion step (1 ms at 8 kHz)
 const STREET_Y = 1.0;    // contacts below this height are with the street (task "touchdown" rule)
+const KERB_MARGIN = 0.02; // m: a node pushed out of a kerb's side face sits on the face (tyre nodes have no allowance)
+const ND = DRIVE.channels.length;
 const deg = 180 / Math.PI;
 
 // ------------------------------------------------------------------------------------------------ geometry
@@ -227,10 +236,11 @@ export class ThrusterRig {
    *             logHz        log rate (default 100)
    *             drainGas     remove the used gas from the bottle nodes (default true)
    *             armDelay     extra seconds between the arming event and enabling the thrusters (fault studies)
+   *             drive        brakes / steering (./drive.js, spec/drive.json); false = none (inert without commands)
    */
-  constructor(car, { spec = PROPULSION, controller = null, task = 'escape-soft-landing', logHz = 100, drainGas = true, armDelay = 0, seed = 0, controllerName = '' } = {}) {
+  constructor(car, { spec = PROPULSION, controller = null, task = 'escape-soft-landing', logHz = 100, drainGas = true, armDelay = 0, seed = 0, controllerName = '', drive = true } = {}) {
     this.car = car; this.spec = spec;
-    this.task = typeof task === 'string' ? TASKS[task] : task;
+    this.task = typeof task === 'string' ? loadTask(task) : task; // resolved (`extends` merged)
     this.controller = controller; this.controllerName = controllerName || controller?.name || 'none';
     this.logHz = logHz; this.drainGas = drainGas; this.armDelay = armDelay; this.seed = seed;
     this.prop = new Propulsion(spec);
@@ -241,6 +251,13 @@ export class ThrusterRig {
     this.mass = new Float64Array(N);
     this.gasNodes = Int32Array.from({ length: N }, (_, n) => n).filter(n => kit.gas[n] > 0);
     this.kitDry = kit.dry.reduce((s, v) => s + v, 0);
+    // the kit's rear coil-overs: spring beams whose wheel end belongs to a rear wheel (spec suspension)
+    const B = car.beams, chunk = car.nodes.chunk, rearWheel = new Set(car.wheels.filter(wh => wh.centre[2] <= 0).map(wh => wh.chunk));
+    this.rearSprings = Int32Array.from({ length: B.count }, (_, b) => b).filter(b => B.kind[b] === BEAM.SPRING && (rearWheel.has(chunk[B.i[b]]) || rearWheel.has(chunk[B.j[b]])));
+    this.rearSpringScale = spec.suspension?.rear_spring_scale ?? 1;
+    // and its heavy-duty rear control arms: SUSP beams of the rear wheels, give x rear_arm_give_scale
+    this.rearArms = Int32Array.from({ length: B.count }, (_, b) => b).filter(b => B.kind[b] === BEAM.SUSP && (rearWheel.has(chunk[B.i[b]]) || rearWheel.has(chunk[B.j[b]])));
+    this.rearArmScale = spec.suspension?.rear_arm_give_scale ?? 1;
     // per-mount rotation fit
     this.mq = this.mounts.map(() => [0, 0, 0, 1]);
     this.mc = this.mounts.map(() => [0, 0, 0]);
@@ -252,19 +269,27 @@ export class ThrusterRig {
     this.bodyNodes = Int32Array.from({ length: Math.ceil(body.nodeCount / 2) }, (_, i) => body.nodeStart + i * 2).filter(n => n < body.nodeStart + body.nodeCount);
     this.qBody = [0, 0, 0, 1];
     this.u = new Float64Array(NU);
-    this.state = { t: 0, p: new Float64Array(3), q: new Float64Array(4), v: new Float64Array(3), w: new Float64Array(3), comB: new Float64Array(3), tank: { m: 0, T: 0, p: 0 }, valve: this.prop.valve, armed: false, phase: 'deck' };
-    this.log = { t: [], u_cmd: [], valve: [], thrust: [], tank: [], pc: [], state: [], comB: [], phase: [], armed: [] };
+    this.drive = drive ? new SoftDrive(car) : null; this.wW = [0, 0, 0]; // body angular velocity, world (brake reference)
+    this.state = { t: 0, p: new Float64Array(3), q: new Float64Array(4), v: new Float64Array(3), w: new Float64Array(3), comB: new Float64Array(3), tank: { m: 0, T: 0, p: 0 }, valve: this.prop.valve, armed: false, phase: 'deck', drive: { brake: 0, steer: 0 } };
+    this.log = { t: [], u_cmd: [], valve: [], thrust: [], tank: [], pc: [], state: [], comB: [], phase: [], armed: [], drive_cmd: [], drive: [], wheel_spin: [] };
     this.events = [];
-    this.edgeT = null; this.armT = null; this.touchT = null; this.strikeT = null; this.ignT = null;
+    this.edgeT = null; this.armT = null; this.touchT = null; this.strikeT = null; this.ignT = null; this.kerbT = null; this.stopT = null; this.stopP = null;
     this.td = null; this.hold = null; this.peakAccel = 0; this._prevV = null;
     this.maxTiltAfterTd = 0; this.strikeInHold = false; this.wheelOnly = true;
     this._A = new Float64Array(9);
   }
 
-  /** Put the kit on the car: writes kit-augmented inverse masses into sim.w (fill = gas fraction). */
+  /**
+   * Put the kit on the car: writes kit-augmented inverse masses into sim.w (fill = gas fraction) and fits its
+   * rear coil-overs (compliance of the rear springs / rear_spring_scale, from the lattice's, so repeat calls are safe)
+   * and rear control arms (give x rear_arm_give_scale on top of the run's `joints` factor, as CrashSim sets it).
+   */
   applyMass(sim, fill = 1) {
     const { dry, gas } = this.kit, m = this.mass, N = sim.N;
     for (let n = 0; n < N; n++) { m[n] = this.base[n] + dry[n] + gas[n] * fill; if (sim.alive[n]) sim.w[n] = 1 / m[n]; }
+    const B = this.car.beams, s = this.rearSpringScale, J = sim.sc.joints ?? 1, ga = this.rearArmScale;
+    for (const b of this.rearSprings) sim.comp[b] = B.comp[b] / s;
+    for (const b of this.rearArms) sim.tear[b] = B.tear[b] * J * ga;
     return this;
   }
 
@@ -273,6 +298,7 @@ export class ThrusterRig {
     this.sim = sim;
     this.applyMass(sim, 1);
     sim.actuators.push(this);
+    this.kerbBoxes = sim.boxes.filter(B => B.name === 'sidewalk' || B.name === 'median');
     this.ctrlEvery = Math.round(CONTROL_DT / sim.dt);
     this.logEvery = Math.round(1 / this.logHz / sim.dt);
     this.propDt = PROP_EVERY * sim.dt;
@@ -302,6 +328,7 @@ export class ThrusterRig {
         v[o] += j * d[0]; v[o + 1] += j * d[1]; v[o + 2] += j * d[2];
       }
     }
+    if (this.drive) this.drive.apply(sim, dt, this.wW);
   }
 
   /**
@@ -392,6 +419,8 @@ export class ThrusterRig {
     S.t = sim.time;
     const tk = this.prop.tank; S.tank.m = tk.m; S.tank.T = tk.T; S.tank.p = tk.p;
     S.tilt = Math.acos(Math.max(-1, Math.min(1, _R[4])));
+    this.wW[0] = om[0]; this.wW[1] = om[1]; this.wW[2] = om[2];
+    if (this.drive) { S.drive.brake = this.drive.brake; S.drive.steer = this.drive.steer; }
     return S;
   }
 
@@ -399,11 +428,12 @@ export class ThrusterRig {
   detect(sim) {
     if (this.edgeT === null) return;
     const N = sim.N, X = sim.x, contact = sim.contact, wheel = sim.isWheel;
-    let touch = false, hull = false;
+    let touch = false, hull = false, kerb = -1;
     for (let n = 0; n < N; n++) {
       if (!contact[n] || X[n * 3 + 1] > STREET_Y || !this.isVehicle(sim, n)) continue;
       touch = true;
-      if (!wheel[n]) { hull = true; break; }
+      if (kerb < 0 && this.kerbT === null && this.onKerb(X, n)) kerb = n;
+      if (!wheel[n]) { hull = true; if (kerb >= 0 || this.kerbT !== null) break; }
     }
     this.onStreet = touch;
     const t = sim.time;
@@ -414,7 +444,18 @@ export class ThrusterRig {
       this.events.push({ t, type: 'touchdown', hull });
     }
     if (hull && this.strikeT === null) { this.strikeT = t; this.events.push({ t, type: 'hull_strike' }); }
+    if (kerb >= 0) { this.kerbT = t; this.events.push({ t, type: 'kerb', wheel: !!wheel[kerb], piece: this.car.pieces[sim.nodePiece[kerb]] }); }
     if (this.touchT !== null && hull && t - this.touchT <= (this.task?.success?.upright_hold ?? 1)) this.strikeInHold = true;
+  }
+
+  /** Is node n (in contact) on or against a sidewalk / median box? */
+  onKerb(X, n) {
+    const x = X[n * 3], y = X[n * 3 + 1], z = X[n * 3 + 2], m = KERB_MARGIN;
+    for (const B of this.kerbBoxes) {
+      const cy = Math.cos(B.yaw), sy = Math.sin(B.yaw), dx = x - B.c[0], dz = z - B.c[2];
+      if (Math.abs(cy * dx - sy * dz) < B.e[0] + m && Math.abs(sy * dx + cy * dz) < B.e[2] + m && y < B.c[1] + B.e[1] + m) return true;
+    }
+    return false;
   }
 
   phaseOf(S) { return this.edgeT === null ? 'deck' : this.touchT === null ? 'air' : 'ground'; }
@@ -431,6 +472,9 @@ export class ThrusterRig {
     if (this.touchT !== null) {
       const hold = this.task?.success?.upright_hold ?? 1;
       if (sim.time - this.touchT <= hold) this.maxTiltAfterTd = Math.max(this.maxTiltAfterTd, S.tilt * deg);
+      // stopped: horizontal COM speed below the task's stop_speed (default 0.5 m/s) after the hold
+      const vs = this.task?.success?.stop_speed ?? 0.5;
+      if (this.stopT === null && sim.time - this.touchT >= hold && Math.hypot(S.v[0], S.v[2]) <= vs) { this.stopT = sim.time; this.stopP = [S.p[0], S.p[2]]; this.events.push({ t: sim.time, type: 'stopped' }); }
     }
     if (this._prevV && this.edgeT !== null) {
       const a = Math.hypot(S.v[0] - this._prevV[0], S.v[1] - this._prevV[1] + 9.81 * CONTROL_DT, S.v[2] - this._prevV[2]) / CONTROL_DT;
@@ -441,7 +485,8 @@ export class ThrusterRig {
     if (S.armed && this.controller) {
       const out = this.controller.act(S, { t: sim.time, dt: CONTROL_DT, task: this.task });
       for (let i = 0; i < NU; i++) { const c = +out[i] || 0; u[i] = c < 0 ? 0 : c > 1 ? 1 : c; }
-    } else u.fill(0);
+      this.drive?.set(out.length > NU ? out[NU] : 0, out.length > NU + 1 ? out[NU + 1] : 0);
+    } else { u.fill(0); this.drive?.set(0, 0); }
   }
 
   record(sim) {
@@ -453,6 +498,9 @@ export class ThrusterRig {
     L.tank.push([Math.round(P.m * 1e3) / 1e3, Math.round(P.T * 100) / 100, Math.round(P.p)]); L.pc.push(Math.round(P.pc));
     L.state.push([...S.p, ...S.q, ...S.v, ...S.w].map(r5)); L.comB.push(Array.from(S.comB, r5));
     L.phase.push(S.phase[0]); L.armed.push(S.armed ? 1 : 0);
+    const D = this.drive;
+    L.drive_cmd.push(D ? [r4(D.cmd.brake), r4(D.cmd.steer)] : [0, 0]); L.drive.push(D ? [r4(D.brake), r5(D.steer)] : [0, 0]);
+    L.wheel_spin.push(D ? D.wheelSpins(sim, this.wW).map(r1) : [0, 0, 0, 0]);
     if (this.ignT === null) for (let i = 0; i < NU; i++) if (P.thrust[i] > 200) { this.ignT = sim.time; this.events.push({ t: sim.time, type: 'ignition' }); break; }
   }
 
@@ -461,7 +509,7 @@ export class ThrusterRig {
   propulsionLog() {
     const L = this.log;
     return {
-      format: 'coldgas-log@1', hz: this.logHz, n: L.t.length, nozzles: NOZZLE_IDS, ...L,
+      format: 'coldgas-log@1', hz: this.logHz, n: L.t.length, nozzles: NOZZLE_IDS, drive_channels: DRIVE.channels, ...L,
       mounts: this.spec.nozzles.map((z, i) => ({ id: z.id, group: z.group, nodes: Array.from(this.mounts[i].nodes), share: Array.from(this.mounts[i].share, v => Math.round(v * 1e6) / 1e6), exit: z.exit, mount: z.mount, dir: this.mounts[i].dir, exhaust: z.exhaust })),
       kit: { dry: +this.kitDry.toFixed(3), gas0: +this.prop.m0.toFixed(3), total0: +(this.base.reduce((s, v) => s + v, 0) + this.kitDry + this.prop.m0).toFixed(3) },
     };
@@ -477,7 +525,10 @@ export class ThrusterRig {
       touchdown_tilt_deg: +td.tilt.toFixed(2), touchdown_angular_rate: +td.rate.toFixed(3), hull_strike: !!(td.hull || this.strikeInHold),
       hull_strike_any: this.strikeT !== null, max_tilt_hold_deg: +this.maxTiltAfterTd.toFixed(2), landing_point: td.p.map(v => +v.toFixed(2)),
       gas_used_touchdown_kg: +td.gas.toFixed(2),
-    } : { touchdown_t: null, hull_strike: this.strikeT !== null };
+      kerb: this.kerbT !== null, kerb_after_td: this.kerbT !== null ? +(this.kerbT - td.t).toFixed(3) : null,
+      stopped: this.stopT !== null, stop_time: this.stopT !== null ? +(this.stopT - td.t).toFixed(3) : null,
+      stop_distance: this.stopT !== null ? +Math.hypot(this.stopP[0] - td.p[0], this.stopP[1] - td.p[1]).toFixed(2) : null,
+    } : { touchdown_t: null, hull_strike: this.strikeT !== null, kerb: this.kerbT !== null };
     m.gas_used_kg = +(this.prop.m0 - this.prop.m).toFixed(2);
     m.peak_accel_g = +this.peakAccel.toFixed(2);
     const fails = [];
@@ -489,6 +540,9 @@ export class ThrusterRig {
       if (crit.hull_strike === false && m.hull_strike) fails.push('hull_strike');
       if (crit.max_tilt_deg !== undefined && this.maxTiltAfterTd > crit.max_tilt_deg) fails.push('upright_hold');
       if (!holdDone) fails.push('hold_incomplete');
+      // stop tasks (spec/tasks/escape-land-stop): come to rest within stop_within s, never touch a kerb
+      if (crit.kerb === false && this.kerbT !== null) fails.push('kerb');
+      if (crit.stop_speed !== undefined && (this.stopT === null || (crit.stop_within !== undefined && this.stopT - td.t > crit.stop_within))) fails.push('not_stopped');
     }
     m.success = fails.length === 0; m.fails = fails;
     // damage

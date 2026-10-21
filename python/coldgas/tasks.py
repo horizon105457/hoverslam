@@ -118,6 +118,7 @@ class TaskTracker:
         self.td, self.hold_max_tilt = None, 0.0
         self.hold_t, self.hold_best, self.hold_done, self.h_err2, self.h_err_n = 0.0, 0.0, False, 0.0, 0
         self.recovered, self.recover_t, self.recover_h = False, None, None
+        self.stop_t = self.stop_d = None
         self.origin = (float(tw.S[0, e]), float(tw.S[2, e]))
 
     def update(self, tw):
@@ -165,16 +166,25 @@ class TaskTracker:
         dx, dz = float(p[0]) - self.origin[0], float(p[2]) - self.origin[1]
         if tw.hs[e] and S.get('hull_strike') is False:
             terminated, reason = True, 'hull_strike'
+        elif tw.wo[e] and S.get('wheel_overload', S.get('hull_strike')) is False:  # see tasks.js (spec/README.md 5.11)
+            terminated, reason = True, 'wheel_overload'
+        elif S.get('kerb') is False and tw.kerb_hit[e]:  # a loaded wheel on a kerb (5.13) where the task forbids it
+            terminated, reason = True, 'kerb'
         elif float(p[1]) < LIMITS['floor_y'] or math.sqrt(dx * dx + dz * dz) > LIMITS['max_range']:
             terminated, reason = True, 'out_of_bounds'
         elif self.td is not None and T.get('target') and not self.hold_done:
             terminated, reason = True, 'landed_early'
-        elif self.td is not None and t >= self.td['t'] + hold - 1e-9:
-            terminated, reason = True, 'landed'
+        elif self.td is not None and t >= self.td['t'] + hold - 1e-9 and (
+                'stop_speed' not in S or math.sqrt(float(tw.S[7, e]) * float(tw.S[7, e]) + float(tw.S[9, e]) * float(tw.S[9, e])) <= S['stop_speed']):
+            terminated, reason = True, ('stopped' if 'stop_speed' in S else 'landed')  # stop tasks: horizontal COM speed
         elif t >= T['horizon'] - 1e-9:
             truncated, reason = True, 'timeout'
         if terminated or truncated:
-            self.success = reason == 'landed' and self.passes()
+            if reason == 'stopped':
+                sx, sz = float(p[0]) - self.td['x'], float(p[2]) - self.td['z']
+                self.stop_t, self.stop_d = t - self.td['t'], math.sqrt(sx * sx + sz * sz)
+            self.success = reason in ('landed', 'stopped') and self.passes() and not (
+                reason == 'stopped' and 'stop_within' in S and not self.stop_t <= S['stop_within'])
             r += self.terminal_reward(reason)
             self.done, self.reason = True, reason
         self.ret += r
@@ -206,12 +216,17 @@ class TaskTracker:
         return math.sqrt(dx * dx + dz * dz)
 
     def terminal_reward(self, reason) -> float:
+        """Terminal reward of the final step (self.success already decided)."""
         Rw, d = self.Rw, self.td
         r = 0.0
-        if reason == 'landed' and self.passes():
+        if self.success:
             r += Rw.get('terminal_success', 0)
         if reason == 'hull_strike':
             r += Rw.get('terminal_hull_strike', 0)
+        if reason == 'wheel_overload':
+            r += Rw.get('terminal_wheel_overload', Rw.get('terminal_hull_strike', 0))
+        if reason == 'kerb':
+            r += Rw.get('terminal_kerb', Rw.get('terminal_hull_strike', 0))
         if reason in ('timeout', 'out_of_bounds', 'landed_early'):
             r += Rw.get('terminal_timeout', 0)
         if d is not None:
@@ -234,6 +249,9 @@ class TaskTracker:
             'touchdown_wheels': bin(d['wheels']).count('1') if d else None,
             'peak_accel_g': float(tw.peak_sf[e]) / WORLD['gravity'],
             'hull_strike': bool(tw.hs[e]),
+            'wheel_overload': bool(tw.wo[e]),
+            'wheel_peak_normal': max(tw.peak_N[e].tolist()), 'wheel_peak_lat': max(tw.peak_lat[e].tolist()),
+            'wheel_lat_impulse': max(tw.lat_impulse[e].tolist()),
             'gas_used_kg': self.m0 - float(tw.prop.m[e]),
             'landing_point': [d['x'], d['z']] if d else None,
             'hold_time': self.hold_best if T.get('target') else None,
@@ -241,6 +259,8 @@ class TaskTracker:
             'pad_distance': self.pad_distance(),
             'recovered': self.recovered if T.get('recover_by_height') is not None else None,
             'recover_time': self.recover_t, 'recover_height': self.recover_h,
+            'stopped': self.reason == 'stopped', 'stop_time': self.stop_t, 'stop_distance': self.stop_d,
+            'kerb': bool(tw.kerb_hit[e]),
         }
         out = {k: allm.get(k) for k in T.get('metrics', [])}
         out.update({'return': self.ret, 'reason': self.reason, 't_end': float(tw.k[e] * tw.dt), 'touchdown_t': d['t'] if d else None})

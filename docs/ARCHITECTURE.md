@@ -81,7 +81,7 @@ reproducible from (spec hash, task, controller config, seed). See `experiments/R
 | lead / integration | `src/app`, `src/core`, `src/cinema`, `src/playback`, `src/render/{stage,carRender,effects,latticeView}.js`, `src/softbody/{solver,recording,worker}.js`, `src/scene`, `src/car`, `src/programs/crash`, `spec/*.json` (except tasks), `index.html`, `style.css`, `package.json`, `tools/{lib,film,spec,audit}`, docs |
 | flight-twin (JS + Python dynamics, tasks, controllers, bench) | `src/flight/**` (`propulsion.js`/`contract.js` are contracts: extend, don't break), `python/**`, `tests/parity/**`, `experiments/**`, `tools/flight/**`, `spec/tasks/**`, `spec/README.md` §5 §7 §8 |
 | install (motion design) | `src/programs/install/**`, `public/assets/install/**` |
-| flight-viewer (soft-body thrusters, plumes, flight program) | `src/softbody/actuators.js`, `src/render/plumes.js`, `src/programs/flight/**`, `tools/sim/flight*.mjs`, `public/assets/settled-coldgas.bin`, `public/sims/flight-*.sim` |
+| flight-viewer (soft-body thrusters, brakes / steering, plumes, flight program) | `src/softbody/actuators.js`, `src/softbody/drive.js`, `src/render/plumes.js`, `src/programs/flight/**`, `tools/sim/flight*.mjs`, `public/assets/settled-coldgas.bin`, `public/sims/flight-*.sim` |
 
 Rules: edit only what you own; need a change elsewhere → note it as a request for the lead (or wrap/extend in
 your own area); no new npm dependencies; never commit or rewrite git state; dev servers per stream on their own
@@ -107,7 +107,8 @@ or touches `src/**` outside their files while the other stream runs (the user's 
 
 Outcome (reports in `experiments/reports/`): **barrel-roll** — `objectives/roll.js` + `roll-final.json` (hybrid
 cem→cem, 4 s horizon): twin flat 10/10 (19/20 on seeds 1-20, 15/18 over all presets untuned), climb 2.3 m, roll
-361°, ~90 kg; soft body `public/sims/flight-mpc-roll.sim` succeeds (1.24 m/s, 1.5°, no hull contact), 4/6 over
+361°, ~90 kg; soft body `public/sims/flight-mpc-roll.sim` succeeded (1.24 m/s, 1.5°, no hull contact; on the
+2026-10-21 nozzle layout it strikes the rear floor 0.24 s after touchdown, see the report's dated note), 4/6 over
 soft-body variants. **gas-late-burn** — braking itself is bang-bang optimal (twin reference 27.3 kg, earlier
 ignition costs more), but only for the lift: attitude must be fixed first (full coast > 0.3 s collapses success);
 best MPC = lift-only coast 0.9 s, 39.9 kg 30/30; pd with saturated late braking 35.3 kg (MPC never finds it);
@@ -123,7 +124,64 @@ MPC backlog from that round (lead):
 - stop rollouts after the task's hold window (halves episode time); heave mode is solved at the full-tank COM
   (~0.66 kN·m of pitch at full heave after ~45 kg); `slip2` scores 180° slip as 0
 - soft body: the pure MPC keeps 1-2 kN of bottom thrust after touchdown (the soft body sits 1-2° tilted, the twin
-  level) and most twin-good touchdowns strike the hull 0.15-0.3 s later (rear bottoming, slip): the known gap
+  level) and most twin-good touchdowns strike the hull 0.15-0.3 s later (rear bottoming, slip): the known gap — the
+  touchdown calibration round (below) found the main cause was sideways landings (14-89° of slip), fixed there
+- 2026-10-21 (lead): the bottom nozzle pairs moved to z 0.34 / −1.16 (centroid on the COM after ~45 kg): pitch-free
+  lift 26.6 → 33.7-34.9 kN. Twin: `mpc-baseline` at least as good everywhere (mppi / hybrid 94 → 100 %),
+  `mppi-soft-landing` 97 → 98 % at −4 kg, late burns with −10 % thrust 6 → 56-67 %. Soft body: every recording keeps
+  its outcome except `flight-mpc-roll`, which now strikes the rear floor after touchdown (the gap above; opt-in
+  `ground_cut` + v_ok 0.8 gets 3/4 soft-body cases at the price of twin 7/10, not adopted)
+
+## Touchdown calibration round (2026-10-21)
+
+Grey-box identification of the twin's touchdown model against designed soft-body landings, report
+`experiments/reports/touchdown-calibration/README.md`. Hardware first (kit): bottle rack one slot forward, bottom
+nozzles re-centred (0.41 / −1.09), stiffer rear coil-overs for the kit car only (`propulsion.suspension`,
+`ThrusterRig.applyMass`, per-run `sim.comp`). Data: `tools/flight/touchdown/` (drop rig, 92-case design, opt-in contact
+force probe `CrashSim.fprobe`). Model: twin v2 extensions (spec/README.md §5.11: per-axle suspension, bump-stop
+damping, slip tyre, wheel spin, toe / compliance steer, underbody points, wheel loads, `vehicle` override), fitted
+values in `spec/vehicle.json` = `coldgas-rigid@2` (v1 = `tests/parity/vehicle-v1.json`). Fit / validation /
+acceptance: `tools/flight/calib/`. Failure criteria calibrated on the soft body live in the MPC land objective
+(touchdown contact-patch lateral speed, ground wheel lateral load). Soft-body closed loop, 26 untuned cases:
+touchdown-clean 8/26 → 17/26 (p = 0.035 paired).
+
+Open after this round (all but the gas budget handled by the drive round below):
+- (done) the stiff rear springs break the rear-left control arm when the `flat` preset leaves the deck: kit rear arms ×2
+- (done) `public/sims/flight-*.sim` were recorded on the old hardware and the v1 twin: re-recorded
+- (done, `tyre.slide`) the twin's tyre fits rolling but not the impact (soft-body tyres grip like Coulomb at impact)
+- (done: brakes + steering) landing at ~20 m/s without brakes still ends at a kerb 1-2 s later
+- the roll's gas budget is tight (3/8 out of gas)
+
+## Drive round (2026-10-21): kit rear arms, brakes, steering
+
+The user asked for the reinforced rear control arms, re-recorded flights and an install film on the new hardware, and
+brakes + steering after the landing. Report: `experiments/reports/drive-brakes-steering/README.md`.
+- Hardware: kit rear arms ×2 (`propulsion.suspension.rear_arm_give_scale`, `ThrusterRig.applyMass`); brakes with ABS on
+  every wheel and front-wheel steering, the car's own hardware (`spec/drive.json`): two action channels after the
+  nozzles (`NA = NU + 2`, contract `coldgas-contract@2`). Soft body `src/softbody/drive.js` (brake = torque couple
+  wheel / caliper cluster, ABS from the hub speed; steering = rest lengths of the front arms / coil-overs for the
+  kingpin-rotated axle), mounted by `ThrusterRig` (inert without commands: old runs bit-identical).
+- Twins: `coldgas-rigid@3` (spec/README.md §5.13: brake pressure lag, implicit Coulomb brake with ABS bound in the
+  wheel-spin update, rate-limited steer on the front tyre axes, kerb event; §5.11 `slip_ratio_sat`, `tyre.slide`),
+  new task `escape-land-stop`; refit jointly on both landing designs + 16 soft-body drive tests (`tools/flight/drive`).
+- The landing design now runs at the flight connector strength (0.55): front control arms are the weak point (they
+  break in 46 of 92 landings, mostly at impact; failure criteria in `land.js` re-derived, `tools/flight/calib/criteria.mjs`).
+- MPC: `drive: true` adds brake / steer channels (0 until the touchdown), land objective drive terms (kerb crash, kerb
+  margin, distance, stop-before-the-kerb in the air and on the ground, stop deadline): `experiments/configs/drive-stop.json`.
+- Viewer: brake / steer HUD panel, stop verdict; `ap` brakes fully on the ground; no render trees on the crossing road.
+- Outcome: soft body, 26 untuned launches, "lands softly, stops, no kerb, nothing broken after the touchdown" 17/26
+  without brakes → 24/26 with brakes + steering (stops in 2-3.6 s / 10-34 m); the old sets without brakes on the new
+  arms + refit: touchdown-clean 17/26 → 22/26. Twin: stop task 17/18 (without drive 0/18).
+
+Open after the drive round:
+- front control arms: at the flight connector strength they are the weak point (46/92 landings, steer steps of 1-3° at
+  15-20 m/s, the `nose` launch); front ×2 is the same one-line kit change (user's call), then the landing design, fit,
+  criteria and acceptance again
+- the soft kit car is yaw-unstable when rolling free above ~9 m/s; one soft-body case (roof s1) spun out while braking at
+  26° of steer: a speed-dependent steer limit, or braking + large-steer cases in the drive tests
+- `tyre.slide` makes the twin's impact wheel loads Coulomb-like (lateral load RMS 1.1-1.2 → 1.6 kN on held-out landings)
+- the land objective's drive terms only know raised street boxes: render-only scenery (park trees beyond the crossing
+  road's end) is open ground to the physics
 
 ## Integration backlog (from the first parallel round, 2026-10-20)
 
@@ -140,8 +198,8 @@ Open issues:
 - twin `pd` lands softly on the soft body but rolls over 0.3 s later (no heading/slip control); the flight program's
   autopilot `ap` (`src/programs/flight/autopilot.js`) aligns heading and cancels drift — port it to both twins and
   add a heading/slip criterion to the landing tasks
-- with the kit 70 % of the weight is on the rear axle: the twin's rear suspension sits on its bump stop at rest;
-  needs per-axle spring rates and bump-stop damping in `spec/vehicle.json` (model change → regenerate goldens)
+- (done 2026-10-21, touchdown calibration round above) with the kit 70 % of the weight was on the rear axle and the
+  twin's rear suspension sat on its bump stop at rest: per-axle springs / bump-stop damping are in coldgas-rigid@2
 - the soft body's springs are unloaded, so the car sags 5-7 cm (bare) / 5-11 cm (kit, rear on the bump stop) below
   the GLB's ride height and the tyres sit up to ~8 cm inside the wheel arches (only 29-34 mm of clearance are
   modelled), visible in every close-up. The fix exists as an opt-in model update, `CrashSim` scenario `level`
@@ -163,5 +221,5 @@ Open issues:
   gap behind most of these terms); MPPI only shifts its nominal by whole knots, so with `replan` < `knot` it never
   shifts (same in Python, kept for parity)
 - PPO solves hover-hold (from a pd warm start) but not escape-soft-landing yet (brakes too late)
-- the soft body has no brakes or rolling resistance: after landing the car rolls on at launch speed
+- (done 2026-10-21, drive round) the soft body has no brakes or rolling resistance: after landing the car rolls on at launch speed
 - `renderFilmFrame` shutter samples straddle shot cuts (one blended frame per cut)

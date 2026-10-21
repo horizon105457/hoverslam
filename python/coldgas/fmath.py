@@ -243,6 +243,41 @@ def cos(x: float) -> float:
     return _ksin(y0, y1, 1)
 
 
+def _sincos_np(x: np.ndarray, want_sin: bool) -> np.ndarray:
+    """Vectorised sin() / cos(): the fdlibm kernels with y = 0 for |x| <= pi/4 (no argument reduction: steer angles),
+    the scalar functions element by element beyond; identical to sin() / cos() element by element."""
+    x = np.asarray(x, dtype=np.float64)
+    ix = (x.view(np.int64) >> 32) & 0x7FFFFFFF
+    with np.errstate(all='ignore'):
+        z = x * x
+        tiny = ix < 0x3E400000
+        if want_sin:
+            v = z * x
+            r = _S2 + z * (_S3 + z * (_S4 + z * (_S5 + z * _S6)))
+            out = np.where(tiny, x, x + v * (_S1 + z * r))
+        else:
+            r = z * (_C1 + z * (_C2 + z * (_C3 + z * (_C4 + z * (_C5 + z * _C6)))))
+            xy = x * 0.0  # fdlibm's x * y with y = 0 (sign of zero kept)
+            qx = np.where(ix > 0x3FE90000, 0.28125, ((ix - 0x00200000) << 32).view(np.float64))
+            big = (1.0 - qx) - ((0.5 * z - qx) - (z * r - xy))
+            out = np.where(tiny, 1.0, np.where(ix < 0x3FD33333, 1.0 - (0.5 * z - (z * r - xy)), big))
+    far = ix > 0x3FE921FB
+    if far.any():
+        f = sin if want_sin else cos
+        out = np.where(far, 0.0, out)
+        for i in zip(*np.nonzero(far)):
+            out[i] = f(float(x[i]))
+    return out
+
+
+def sin_np(x: np.ndarray) -> np.ndarray:
+    return _sincos_np(x, True)
+
+
+def cos_np(x: np.ndarray) -> np.ndarray:
+    return _sincos_np(x, False)
+
+
 # --------------------------------------------------------------------------------------------------- acos
 _pi = 3.14159265358979311600e+00
 _pio2_hi = 1.57079632679489655800e+00

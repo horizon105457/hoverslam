@@ -1,8 +1,9 @@
 // Flight telemetry drawn into a 2D canvas: shown as a DOM overlay in realtime and composited into offline film
 // frames (the film tools capture only the WebGL canvas), so both look the same. Pure function of the sampled
 // state at sim time t: 10 thruster bars grouped bottom / rear / side in spec order, tank pressure / temperature /
-// mass, feed pressure, altitude, vertical speed, tilt, and the touchdown verdict against the task criteria.
-import { PROPULSION } from '../../core/spec.js';
+// mass, feed pressure, altitude, vertical speed, tilt, brake pressure and steer angle (spec/drive.json), and the
+// touchdown verdict against the task criteria (stop tasks: stopping time / distance, kerb).
+import { PROPULSION, DRIVE } from '../../core/spec.js';
 import { GROUPS } from '../../flight/contract.js';
 
 const FONT = '-apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif';
@@ -20,7 +21,7 @@ export class FlightHUD {
 
   /**
    * @param s {t, thrust[], valve[], nom[], tank:{m,T,p}, m0, pc, pset, alt, vy, tilt, rate, speed, phase, roll (deg or null),
-   *           verdict: null | {success, vs, tilt, rate, hull, crit}, title, sub, letterbox}
+   *           drive: null | {brake 0..1, steer rad}, verdict: null | {success, vs, tilt, rate, hull, crit, stop?}, title, sub, letterbox}
    */
   draw(s) {
     const c = this.canvas, g = this.g, W = c.width, H = c.height, k = H / 1080;
@@ -61,6 +62,22 @@ export class FlightHUD {
     const total = s.thrust.reduce((a, b) => a + b, 0);
     g.fillStyle = FG; g.font = `500 ${px(13)}px ${FONT}`;
     g.fillText(`总推力 ${(total / 1000).toFixed(1)} kN`, bx, by + px(76));
+    // ---- brakes / steering (next to the thrusters): brake pressure bar, steer needle on a +-max_deg arc
+    if (s.drive) {
+      const dx = bx - px(18) + px(18) * 2 + 10 * bw + 7 * gap + 2 * ggap + px(14), dw = px(178);
+      panel(g, dx, by - bh - px(52), dw, bh + px(130), k);
+      const x0 = dx + px(18), b = clamp01(s.drive.brake), on = b > 0.03;
+      g.font = `500 ${px(12)}px ${FONT}`; g.fillStyle = DIM; g.fillText('制动 · 转向', x0, by - bh - px(26));
+      g.fillStyle = 'rgba(255,255,255,0.10)'; g.fillRect(x0, by - bh, bw * 1.6, bh);
+      g.fillStyle = on ? RED : 'rgba(255,90,78,0.3)'; g.fillRect(x0, by - bh * b, bw * 1.6, bh * b);
+      g.fillStyle = on ? FG : DIM; g.font = `500 ${px(11)}px ${FONT}`; g.fillText('制动', x0, by + px(22)); g.fillText(`${(b * 100).toFixed(0)}%`, x0, by + px(40));
+      const cx = x0 + px(96), cy = by - px(20), r = px(52), mx = DRIVE.steer.max_deg * Math.PI / 180, d = s.drive.steer, a = Math.max(-1, Math.min(1, d / mx));
+      g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = px(3); g.beginPath(); g.arc(cx, cy, r, -Math.PI / 2 - 0.9, -Math.PI / 2 + 0.9); g.stroke();
+      g.strokeStyle = Math.abs(a) > 0.01 ? HOT : MINT; g.lineWidth = px(3); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + r * Math.sin(0.9 * a), cy - r * Math.cos(0.9 * a)); g.stroke();
+      g.fillStyle = FG; g.beginPath(); g.arc(cx, cy, px(3.5), 0, 2 * Math.PI); g.fill();
+      g.textAlign = 'center'; g.fillStyle = DIM; g.font = `500 ${px(11)}px ${FONT}`; g.fillText('转向', cx, by + px(22));
+      g.fillStyle = FG; g.font = `500 ${px(13)}px ${FONT}`; const dd = d * 180 / Math.PI; g.fillText(`${Math.abs(dd) < 0.05 ? '' : dd > 0 ? '右 ' : '左 '}${Math.abs(dd).toFixed(1)}°`, cx, by + px(40)); g.textAlign = 'left';
+    }
     // ---- telemetry (top right)
     const rows = [
       ['高度', `${s.alt.toFixed(2)} m`],
@@ -98,7 +115,8 @@ export class FlightHUD {
       const cr = v.crit || {};
       const mark = (val, lim, unit, d = 2) => `${val.toFixed(d)}${unit}${lim !== undefined ? (val <= lim ? ' ✓' : ' ✗') : ''}`;
       g.fillText(`触地垂直速度 ${mark(v.vs, cr.max_vertical_speed, ' m/s')}   ·   倾角 ${mark(v.tilt, cr.max_tilt_deg, '°', 1)}   ·   角速度 ${mark(v.rate, cr.max_angular_rate, ' rad/s')}   ·   ${v.hull ? '车身触地 ✗' : '四轮着地 ✓'}${v.hold !== undefined && cr.upright_hold ? `   ·   ${cr.upright_hold} s 内最大倾角 ${mark(v.hold, cr.max_tilt_deg, '°', 0)}` : ''}`, cx, cy + px(34));
-      if (v.note) { g.fillStyle = DIM; g.font = `400 ${px(13)}px ${FONT}`; g.fillText(v.note, cx, cy + px(58)); }
+      if (v.stop) { g.fillStyle = FG; g.font = `400 ${px(16)}px ${FONT}`; g.fillText(v.stop, cx, cy + px(58)); }
+      if (v.note) { g.fillStyle = DIM; g.font = `400 ${px(13)}px ${FONT}`; g.fillText(v.note, cx, cy + px(v.stop ? 82 : 58)); }
       g.textAlign = 'left';
       noShadow(g);
     }
@@ -109,7 +127,8 @@ export class FlightHUD {
 const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
 /** 软着陆 = task success; 硬着陆 = the touchdown itself broke a limit; 着陆后翻车 = soft touchdown, then a hull strike / roll-over. */
 export function verdictLabel(v) {
-  if (v.success) return '软着陆';
+  if (v.success) return v.crit?.stop_speed !== undefined ? '软着陆 · 刹停' : '软着陆';
+  if (v.kerb) return '冲上路缘';
   const c = v.crit || {};
   const hardTd = (c.max_vertical_speed !== undefined && v.vs > c.max_vertical_speed) || (c.max_tilt_deg !== undefined && v.tilt > c.max_tilt_deg) || (c.max_angular_rate !== undefined && v.rate > c.max_angular_rate);
   return hardTd ? '硬着陆' : '着陆后翻车';

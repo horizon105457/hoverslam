@@ -1,0 +1,26 @@
+{
+ "name": "touchdown-accept-land",
+ "description": "Acceptance controllers of the touchdown calibration on the twin (coldgas-rigid@2 + the land objective's sideslip / ground lateral-load terms): default pure MPC, escape-soft-landing, 6 presets x 3 seeds. Soft-body counterpart: tools/flight/calib/accept.mjs sets=land.",
+ "task": "escape-soft-landing",
+ "controllers": [
+  {
+   "name": "mpc",
+   "label": "mpc-cem"
+  }
+ ],
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "record": "first",
+ "workers": 8
+}

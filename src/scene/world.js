@@ -529,8 +529,11 @@ function buildTrees(world, { xRanges, G, D }) {
       for (let x = a + 3; x < b - 3; x += 7.5 + r() * 2) spots.push([x + (r() - 0.5), 0.24, z0 + (r() - 0.5) * 1.2]);
     }
   }
-  // a second row deeper in the belts and distant tree lines
-  for (let x = -400; x < 400; x += 9 + r() * 6) for (const z of [G.greenBelt[1] + 3 + r() * 6, G.greenBeltN[0] - 3 - r() * 6]) spots.push([x, 0.1, z]);
+  // a second row deeper in the belts and distant tree lines; none on the crossing road (cars landing in it roll on
+  // across z ~ 40: these trees stood in its lanes). Skipped spots (4th entry true) still draw their random numbers, so
+  // every other tree keeps its place and species.
+  const onCross = x => x > G.cross[0] - 2 && x < G.cross[1] + 2;
+  for (let x = -400; x < 400; x += 9 + r() * 6) for (const z of [G.greenBelt[1] + 3 + r() * 6, G.greenBeltN[0] - 3 - r() * 6]) spots.push([x, 0.1, z, onCross(x)]);
   // park belts behind the sidewalks (keeps the skyline soft and far)
   for (let x = -400; x < 400; x += 6 + r() * 8) for (let k = 0; k < 4; k++) {
     if (x > G.cross[0] - 6 && x < G.cross[1] + 6) continue;
@@ -540,16 +543,18 @@ function buildTrees(world, { xRanges, G, D }) {
   for (const s of spots) perProto[Math.floor(r() * protos.length)].push(s);
   const meshes = [];
   protos.forEach((p, i) => {
-    const list = perProto[i];
-    const wood = new THREE.InstancedMesh(p.wood, barkMat, list.length);
-    const leaves = new THREE.InstancedMesh(p.leaves, leafMat, list.length);
+    const list = perProto[i], n = list.filter(s => !s[3]).length;
+    const wood = new THREE.InstancedMesh(p.wood, barkMat, n);
+    const leaves = new THREE.InstancedMesh(p.leaves, leafMat, n);
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
-    list.forEach((s, k) => {
+    let k = 0;
+    for (const s of list) {
       q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * Math.PI * 2);
       const k2 = 0.85 + r() * 0.35; sc.set(k2, k2 * (0.9 + r() * 0.2), k2);
-      m.compose(new THREE.Vector3(...s), q, sc);
-      wood.setMatrixAt(k, m); leaves.setMatrixAt(k, m);
-    });
+      if (s[3]) continue; // on the crossing road: draws consumed, no tree
+      m.compose(new THREE.Vector3(s[0], s[1], s[2]), q, sc);
+      wood.setMatrixAt(k, m); leaves.setMatrixAt(k, m); k++;
+    }
     for (const im of [wood, leaves]) { im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); world.add(im); meshes.push(im); }
   });
   return meshes;

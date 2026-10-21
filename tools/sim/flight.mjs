@@ -22,7 +22,7 @@ import { RecordingEncoder, finalMeta, packRecording } from '../../src/softbody/r
 import { ThrusterRig } from '../../src/softbody/actuators.js';
 import { makeController } from '../../src/programs/flight/controllers.js';
 import { PRESETS } from '../../src/scene/layout.js';
-import { TASKS } from '../../src/core/spec.js';
+import { loadTask } from '../../src/flight/tasks.js';
 
 const args = parseArgs();
 const ctlSpec = args.controller || 'ap';
@@ -32,7 +32,7 @@ const init = traj?.init?.type === 'launch' ? traj.init : null;
 const preset = init?.preset || args.preset || 'flat', P = PRESETS[preset];
 if (!P) throw new Error(`unknown preset ${preset}`);
 const name = `flight-${args.out || `${preset}-${ctlSpec.split(/[:{]/)[0]}`}`;
-const task = TASKS[args.task || (typeof traj?.task === 'string' ? traj.task : null) || 'escape-soft-landing'];
+const task = loadTask(args.task || (typeof traj?.task === 'string' ? traj.task : null) || 'escape-soft-landing');
 const car = await loadCarNode({ h: 0.065 });
 const settled = readSettled('public/assets/settled-coldgas.bin', car);
 const spinScale = +(args.spinScale || 1);

@@ -1,0 +1,22 @@
+{
+  "_doc": "Soft-body touchdown experiments for the grey-box identification of the rigid twin's touchdown model (tools/flight/touchdown/README.md). Factors = state at the first tyre contact (conventions in tools/flight/touchdown/lib.mjs); ranges here override lib.mjs FACTORS. fit / holdout: maximin Latin hypercubes (jittered strata, simulated-annealing column swaps on the phi_p criterion) with their own seeds, restricted to genuine first contacts (feasibility: the touching tyre node approaches at >= vmin and no tyre node was below the street in the `window` before). anchors: one factor at a time around `nominal`. drop: options of drop.mjs for every case.",
+  "id": "touchdown-doe",
+  "factors": {
+    "vs": [0.3, 3.0], "u": [0, 22], "beta": [-30, 30], "theta": [-8, 8], "phi": [-8, 8],
+    "yaw_rate": [-0.6, 0.6], "pitch_rate": [-0.4, 0.4], "roll_rate": [-0.4, 0.4], "gas": [0.25, 1.0], "spin": [0, 1.1]
+  },
+  "nominal": { "vs": 1.25, "u": 15, "beta": 0, "theta": 0, "phi": 0, "yaw_rate": 0, "pitch_rate": 0, "roll_rate": 0, "gas": 0.4, "spin": 0.57 },
+  "fit": { "n": 60, "seed": 20261021 },
+  "holdout": { "n": 20, "seed": 77031 },
+  "anchors": [
+    { "id": "nominal" },
+    { "id": "vs0.6", "vs": 0.6 }, { "id": "vs2.0", "vs": 2.0 }, { "id": "vs3.0", "vs": 3.0 },
+    { "id": "beta10", "beta": 10 }, { "id": "beta20", "beta": 20 }, { "id": "beta30", "beta": 30 },
+    { "id": "theta+5", "theta": 5 }, { "id": "theta-5", "theta": -5 }, { "id": "phi5", "phi": 5 },
+    { "id": "spin0", "spin": 0 }, { "id": "spin1.0", "spin": 1.0 }
+  ],
+  "maximin": { "iters": 60000, "p": 30, "t0": 0.02, "t1": 0.00002 },
+  "feasibility": { "window": 0.06, "vmin": 0.1 },
+  "_drop_doc": "joints 0.55 = the connector give factor every launch preset flies with (spec/launch-presets.json); the first run (20261021-020006) used the solver default 1, i.e. arms 1.8x stronger than in any flight.",
+  "drop": { "post": 2.0, "airtime": 0.3, "cmin": 0.004, "hz": 200, "denseHz": 1000, "denseWin": 0.4, "joints": 0.55 }
+}

@@ -93,6 +93,7 @@ export class TaskTracker {
     this.td = null; this.holdMaxTilt = 0;
     this.holdT = 0; this.holdBest = 0; this.holdDone = false; this.hErr2 = 0; this.hErrN = 0;
     this.recovered = false; this.recoverT = null; this.recoverH = null;
+    this.stopT = null; this.stopD = null;
     this.origin = [twin.p[0], twin.p[2]];
   }
 
@@ -132,12 +133,23 @@ export class TaskTracker {
     let terminated = false, truncated = false, reason = null;
     const hold = S.upright_hold ?? 0;
     if (twin.hullStrike && S.hull_strike === false) { terminated = true; reason = 'hull_strike'; }
+    // a wheel overload (twin failure criterion, spec/README.md 5.11; never with the default null thresholds) is a
+    // crash wherever hull strikes are; success.wheel_overload overrides
+    else if (twin.wheelOverload && (S.wheel_overload ?? S.hull_strike) === false) { terminated = true; reason = 'wheel_overload'; }
+    // a loaded wheel on a kerb (sidewalk / median top off the deck, 5.13) where the task forbids it
+    else if (S.kerb === false && twin.kerb) { terminated = true; reason = 'kerb'; }
     else if (twin.p[1] < MODEL.limits.floor_y || Math.sqrt((twin.p[0] - this.origin[0]) ** 2 + (twin.p[2] - this.origin[1]) ** 2) > MODEL.limits.max_range) { terminated = true; reason = 'out_of_bounds'; }
     else if (this.td && T.target && !this.holdDone) { terminated = true; reason = 'landed_early'; }
-    else if (this.td && t >= this.td.t + hold - 1e-9) { terminated = true; reason = 'landed'; }
-    else if (t >= T.horizon - 1e-9) { truncated = true; reason = 'timeout'; }
+    // stop tasks (success.stop_speed): after the hold, the episode ends once the COM's horizontal speed is low enough
+    else if (this.td && t >= this.td.t + hold - 1e-9 && (S.stop_speed === undefined || Math.sqrt(twin.v[0] * twin.v[0] + twin.v[2] * twin.v[2]) <= S.stop_speed)) {
+      terminated = true; reason = S.stop_speed === undefined ? 'landed' : 'stopped';
+    } else if (t >= T.horizon - 1e-9) { truncated = true; reason = 'timeout'; }
     if (terminated || truncated) {
-      this.success = reason === 'landed' && this.passes();
+      if (reason === 'stopped') {
+        const dx = twin.p[0] - this.td.x, dz = twin.p[2] - this.td.z;
+        this.stopT = t - this.td.t; this.stopD = Math.sqrt(dx * dx + dz * dz);
+      }
+      this.success = (reason === 'landed' || reason === 'stopped') && this.passes() && !(reason === 'stopped' && S.stop_within !== undefined && !(this.stopT <= S.stop_within));
       r += this.terminalReward(reason);
       this.done = true; this.reason = reason;
     }
@@ -165,11 +177,14 @@ export class TaskTracker {
     return Math.sqrt(dx * dx + dz * dz);
   }
 
+  /** Terminal reward of the final step (this.success already decided). */
   terminalReward(reason) {
     const Rw = this.Rw, d = this.td;
     let r = 0;
-    if (reason === 'landed' && this.passes()) r += Rw.terminal_success ?? 0;
+    if (this.success) r += Rw.terminal_success ?? 0;
     if (reason === 'hull_strike') r += Rw.terminal_hull_strike ?? 0;
+    if (reason === 'wheel_overload') r += Rw.terminal_wheel_overload ?? Rw.terminal_hull_strike ?? 0;
+    if (reason === 'kerb') r += Rw.terminal_kerb ?? Rw.terminal_hull_strike ?? 0;
     if (reason === 'timeout' || reason === 'out_of_bounds' || reason === 'landed_early') r += Rw.terminal_timeout ?? 0;
     if (d) {
       if (Rw.terminal_vertical_speed_per_mps) r += Rw.terminal_vertical_speed_per_mps * d.vy;
@@ -190,6 +205,8 @@ export class TaskTracker {
       touchdown_wheels: d ? popcount(d.wheels) : null,
       peak_accel_g: twin.peakSf / WORLD.gravity,
       hull_strike: !!twin.hullStrike,
+      wheel_overload: !!twin.wheelOverload,
+      wheel_peak_normal: maxOf(twin.wheels, 'pN'), wheel_peak_lat: maxOf(twin.wheels, 'pL'), wheel_lat_impulse: maxOf(twin.wheels, 'pI'),
       gas_used_kg: this.m0 - twin.prop.m,
       landing_point: d ? [d.x, d.z] : null,
       hold_time: this.task.target ? this.holdBest : null,
@@ -197,10 +214,12 @@ export class TaskTracker {
       pad_distance: this.padDistance(),
       recovered: this.task.recover_by_height !== undefined ? this.recovered : null,
       recover_time: this.recoverT, recover_height: this.recoverH,
+      stopped: this.reason === 'stopped', stop_time: this.stopT, stop_distance: this.stopD, kerb: !!twin.kerb,
     };
     for (const k of this.task.metrics || []) out[k] = all[k] ?? null;
     Object.assign(out, { return: this.ret, reason: this.reason, t_end: twin.k * twin.dt, touchdown_t: d ? d.t : null });
     return out;
   }
 }
+const maxOf = (W, k) => Math.max(W[0][k], W[1][k], W[2][k], W[3][k]);
 const popcount = m => ((m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1) + ((m >> 3) & 1));

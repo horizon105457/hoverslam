@@ -18,6 +18,7 @@ import { Plumes, trackFromRecording, trackFromTrajectory, nozzleNominal } from '
 import { quatToMat } from '../../core/quat.js';
 import { TASKS, PROPULSION, WORLD } from '../../core/spec.js';
 import { NU } from '../../flight/contract.js';
+import { loadTask } from '../../flight/tasks.js';
 import { PRESETS } from '../../scene/layout.js';
 import { FlightLog } from './timeline.js';
 import { FlightEdit } from './edit.js';
@@ -26,15 +27,17 @@ import { FLIGHT_UI, FLIGHT_CSS, FLIGHT_GROUPS } from './ui.js';
 
 /** Known soft-body runs (shown when their .sim exists); ?run= may name any other flight-*.sim. */
 const RUNS = [
-  { id: 'soft', label: '软着陆', sub: '车头俯冲 · 自动驾驶 ap' },
-  { id: 'recover', label: '翻滚改出', sub: '倒扣车顶 · 自动驾驶 ap' },
+  { id: 'soft', label: '软着陆', sub: '车头俯冲 · 自动驾驶 ap · 刹停' },
+  { id: 'recover', label: '翻滚改出', sub: '倒扣车顶 · 自动驾驶 ap · 刹停' },
   { id: 'hard', label: '硬着陆', sub: '倒扣车顶 · 点火延迟 0.6 s' },
-  { id: 'pd-nose', label: 'pd · 着陆后翻车', sub: '车头俯冲 · 孪生 pd（无航向控制）' },
-  { id: 'pd-roof', label: 'pd · 着陆后翻车', sub: '倒扣车顶 · 孪生 pd（无航向控制）' },
-  { id: 'replay-mppi-nose', label: 'MPPI 开环回放', sub: '车头俯冲 · Python MPPI 轨迹' },
-  { id: 'mppi-nose', label: 'MPPI 闭环 · 软着陆', sub: '车头俯冲 · JS MPPI 在软体上实时重规划' },
-  { id: 'mppi-roof', label: 'MPPI 闭环 · 翻滚改出', sub: '倒扣车顶 · JS MPPI 在软体上实时重规划' },
-  { id: 'mpc-roll', label: 'MPC · 跳跃横滚 360°', sub: '四轮平拍 · 纯 MPC（无 PD）在软体上实时重规划' },
+  { id: 'mpc-stop-nose', label: 'MPC · 落地边刹边转', sub: '车头俯冲 · 纯 MPC 规划刹车与转向，转 43° 刹停' },
+  { id: 'mpc-stop-corner', label: 'MPC · 翻滚改出 · 刹停', sub: '角部翻滚 · 纯 MPC，避开路缘刹停' },
+  { id: 'mpc-roll', label: 'MPC · 跳跃横滚 360°', sub: '四轮平拍 · 纯 MPC（无 PD），落地后刹车转向' },
+  { id: 'pd-nose', label: 'pd · 着陆后失控', sub: '车头俯冲 · 孪生 pd（无航向控制、不用刹车）' },
+  { id: 'pd-roof', label: 'pd · 着陆后失控', sub: '倒扣车顶 · 孪生 pd（无航向控制、不用刹车）' },
+  { id: 'replay-mppi-nose', label: 'MPPI 开环回放', sub: '车头俯冲 · 孪生 MPPI 轨迹开环回放' },
+  { id: 'mppi-nose', label: 'MPPI 闭环 · 软着陆', sub: '车头俯冲 · JS MPPI 在软体上实时重规划（无刹车）' },
+  { id: 'mppi-roof', label: 'MPPI 闭环 · 落在路缘', sub: '倒扣车顶 · JS MPPI 软触地，但正落在路缘上（无刹车）' },
 ];
 const runName = id => (id.startsWith('flight-') ? id.slice(7) : id);
 const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c === 'mppi' ? 'MPPI 闭环' : c === 'mpc' ? '纯 MPC（无 PD）' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);
@@ -116,7 +119,7 @@ export default class FlightProgram extends Program {
     this.log = new FlightLog(meta.propulsion, { flight: meta.flight, duration: player.duration });
     this.plumes.setTrack(trackFromRecording(player, meta.propulsion));
     this.metrics = meta.flight?.metrics || {};
-    this.task = TASKS[meta.flight?.task] || TASKS['escape-soft-landing'];
+    this.task = loadTask(TASKS[meta.flight?.task] ? meta.flight.task : 'escape-soft-landing');
     const preset = PRESETS[meta.flight?.preset];
     this.label = { title: '坠 · FALL', sub: `冷气推力 · ${preset?.label || meta.flight?.preset || ''} · ${ctlLabel(meta.flight?.controller)}${meta.flight?.armDelay ? ` · 点火延迟 ${meta.flight.armDelay} s` : ''} · 软体` };
     this.afterLoad();
@@ -137,7 +140,7 @@ export default class FlightProgram extends Program {
     this.log = new FlightLog(traj, { flight: { events: traj.events || [] }, duration: traj.t[traj.t.length - 1] });
     this.plumes.setTrack(trackFromTrajectory(traj));
     this.metrics = traj.metrics || {};
-    this.task = TASKS[typeof traj.task === 'string' ? traj.task : traj.task?.id] || TASKS['escape-soft-landing'];
+    { const id = typeof traj.task === 'string' ? traj.task : traj.task?.id; this.task = loadTask(TASKS[id] ? id : 'escape-soft-landing'); }
     const ctl = typeof traj.controller === 'string' ? traj.controller : traj.controller?.name || traj.controller?.type || '';
     this.label = { title: '坠 · FALL', sub: `刚体回放 · ${traj.preset || ''} · ${ctl} · ${traj.producer || ''}` };
     this.ctx.ui.$('runs').innerHTML = '';
@@ -234,12 +237,14 @@ export default class FlightProgram extends Program {
     const m = this.metrics;
     const verdict = t >= e.tTouch + 0.2 && m.touchdown_vertical_speed !== undefined
       ? { success: !!m.success, vs: m.touchdown_vertical_speed, tilt: m.touchdown_tilt_deg, rate: m.touchdown_angular_rate, hull: !!m.hull_strike, crit: this.task?.success, hold: m.max_tilt_hold_deg,
-        note: `${this.rigid ? '刚体孪生' : '软体'} · 用气 ${(m.gas_used_kg ?? 0).toFixed(1)} kg${m.peak_accel_g ? ` · 峰值 ${m.peak_accel_g.toFixed(1)} g` : ''}` }
+        note: `${this.rigid ? '刚体孪生' : '软体'} · 用气 ${(m.gas_used_kg ?? 0).toFixed(1)} kg${m.peak_accel_g ? ` · 峰值 ${m.peak_accel_g.toFixed(1)} g` : ''}`,
+        kerb: !!m.kerb && (m.kerb_after_td == null || t >= e.tTouch + m.kerb_after_td),
+        stop: m.stopped && t >= e.tTouch + (m.stop_time ?? 0) ? `刹停 ${m.stop_time.toFixed(1)} s · ${m.stop_distance.toFixed(0)} m${m.kerb ? '   ·   路缘 ✗' : '   ·   未碰路缘 ✓'}` : null }
       : null;
     return {
       t, thrust, valve, nom: this.nom.F, tank: tk, m0: L.log.tank[0][0], pc: pc > 2 * WORLD.air.pressure ? pc : 0,
       alt: L.p(t)[1] - this.restY, vy: v[1], speed: Math.hypot(v[0], v[2]), tilt: L.tilt(t), rate: Math.hypot(w[0], w[1], w[2]), phase, verdict,
-      roll: e.roll ? e.roll.at(t) : null,
+      roll: e.roll ? e.roll.at(t) : null, drive: t < 0 ? (L.log.drive ? { brake: 0, steer: 0 } : null) : L.driveState(t),
       title: this.label?.title, sub: this.label?.sub,
     };
   }

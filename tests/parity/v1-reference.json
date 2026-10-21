@@ -1,0 +1,877 @@
+{
+ "_doc": "Fingerprints of the coldgas-rigid@1 parity goldens (Python producer, 2026-10-21, before the calibration; the old code's output) for the scenarios below (zero / random controllers only, so retuned controllers cannot break them). python/tests/test_twin_v2.py re-runs each scenario with vehicle-v1.json and requires: same row count, sha256 of the state rows as little-endian float64 [n, 13], identical events and metrics. Depends on spec/propulsion.json, world.json, generated/ and the tasks: after an intended change there, regenerate it from the V1 override with test_twin_v2.write_v1_reference() (from then on vehicle-v1.json defines v1).",
+ "scenarios": [
+  {
+   "scenario": {
+    "id": "free-tumble-random",
+    "init": {
+     "type": "state",
+     "p": [
+      0,
+      150,
+      0
+     ],
+     "q": [
+      0.3,
+      -0.2,
+      0.5,
+      0.787400787
+     ],
+     "v": [
+      5,
+      2,
+      -3
+     ],
+     "w": [
+      1.2,
+      -0.7,
+      2.1
+     ]
+    },
+    "controller": {
+     "name": "random",
+     "seed": 11,
+     "p_on": 0.5
+    },
+    "duration": 3.0
+   },
+   "n": 151,
+   "state_sha256": "64aca95cb69b7d6df305636dba74b63ef8ae97c2d0beec4eb162d170113dd61f",
+   "final": [
+    2.648529209200346,
+    107.54185689991442,
+    -14.467872385055594,
+    0.3303643229663766,
+    0.5118311604869719,
+    -0.7044792546690959,
+    -0.36413906273071317,
+    -6.225465711640259,
+    -29.816004184429556,
+    -7.358845018082711,
+    -0.7878396509696586,
+    -1.2404512601671158,
+    -1.310774256516311
+   ],
+   "events": [
+    {
+     "t": 0.0,
+     "type": "armed"
+    },
+    {
+     "t": 0.02,
+     "type": "airborne"
+    }
+   ],
+   "metrics": {}
+  },
+  {
+   "scenario": {
+    "id": "free-coast-spin",
+    "init": {
+     "type": "state",
+     "p": [
+      0,
+      150,
+      0
+     ],
+     "q": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "v": [
+      0,
+      0,
+      0
+     ],
+     "w": [
+      0.5,
+      3.0,
+      1.5
+     ]
+    },
+    "controller": "zero",
+    "duration": 4.0
+   },
+   "n": 201,
+   "state_sha256": "d415ccb0e72c0f60f67435fa06c9d63562088f417a97b38d8a7ba68cb60b1f01",
+   "final": [
+    0.1833972518039494,
+    73.87073460166357,
+    0.2666937303922506,
+    0.13311910305723926,
+    0.23831098724873148,
+    -0.27960268551524026,
+    0.9204941694603159,
+    0.25678316840958615,
+    -36.86266003483961,
+    0.4177402712782042,
+    -1.5721078068878835,
+    2.837470003075743,
+    -0.8803564723848587
+   ],
+   "events": [
+    {
+     "t": 0.0,
+     "type": "armed"
+    },
+    {
+     "t": 0.02,
+     "type": "airborne"
+    }
+   ],
+   "metrics": {}
+  },
+  {
+   "scenario": {
+    "id": "free-blowdown",
+    "init": {
+     "type": "state",
+     "p": [
+      0,
+      150,
+      0
+     ],
+     "q": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "v": [
+      0,
+      0,
+      0
+     ],
+     "w": [
+      0,
+      0,
+      0
+     ]
+    },
+    "controller": {
+     "name": "random",
+     "seed": 5,
+     "p_on": 1.0
+    },
+    "duration": 2.5
+   },
+   "n": 126,
+   "state_sha256": "a0a964b40ce63a017d2cd04710f46d8d5821a8ab17afa497e9ba2248705eb410",
+   "final": [
+    -20.559400668827937,
+    148.59600134015025,
+    29.847719265181784,
+    0.32424264880435943,
+    -0.24679453573161875,
+    0.7084239167235741,
+    0.5762765968208132,
+    -21.418360633400386,
+    -11.217535700539196,
+    24.61444256139901,
+    -0.2567640270738835,
+    -0.45840456244579636,
+    1.074262534233169
+   ],
+   "events": [
+    {
+     "t": 0.0,
+     "type": "armed"
+    },
+    {
+     "t": 0.02,
+     "type": "airborne"
+    },
+    {
+     "t": 2.322,
+     "type": "regulator_dropout"
+    }
+   ],
+   "metrics": {}
+  },
+  {
+   "scenario": {
+    "id": "land-wheels",
+    "init": {
+     "type": "state",
+     "p": [
+      -20,
+      1.6,
+      10
+     ],
+     "q": [
+      0,
+      0.3826834324,
+      0,
+      0.9238795325
+     ],
+     "v": [
+      -4,
+      -3,
+      1
+     ],
+     "w": [
+      0,
+      0,
+      0
+     ]
+    },
+    "controller": "zero",
+    "duration": 3.0
+   },
+   "n": 151,
+   "state_sha256": "82432b5de5b4b4dea7075e98fa1febbf4f843ee848498174afc2ddb4427c61ca",
+   "final": [
+    -22.52422290176367,
+    0.514035920194853,
+    8.843989929229949,
+    -0.012450902650911753,
+    0.3719946759890029,
+    0.004661442243744794,
+    0.9281396484447924,
+    -0.0889649658521551,
+    -0.03553350661405288,
+    -0.21004680379488264,
+    -0.009891240370494376,
+    -0.00019663128043499565,
+    -0.12448714226633989
+   ],
+   "events": [
+    {
+     "t": 0.0,
+     "type": "armed"
+    },
+    {
+     "t": 0.02,
+     "type": "airborne"
+    },
+    {
+     "t": 0.23800000000000002,
+     "type": "touchdown",
+     "wheels": 15
+    },
+    {
+     "t": 0.273,
+     "type": "hull_strike",
+     "point": 2
+    }
+   ],
+   "metrics": {}
+  },
+  {
+   "scenario": {
+    "id": "land-hull",
+    "init": {
+     "type": "state",
+     "p": [
+      -20,
+      2.2,
+      10
+     ],
+     "q": [
+      0,
+      0,
+      0.5735764364,
+      0.8191520443
+     ],
+     "v": [
+      2,
+      -2,
+      0
+     ],
+     "w": [
+      0.3,
+      0,
+      0.6
+     ]
+    },
+    "controller": "zero",
+    "duration": 2.5
+   },
+   "n": 126,
+   "state_sha256": "cc479468f99f14cb065366159986347dc7b30a6184af52486b0335b6a5ad05ce",
+   "final": [
+    -19.25489545569809,
+    0.7771886479050742,
+    10.038496370134506,
+    0.03072571032348006,
+    0.03521864334536089,
+    0.6741513223041197,
+    0.737112998475564,
+    0.23359803470181734,
+    0.10214255532253923,
+    -0.03145648735414666,
+    0.00015939798897499142,
+    0.004191115357313534,
+    -0.2186833476488708
+   ],
+   "events": [
+    {
+     "t": 0.0,
+     "type": "armed"
+    },
+    {
+     "t": 0.02,
+     "type": "airborne"
+    },
+    {
+     "t": 0.356,
+     "type": "hull_strike",
+     "point": 0
+    },
+    {
+     "t": 0.356,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {}
+  },
+  {
+   "scenario": {
+    "id": "rest-parked",
+    "init": {
+     "type": "rest",
+     "x": -30,
+     "z": 12,
+     "heading_deg": 183
+    },
+    "controller": "zero",
+    "duration": 3.0
+   },
+   "n": 151,
+   "state_sha256": "1139f895a722167b17f6fe4c4614b19500ed6394b17d76e1b3de367688c58d8e",
+   "final": [
+    -30.0,
+    0.5150453056050855,
+    12.0,
+    -0.00032561039722586515,
+    -0.9995825181472219,
+    -0.012229199527336237,
+    0.026174989422133386,
+    2.0820437947886845e-17,
+    -1.882938249764255e-15,
+    6.009391846762426e-16,
+    -1.000219294997588e-15,
+    1.4625869391739074e-20,
+    -1.748135603306883e-17
+   ],
+   "events": [
+    {
+     "t": 0.0,
+     "type": "armed"
+    }
+   ],
+   "metrics": {}
+  },
+  {
+   "scenario": {
+    "id": "launch-flat",
+    "task": "escape-soft-landing",
+    "preset": "flat",
+    "seed": 3,
+    "controller": "zero"
+   },
+   "n": 107,
+   "state_sha256": "8b3a153638439ad0668eb489e1dc3e5f7b7f035af46c9c9042f8ccedd0a7c36a",
+   "final": [
+    -21.583949392594697,
+    1.047698576929245,
+    14.677561635725105,
+    0.691437841625724,
+    0.03569110357859221,
+    -0.7179392891727192,
+    0.07213205497885973,
+    -13.962908884734325,
+    -9.92185785316183,
+    4.49731276733607,
+    0.3323439677208164,
+    0.6117018262352344,
+    -3.4498252599336223
+   ],
+   "events": [
+    {
+     "t": 0.63,
+     "type": "kick"
+    },
+    {
+     "t": 0.78,
+     "type": "edge"
+    },
+    {
+     "t": 0.78,
+     "type": "armed"
+    },
+    {
+     "t": 1.04,
+     "type": "airborne"
+    },
+    {
+     "t": 2.102,
+     "type": "hull_strike",
+     "point": 5
+    },
+    {
+     "t": 2.102,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {
+    "success": false,
+    "touchdown_vertical_speed": 12.71516809763925,
+    "touchdown_horizontal_speed": 15.921100986574853,
+    "touchdown_tilt_deg": 168.85170948999354,
+    "touchdown_angular_rate": 2.352852398560066,
+    "peak_accel_g": 37.53989651931678,
+    "hull_strike": true,
+    "gas_used_kg": 0.0,
+    "landing_point": [
+     -21.31841465962771,
+     14.59660435939554
+    ],
+    "return": -33.65278650306427,
+    "reason": "hull_strike",
+    "t_end": 2.12,
+    "touchdown_t": 2.102
+   }
+  },
+  {
+   "scenario": {
+    "id": "launch-nose",
+    "task": "escape-soft-landing",
+    "preset": "nose",
+    "seed": 3,
+    "controller": "zero"
+   },
+   "n": 103,
+   "state_sha256": "f3689306c85a4118133c5a7076dae3fc26535d6f97c8ae88b56f51e60cbdbac1",
+   "final": [
+    -23.54293076734382,
+    1.4334272954542382,
+    14.982091280352597,
+    0.39305552593661897,
+    0.0030269186252052803,
+    -0.8018197126816192,
+    0.45009259008507335,
+    -17.193906710219082,
+    -12.219168642219472,
+    4.918235559436693,
+    -0.3194171928341135,
+    -0.3441007409765273,
+    -1.5350580947079682
+   ],
+   "events": [
+    {
+     "t": 0.621,
+     "type": "kick"
+    },
+    {
+     "t": 0.76,
+     "type": "edge"
+    },
+    {
+     "t": 0.76,
+     "type": "armed"
+    },
+    {
+     "t": 0.86,
+     "type": "airborne"
+    },
+    {
+     "t": 2.036,
+     "type": "hull_strike",
+     "point": 15
+    },
+    {
+     "t": 2.036,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {
+    "success": false,
+    "touchdown_vertical_speed": 12.608510170822111,
+    "touchdown_horizontal_speed": 18.072109216911112,
+    "touchdown_tilt_deg": 126.20554813341609,
+    "touchdown_angular_rate": 1.847006878541985,
+    "peak_accel_g": 12.281288968199753,
+    "hull_strike": true,
+    "gas_used_kg": 0.0,
+    "landing_point": [
+     -23.473875435502144,
+     14.962349959993997
+    ],
+    "return": -30.82517590262714,
+    "reason": "hull_strike",
+    "t_end": 2.04,
+    "touchdown_t": 2.036
+   }
+  },
+  {
+   "scenario": {
+    "id": "launch-rear",
+    "task": "escape-soft-landing",
+    "preset": "rear",
+    "seed": 3,
+    "controller": "zero"
+   },
+   "n": 106,
+   "state_sha256": "6e7b4f7595915065191f95e5fab72ad952a5b9bd9e4f6d3a0e27e7d4a678d0d4",
+   "final": [
+    -20.736255588070527,
+    1.1849800525867404,
+    13.23378617770332,
+    0.6478990246858735,
+    0.21627985501349803,
+    -0.7149906716807076,
+    -0.14912483876271163,
+    -14.162977758679105,
+    -11.002360998163951,
+    3.5135569517557563,
+    0.1270775430368835,
+    0.1419457872606154,
+    -2.2371815912269057
+   ],
+   "events": [
+    {
+     "t": 0.639,
+     "type": "kick"
+    },
+    {
+     "t": 0.8200000000000001,
+     "type": "edge"
+    },
+    {
+     "t": 0.8200000000000001,
+     "type": "armed"
+    },
+    {
+     "t": 1.12,
+     "type": "airborne"
+    },
+    {
+     "t": 2.086,
+     "type": "hull_strike",
+     "point": 4
+    },
+    {
+     "t": 2.086,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {
+    "success": false,
+    "touchdown_vertical_speed": 12.651753656806813,
+    "touchdown_horizontal_speed": 15.358814012493118,
+    "touchdown_tilt_deg": 151.4899560396363,
+    "touchdown_angular_rate": 2.8730894333181545,
+    "peak_accel_g": 16.3827080889017,
+    "hull_strike": true,
+    "gas_used_kg": 0.0,
+    "landing_point": [
+     -20.53254919724858,
+     13.184473699551823
+    ],
+    "return": -33.61353273072952,
+    "reason": "hull_strike",
+    "t_end": 2.1,
+    "touchdown_t": 2.086
+   }
+  },
+  {
+   "scenario": {
+    "id": "launch-side",
+    "task": "escape-soft-landing",
+    "preset": "side",
+    "seed": 3,
+    "controller": "zero"
+   },
+   "n": 103,
+   "state_sha256": "c1e97c6a7fbcd78e4b043184304b01eb5f161f3173eb6255c35a44352b824f9a",
+   "final": [
+    -20.88654556891661,
+    1.1916703917507583,
+    15.40753393427556,
+    0.6722450248544337,
+    -0.10635559015288916,
+    -0.6911246091471573,
+    0.24314993241389493,
+    -14.607166073196828,
+    -10.508259435345328,
+    5.117294005984092,
+    0.10093118842338104,
+    0.4948534221483997,
+    -2.5540433951937285
+   ],
+   "events": [
+    {
+     "t": 0.618,
+     "type": "kick"
+    },
+    {
+     "t": 0.76,
+     "type": "edge"
+    },
+    {
+     "t": 0.76,
+     "type": "armed"
+    },
+    {
+     "t": 0.98,
+     "type": "airborne"
+    },
+    {
+     "t": 2.0220000000000002,
+     "type": "hull_strike",
+     "point": 5
+    },
+    {
+     "t": 2.0220000000000002,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {
+    "success": false,
+    "touchdown_vertical_speed": 12.647510600565377,
+    "touchdown_horizontal_speed": 16.476740434188578,
+    "touchdown_tilt_deg": 146.9876171670883,
+    "touchdown_angular_rate": 2.0092543007851473,
+    "peak_accel_g": 17.068902972835787,
+    "hull_strike": true,
+    "gas_used_kg": 0.0,
+    "landing_point": [
+     -20.614364355818097,
+     15.31428658869979
+    ],
+    "return": -32.109760945538184,
+    "reason": "hull_strike",
+    "t_end": 2.04,
+    "touchdown_t": 2.0220000000000002
+   }
+  },
+  {
+   "scenario": {
+    "id": "launch-roof",
+    "task": "escape-soft-landing",
+    "preset": "roof",
+    "seed": 3,
+    "controller": "zero"
+   },
+   "n": 100,
+   "state_sha256": "b55d5aeaec6770ef492b7a6ffe7084d780b14efc6df69e46df579b98ea42f1cd",
+   "final": [
+    -21.72663811804212,
+    1.2196040880820804,
+    14.652153595659206,
+    0.656688761700857,
+    -0.00043267969720138554,
+    -0.7466085759214613,
+    0.10646744762885038,
+    -16.701906800724505,
+    -12.431857644630561,
+    4.854154862120322,
+    0.1356422328456205,
+    0.3458044788682484,
+    -2.8119322047900805
+   ],
+   "events": [
+    {
+     "t": 0.618,
+     "type": "kick"
+    },
+    {
+     "t": 0.76,
+     "type": "edge"
+    },
+    {
+     "t": 0.76,
+     "type": "armed"
+    },
+    {
+     "t": 0.88,
+     "type": "airborne"
+    },
+    {
+     "t": 1.976,
+     "type": "hull_strike",
+     "point": 5
+    },
+    {
+     "t": 1.976,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {
+    "success": false,
+    "touchdown_vertical_speed": 12.788015195611552,
+    "touchdown_horizontal_speed": 17.56426028528672,
+    "touchdown_tilt_deg": 167.30290671633023,
+    "touchdown_angular_rate": 2.3017579812880604,
+    "peak_accel_g": 11.436731202095169,
+    "hull_strike": true,
+    "gas_used_kg": 0.0,
+    "landing_point": [
+     -21.659564867205447,
+     14.632711950414727
+    ],
+    "return": -33.47378734551,
+    "reason": "hull_strike",
+    "t_end": 1.98,
+    "touchdown_t": 1.976
+   }
+  },
+  {
+   "scenario": {
+    "id": "launch-corner",
+    "task": "escape-soft-landing",
+    "preset": "corner",
+    "seed": 3,
+    "controller": "zero"
+   },
+   "n": 100,
+   "state_sha256": "3d3967c45c4aa7f206d553de13006a1417682b2bb7507b0aea26bfb7cb825561",
+   "final": [
+    -24.414493092478853,
+    1.2942500384778144,
+    16.517873453872614,
+    0.688849387859847,
+    -0.17999361584378928,
+    -0.6227708935421985,
+    0.32441521736386575,
+    -18.266289933255155,
+    -11.69850967805417,
+    6.075050259643128,
+    0.06319086639555123,
+    0.2506722478346708,
+    -1.5928034488661025
+   ],
+   "events": [
+    {
+     "t": 0.604,
+     "type": "kick"
+    },
+    {
+     "t": 0.72,
+     "type": "edge"
+    },
+    {
+     "t": 0.72,
+     "type": "armed"
+    },
+    {
+     "t": 0.8,
+     "type": "airborne"
+    },
+    {
+     "t": 1.971,
+     "type": "hull_strike",
+     "point": 5
+    },
+    {
+     "t": 1.971,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {
+    "success": false,
+    "touchdown_vertical_speed": 12.692895652058084,
+    "touchdown_horizontal_speed": 19.723925719424727,
+    "touchdown_tilt_deg": 135.60200889540542,
+    "touchdown_angular_rate": 1.8201324421486786,
+    "peak_accel_g": 14.941221914843021,
+    "hull_strike": true,
+    "gas_used_kg": 0.0,
+    "landing_point": [
+     -24.248137133054666,
+     16.462787971322346
+    ],
+    "return": -31.409966515241724,
+    "reason": "hull_strike",
+    "t_end": 1.98,
+    "touchdown_t": 1.971
+   }
+  },
+  {
+   "scenario": {
+    "id": "launch-corner-random",
+    "task": "escape-soft-landing",
+    "preset": "corner",
+    "seed": 4,
+    "controller": {
+     "name": "random",
+     "seed": 21,
+     "p_on": 0.4
+    }
+   },
+   "n": 103,
+   "state_sha256": "91e6142e40772645a1b6a45f4e927079a683d705187fd1d080a23730afc2b6ca",
+   "final": [
+    -28.94189925045164,
+    1.0940265230487198,
+    19.75584860881911,
+    0.7149114656579405,
+    0.4660526448368902,
+    -0.48338398611221617,
+    -0.19502935799930102,
+    -20.890167406485837,
+    -12.337439774402887,
+    8.622922288751816,
+    -1.032704277807889,
+    2.965548540834065,
+    -7.55931522261713
+   ],
+   "events": [
+    {
+     "t": 0.605,
+     "type": "kick"
+    },
+    {
+     "t": 0.72,
+     "type": "edge"
+    },
+    {
+     "t": 0.72,
+     "type": "armed"
+    },
+    {
+     "t": 0.8,
+     "type": "airborne"
+    },
+    {
+     "t": 2.024,
+     "type": "hull_strike",
+     "point": 4
+    },
+    {
+     "t": 2.024,
+     "type": "touchdown",
+     "wheels": 0
+    }
+   ],
+   "metrics": {
+    "success": false,
+    "touchdown_vertical_speed": 14.680441035352466,
+    "touchdown_horizontal_speed": 23.642641778304746,
+    "touchdown_tilt_deg": 124.2011326081063,
+    "touchdown_angular_rate": 3.183608966831342,
+    "peak_accel_g": 24.453301740900297,
+    "hull_strike": true,
+    "gas_used_kg": 21.081358156615664,
+    "landing_point": [
+     -28.5981675015896,
+     19.61728476518741
+    ],
+    "return": -35.16565287649886,
+    "reason": "hull_strike",
+    "t_end": 2.04,
+    "touchdown_t": 2.024
+   }
+  }
+ ]
+}

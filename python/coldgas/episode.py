@@ -8,8 +8,8 @@ from .traj import TrajRecorder
 
 
 def run_episode(task='escape-soft-landing', controller='zero', seed: int = 0, preset=None, init=None, record=True,
-                spec_hash_value: str | None = None):
-    env = ColdGasEnv(task, seed=seed, preset=preset)
+                spec_hash_value: str | None = None, vehicle: dict | None = None):
+    env = ColdGasEnv(task, seed=seed, preset=preset, vehicle=vehicle)
     ctrl = controller if hasattr(controller, 'act') else create_controller(controller)
     env.reset(seed, {'init': init} if init else {})
     ctrl.reset(task=env.task, seed=seed)
@@ -25,7 +25,7 @@ def run_episode(task='escape-soft-landing', controller='zero', seed: int = 0, pr
         u = ctrl.act(s, info)
         _, _, term, trunc, info = env.step(u)
         if rec:
-            rec.applied(env.twin.u[0])
+            rec.applied(env.twin.u[0], env.twin.ud[0])
         done = term or trunc
         if done:
             metrics = info['metrics']

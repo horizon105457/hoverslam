@@ -46,12 +46,13 @@ const cosTilt = q => 1 - 2 * (q[0] * q[0] + q[2] * q[2]);
 const tiltAng = q => { const c = cosTilt(q); return Math.acos(c > 1 ? 1 : c < -1 ? -1 : c); };
 const hinge = (e, w1, w2) => (e > 0 ? w1 * e + w2 * e * e : 0);
 
-/** Pitch-free heave of the bottom group at full opening, full tank: thrust (N) and mass flow (kg/s). The kit is
- *  rear-heavy, so the front pair runs at (c_z - z_r) / (z_f - c_z) ≈ 0.53 of the rear pair (tools/flight/gas). */
+/** Pitch-free heave of the bottom group at full opening, full tank: thrust (N) and mass flow (kg/s). The pair with
+ *  the longer arm about the COM is throttled: full tank, the front one to (c_z - z_r) / (z_f - c_z) ≈ 0.94 (tools/flight/gas). */
 export function heaveFull() {
   const P = new Propulsion(), cz = new MassModel().at(P.m0).com[2], B = GROUPS.bottom, z = B.map(i => PROPULSION.nozzles[i].exit[2]);
-  const zf = Math.max(...z), zr = Math.min(...z), r = (cz - zr) / (zf - cz), u = new Float64Array(NU);
-  B.forEach((i, k) => { u[i] = z[k] === zf ? r : 1; });
+  const zf = Math.max(...z), zr = Math.min(...z), u = new Float64Array(NU);
+  const f = Math.min(1, (cz - zr) / (zf - cz)), r = Math.min(1, (zf - cz) / (cz - zr));
+  B.forEach((i, k) => { u[i] = z[k] === zf ? f : r; });
   P.valve.set(u);
   const T = P.step(u, 1e-9);
   let F = 0, md = 0;

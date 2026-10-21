@@ -56,6 +56,8 @@ export class FlightLog {
   thrust(t, i) { return this.log.thrust ? Math.max(0, this.lerp('thrust', t, i)) : 0; }
   valve(t, i) { return this.log.valve ? this.lerp('valve', t, i) : 0; }
   tank(t) { return { m: this.lerp('tank', t, 0), T: this.lerp('tank', t, 1), p: this.lerp('tank', t, 2) }; }
+  /** Brake pressure 0..1 and steer angle (rad) at t (spec/drive.json; logs without drive columns: null). */
+  driveState(t) { return this.log.drive ? { brake: Math.max(0, this.lerp('drive', t, 0)), steer: this.lerp('drive', t, 1) } : null; }
   /** World position of body point xB (spec/README §1: p + R(q)(xB − comB)). */
   bodyPoint(t, xB, out = [0, 0, 0]) {
     const p = this.p(t), R = quatToMat(this.q(t), this._R), c = this.comB(t), d = [xB[0] - c[0], xB[1] - c[1], xB[2] - c[2]];

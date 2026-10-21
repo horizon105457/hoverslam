@@ -1,16 +1,17 @@
-"""coldgas-traj@1 writer (spec/README.md section 7), same layout as src/flight/traj.js."""
+"""coldgas-traj@1 writer (spec/README.md section 7), same layout as src/flight/traj.js (incl. contact bit 32 = kerb,
+drive_cmd = applied [brake, steer] over [t_k, t_k+1), drive = [beta, delta] at t_k: 5.13)."""
 from __future__ import annotations
 
 import json
 
-from .contract import TRAJ_FORMAT, MODEL, NU, CONTROL_DT
+from .contract import TRAJ_FORMAT, MODEL, NU, ND, CONTROL_DT
 
 
 class TrajRecorder:
     def __init__(self, meta: dict | None = None):
         self.meta = meta or {}
         self.t, self.state, self.comB, self.tank, self.u_cmd, self.valve, self.thrust = [], [], [], [], [], [], []
-        self.contact = []
+        self.contact, self.drive_cmd, self.drive = [], [], []
 
     def sample(self, tw, e: int = 0):
         P = tw.prop
@@ -21,11 +22,16 @@ class TrajRecorder:
         self.valve.append(P.valve[e].tolist())
         self.thrust.append(P.thrust[e].tolist())
         self.u_cmd.append([0.0] * NU)
+        self.drive_cmd.append([0.0] * ND)
+        self.drive.append([float(tw.drive_brake[e]), float(tw.drive_steer[e])])
         self.contact.append(0 if tw.k[e] == 0 else (int(tw.f_any[e]) | 2 * int(tw.f_street[e]) | 4 * int(tw.f_deck[e])
-                                                    | 8 * int(tw.f_other[e]) | 16 * int(tw.f_hull[e])))
+                                                    | 8 * int(tw.f_other[e]) | 16 * int(tw.f_hull[e]) | 32 * int(tw.f_kerb[e])))
 
-    def applied(self, u):
+    def applied(self, u, ud=None):
+        """Commands applied in the step after the last sample: valves (tw.u[e]), drive (tw.ud[e], optional)."""
         self.u_cmd[-1] = [float(x) for x in u]
+        if ud is not None:
+            self.drive_cmd[-1] = [float(x) for x in ud]
 
     def finish(self, events=(), metrics=None, spec_hash=None) -> dict:
         m = self.meta
@@ -33,7 +39,7 @@ class TrajRecorder:
                 'controller': m.get('controller'), 'seed': m.get('seed'), 'preset': m.get('preset'), 'init': m.get('init'),
                 'dt': CONTROL_DT, 'n': len(self.t), 't': self.t, 'state': self.state, 'comB': self.comB, 'tank': self.tank,
                 'u_cmd': self.u_cmd, 'valve': self.valve, 'thrust': self.thrust, 'contact': self.contact,
-                'events': list(events), 'metrics': metrics or {}}
+                'drive_cmd': self.drive_cmd, 'drive': self.drive, 'events': list(events), 'metrics': metrics or {}}
 
 
 def write_traj(path, traj: dict):

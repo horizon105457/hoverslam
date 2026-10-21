@@ -67,7 +67,8 @@ export class CrashSim {
 
     // beams
     const B = car.beams, NB = (this.NB = B.count), S = this.sc.strength;
-    this.bi = B.i; this.bj = B.j; this.kind = B.kind; this.comp = B.comp;
+    // compliance per run: the thruster kit swaps the rear coil-overs (ThrusterRig.applyMass), the lattice stays shared
+    this.bi = B.i; this.bj = B.j; this.kind = B.kind; this.comp = Float32Array.from(B.comp);
     // connector give scales with the strength setting (weaker = parts come off sooner)
     this.tear = Float32Array.from(B.tear);
     const J = this.sc.joints ?? 1;
@@ -145,6 +146,8 @@ export class CrashSim {
      * (velocity impulses) of live nodes. Not called while settling. Order of the array = order of application.
      */
     this.actuators = [];
+    /** Opt-in contact-force probe: Float64Array(N*3) accumulating each node's static-contact force (N, world) per substep, or null (off). */
+    this.fprobe = null;
   }
 
   vol(X, a, b, c, d) {
@@ -187,7 +190,7 @@ export class CrashSim {
     }
     for (const [b, wi] of springs) {
       const i = B.i[b] * 3, j = B.j[b] * 3, cosv = Math.abs(R[j + 1] - R[i + 1]) / B.L0[b];
-      this.pre[b] = (load[wi] / count[wi] / cosv) * B.comp[b];
+      this.pre[b] = (load[wi] / count[wi] / cosv) * this.comp[b];
     }
   }
 
@@ -677,6 +680,9 @@ export class CrashSim {
 
   resolveContact(n, nx, ny, nz, depth, mu, idt) {
     const x = this.x, p = this.p, i = n * 3;
+    // opt-in contact-force probe (tools/flight/touchdown): Float64Array(N*3) or null; reading the pre-push position
+    // changes no arithmetic, so results are bit-identical with the probe off
+    const fp = this.fprobe, ox = x[i], oy = x[i + 1], oz = x[i + 2];
     // approach speed (for impact events / glass)
     const vn = ((x[i] - p[i]) * nx + (x[i + 1] - p[i + 1]) * ny + (x[i + 2] - p[i + 2]) * nz) * idt;
     x[i] += nx * depth; x[i + 1] += ny * depth; x[i + 2] += nz * depth;
@@ -689,6 +695,8 @@ export class CrashSim {
       const s = tl < mu * depth * 1.3 ? 1 : (mu * depth) / tl;
       x[i] -= tx * s; x[i + 1] -= ty * s; x[i + 2] -= tz * s;
     }
+    // contact force = m Δx / dt² of this correction (normal push + friction), summed over the node's contacts
+    if (fp) { const k = idt * idt / this.w[n]; fp[i] += (x[i] - ox) * k; fp[i + 1] += (x[i + 1] - oy) * k; fp[i + 2] += (x[i + 2] - oz) * k; }
     this.contact[n] = 1;
     const imp = -vn;
     if (imp > this.impactV[n]) this.impactV[n] = imp;

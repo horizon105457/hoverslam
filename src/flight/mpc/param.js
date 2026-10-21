@@ -8,8 +8,10 @@
 //    pinv(A) of each group's wrench matrix about the full-tank COM, scaled to a peak entry of 1; u = clamp(Mθ).
 //    Heave and surge are in [0, 1], the differential channels in [-1, 1]. Fewer, decoupled dimensions make
 //    sampling far more efficient; the clamp makes M θ piecewise linear, which the optimizers tolerate.
+//  * drive (opt-in, `drive: true`): two more channels after the mixer's, `brake` ∈ [0, 1] and `steer` ∈ [-1, 1]
+//    (spec/drive.json, action indices NU, NU + 1), passed through unmixed; commands are then NA long.
 // No feedback anywhere: θ is an open-loop command schedule that the receding horizon re-optimises.
-import { NU, CONTROL_DT, GROUPS } from '../contract.js';
+import { NU, NA, CONTROL_DT, GROUPS, DRIVE_IDX } from '../contract.js';
 import { PROPULSION } from '../../core/spec.js';
 import { MassModel } from '../massprops.js';
 import { Propulsion } from '../propulsion.js';
@@ -73,6 +75,13 @@ export class ControlParam {
       this.M = null; this.nv = NU; this.names = PROPULSION.nozzles.map(z => z.id);
       this.clo = new Float64Array(NU); this.chi = Float64Array.from(this.umax);
     } else throw new Error(`mpc: unknown mixer ${c.mixer}`);
+    this.nm = this.nv; // mixer channels; the drive channels follow them
+    this.drive = !!c.drive; this.na = this.drive ? NA : NU;
+    if (this.drive) {
+      this.nv += 2; this.names = [...this.names, 'brake', 'steer'];
+      this.clo = Float64Array.from([...this.clo, 0, -1]); this.chi = Float64Array.from([...this.chi, 1, 1]);
+      this.driveInit = c.drive_init ?? [0, 0];
+    }
     // exploration scale per channel (optimizers multiply their sigma by it): {name: factor} or an nv array
     const cs = c.channel_scale || {};
     this.cscale = Float64Array.from(this.names, (nm, k) => (Array.isArray(cs) ? cs[k] : cs[nm]) ?? 1);
@@ -100,9 +109,13 @@ export class ControlParam {
     return out;
   }
 
-  /** Valve commands at τ into u (NU). */
+  /** Commands at τ into u: NU valve openings (+ brake, steer at NU, NU + 1 with drive; u must be NA long then). */
   command(theta, tau, u) {
     const x = this.channels(theta, tau), um = this.umax;
+    if (this.drive) {
+      const b = x[this.nm], s = x[this.nm + 1];
+      u[DRIVE_IDX.brake] = b < 0 ? 0 : b > 1 ? 1 : b; u[DRIVE_IDX.steer] = s < -1 ? -1 : s > 1 ? 1 : s;
+    }
     if (!this.M) { for (let i = 0; i < NU; i++) { const v = x[i]; u[i] = v < 0 ? 0 : v > um[i] ? um[i] : v; } return u; }
     const M = this.M;
     for (let i = 0; i < NU; i++) {
@@ -124,10 +137,11 @@ export class ControlParam {
     return theta;
   }
 
-  /** Initial schedule: a number (every channel; clamped into its box) or an array of nv channel values. */
+  /** Initial schedule: a number (every mixer channel; clamped into its box) or an array of nv channel values; the
+   *  drive channels start at drive_init (default [0, 0]) unless the array covers them. */
   initial(init = 0, theta = new Float64Array(this.dim)) {
     for (let j = 0; j < this.nk; j++) for (let k = 0; k < this.nv; k++) {
-      const v = Array.isArray(init) ? init[k] : init, e = j * this.nv + k;
+      const v = Array.isArray(init) && k < init.length ? init[k] : k >= this.nm ? this.driveInit[k - this.nm] : init, e = j * this.nv + k;
       theta[e] = v < this.lo[e] ? this.lo[e] : v > this.hi[e] ? this.hi[e] : v;
     }
     return theta;

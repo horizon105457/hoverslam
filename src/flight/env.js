@@ -1,21 +1,21 @@
 // Gymnasium-shaped episode wrapper around the rigid twin, same API and semantics as python/coldgas/env.py:
-//   const env = new ColdGasEnv('escape-soft-landing', {seed: 0});
+//   const env = new ColdGasEnv('escape-soft-landing', {seed: 0});   // {vehicle}: twin parameter override (fitting)
 //   let [obs, info] = env.reset();                     // reset(seed?, {preset?})
-//   [obs, reward, terminated, truncated, info] = env.step(u);
+//   [obs, reward, terminated, truncated, info] = env.step(u);   // u: NU valve commands, or NA (+ brake, steer)
 // Observation: obs.js; reward/termination/metrics: tasks.js (spec/README.md section 8).
 import { RigidTwin } from './twin.js';
 import { loadTask, sampleInitial, TaskTracker } from './tasks.js';
 import { Observer } from './obs.js';
-import { NU } from './contract.js';
+import { NU, NA } from './contract.js';
 
 export class ColdGasEnv {
-  constructor(task, { seed = 0, preset = null } = {}) {
+  constructor(task, { seed = 0, preset = null, vehicle = null } = {}) {
     this.task = typeof task === 'string' || !task.initial ? loadTask(task) : task;
-    this.twin = new RigidTwin({ arm: this.task.arm || 'start' });
+    this.twin = new RigidTwin({ arm: this.task.arm || 'start', vehicle });
     this.tracker = new TaskTracker(this.task);
     this.observer = new Observer(this.task);
     this.seed = seed; this.preset = preset;
-    this.nu = NU; this.obsSize = this.observer.size;
+    this.nu = NU; this.na = NA; this.obsSize = this.observer.size; // valves / full action incl. drive (5.13)
   }
   reset(seed = this.seed, options = {}) {
     this.seed = seed;

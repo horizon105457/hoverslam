@@ -1,0 +1,13 @@
+{
+ "name": "drive-stop",
+ "description": "Brakes + steering (spec/drive.json) after the landing: pure MPC with the brake / steer channels (drive: true) and the land objective's drive terms (kerb crash, kerb margin, distance, stop-before-the-kerb), task escape-land-stop (land softly, then stop within 8 s without touching a kerb), 6 presets x 3 seeds; baseline: the same MPC without drive channels. Soft-body counterpart: tools/flight/calib/accept.mjs sets=stop.",
+ "task": "escape-land-stop",
+ "controllers": [
+  { "name": "mpc", "label": "mpc-drive", "drive": true, "objective": { "name": "land", "kerb_crash": true, "w_kerb": 2, "kerb_margin": 1.0, "w_dist": 0.3, "w_stop_kerb": 1, "a_stop": 7, "w_v_end": 0.1, "w_stop_late": 2, "w_crash_v": 0.2, "stop_kerb_air": true, "w_kerb_reach": 1 } },
+  { "name": "mpc", "label": "mpc-nodrive" }
+ ],
+ "presets": ["flat", "nose", "rear", "side", "roof", "corner"],
+ "seeds": [1, 2, 3],
+ "record": "first",
+ "workers": 8
+}

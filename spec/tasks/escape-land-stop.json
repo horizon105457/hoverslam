@@ -1,0 +1,14 @@
+{
+  "id": "escape-land-stop",
+  "extends": "escape-soft-landing",
+  "version": 1,
+  "title": "高架逃逸 · 软着陆并刹停",
+  "summary": "As escape-soft-landing, then brake (and steer) to a stop on the street: after the upright hold the episode ends once the COM's horizontal speed is at most stop_speed, within stop_within seconds of the touchdown, without a wheel ever standing on a kerb (sidewalk or median top). Brake and steer are the action entries after the nozzles (spec/drive.json, spec/README.md 5.13).",
+  "horizon": 12,
+  "success": {
+    "stop_speed": 0.5,
+    "stop_within": 8,
+    "kerb": false
+  },
+  "metrics": ["stopped", "stop_time", "stop_distance", "kerb"]
+}

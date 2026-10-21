@@ -72,7 +72,7 @@ u_cmd[10] ∈ [0,1]` every 20 ms, FlightState fields only (so they also run on a
 | `replay` | JS, Py | `traj` (object) or `file` | plays `u_cmd` of a `coldgas-traj@1` |
 | `mlp` | JS, Py (bit-identical) | `policy` (object) or `file` | runs a `coldgas-policy@1` (PPO export) |
 | `mppi` | JS, Py (bit-identical) | `samples horizon knot replan sigma temperature plan_dt base seed w_* v_ok curb_*` + soft-body options `w_slip w_td_slip w_gnd_slip w_gnd_yaw curb_steps curb_margin bottom_gate base_pd` | sampling MPC (`src/flight/controllers/mppi.js` = `coldgas/controllers/mppi.py`): K noisy residual sequences on top of `pd`, rolled out on a twin loaded from the FlightState, softmax-weighted; settings / cost documented in `defaults.json` `mppi`. JS: ~2.5 s per escape episode (Python ~18 s); runs closed loop on the soft body |
-| `mpc` | JS only | `horizon knot knot_growth interp replan plan_dt mixer umax channel_scale noise_decay coast init first_passes optimizer objective` + optimizer blocks `mppi cem grad hybrid` | pure MPC (`src/flight/mpc/`), no base pilot: an open-loop command schedule re-optimised every `replan` steps from the FlightState; optimizers `mppi` / `cem` (sampling), `grad` (finite-difference projected descent), `hybrid` (stages); objectives `land` / `roll` / `gas`. Defaults in `src/flight/mpc/defaults.json`. ~16 s per escape episode (cem); runs closed loop on the soft body (`controller='mpc:{...}'`) |
+| `mpc` | JS only | `horizon knot knot_growth interp replan plan_dt mixer umax channel_scale noise_decay coast ground_cut init first_passes optimizer objective` + optimizer blocks `mppi cem grad hybrid` | pure MPC (`src/flight/mpc/`), no base pilot: an open-loop command schedule re-optimised every `replan` steps from the FlightState; optimizers `mppi` / `cem` (sampling), `grad` (finite-difference projected descent), `hybrid` (stages); objectives `land` / `roll` / `gas`. Defaults in `src/flight/mpc/defaults.json`. ~16 s per escape episode (cem); runs closed loop on the soft body (`controller='mpc:{...}'`) |
 
 ## Pure MPC (`mpc`, JS only)
 
@@ -83,7 +83,9 @@ rigid planning twin loaded from the current FlightState; the first part of it is
 - **Schedule** (`param.js`): knots every `knot` s (growing by `knot_growth`), `interp` `linear` (default) or `zoh`;
   `mixer` `modes` (default: 7 wrench channels, bottom heave / pitch / roll, rear surge / pitch / yaw, side sway, from
   the min-norm allocation of each nozzle group about the full-tank COM) or `raw` (10 valves); `umax` ceiling per
-  group; `coast` s of forced free fall after arming (plan and execution); `init` the cold-start schedule.
+  group; `coast` s of forced free fall after arming (plan and execution); `ground_cut` s after the touchdown from which
+  the bottom valves stay closed (plan and execution; opt-in, see the barrel-roll report's 2026-10-21 note); `init` the
+  cold-start schedule.
 - **Optimizers** (`optim/`): `mppi` (softmax mean), `cem` (elite refit; default), `grad` (finite differences on
   the rollout cost, forward / central / SPSA, projected normalised descent with backtracking), `hybrid` (stages on
   the same θ, e.g. mppi → grad). Sampling noise is AR(1)-smooth along the knots (`rho`), scaled per channel
@@ -101,16 +103,17 @@ landing (`w_air` 50 + 20/m, otherwise the plan hovers), small exploration on the
 noise random-walks the attitude), and pricing the touchdown before the crash in the same step (else every crashing
 sample costs the same and the one with the least gas wins).
 
-`mpc-baseline` (6 presets × seeds 1-3, defaults unless noted, spec of 2026-10-20 17:00):
+`mpc-baseline` (6 presets × seeds 1-3, defaults unless noted, spec of 2026-10-21: bottom pairs at z 0.34 / −1.16,
+run `mpc-baseline-js/20261021-003141`; in brackets the 2026-10-20 17:00 layout, pairs at 0.55 / −0.95):
 
 | controller | n | success | hull strike | vy_td | tilt_td | gas kg | return | corner | flat | nose | rear | roof | side | s/ep |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| pd | 18 | 72% | 28% | 0.80 | 0.01 | 47.56 | 2.20 | 0% | 100% | 67% | 100% | 67% | 100% | 0.1 |
-| mpc-cem | 18 | 100% | 0% | 1.13 | 1.40 | 46.13 | 5.65 | 100% | 100% | 100% | 100% | 100% | 100% | 15.9 |
-| mpc-mppi | 18 | 94% | 6% | 1.10 | 2.44 | 47.14 | 4.37 | 67% | 100% | 100% | 100% | 100% | 100% | 14.4 |
-| mpc-grad (2 iters) | 18 | 33% | 39% | 2.84 | 6.69 | 40.62 | -6.64 | 33% | 0% | 67% | 33% | 67% | 0% | 10.7 |
-| mpc-hybrid (mppi 2 → grad 1) | 18 | 94% | 6% | 1.10 | 1.53 | 46.63 | 4.57 | 67% | 100% | 100% | 100% | 100% | 100% | 21.5 |
-| mpc-cem, zoh | 18 | 33% | 33% | 1.54 | 10.58 | 107.63 | -11.01 | 67% | 33% | 33% | 67% | 0% | 0% | 14.1 |
+| pd | 18 | 78% (72) | 22% | 0.80 | 0.01 | 46.55 (47.56) | 3.32 | 0% | 100% | 100% | 100% | 67% | 100% | 0.0 |
+| mpc-cem | 18 | 100% (100) | 0% | 1.14 | 1.42 | 46.30 (46.13) | 5.58 | 100% | 100% | 100% | 100% | 100% | 100% | 15.4 |
+| mpc-mppi | 18 | 100% (94) | 0% | 1.14 | 1.79 | 43.27 (47.14) | 5.79 | 100% | 100% | 100% | 100% | 100% | 100% | 14.7 |
+| mpc-grad (2 iters) | 18 | 44% (33) | 6% | 2.13 | 3.64 | 39.43 (40.62) | -1.39 | 67% | 0% | 67% | 67% | 33% | 33% | 11.5 |
+| mpc-hybrid (mppi 2 → grad 1) | 18 | 100% (94) | 0% | 1.15 | 2.17 | 44.38 (46.63) | 5.92 | 100% | 100% | 100% | 100% | 100% | 100% | 17.4 |
+| mpc-cem, zoh | 18 | 28% (33) | 33% | 1.37 | 11.25 | 93.44 (107.63) | -11.28 | 33% | 0% | 0% | 33% | 33% | 67% | 10.4 |
 
 ```sh
 node tools/flight/bench.mjs experiments/configs/mpc-baseline.json workers=16
@@ -156,53 +159,74 @@ closed loop pays for yaw damping with the rear jets); (4) the roof preset drifts
 1.5 m footprint margin). A clearance-margin cost on the twin's hull points was tried and dropped (the planner
 hovered instead of landing).
 
-Soft body, escape-soft-landing criteria (`ThrusterRig.summary`), spec of 2026-10-20 17:00 (35 MPa fill, 8.7 kN bottom
-nozzles), lattice of 16:20 (headlamp joint):
+Soft body, escape-soft-landing criteria (`ThrusterRig.summary`), spec of 2026-10-21 (35 MPa fill, 8.7 kN bottom
+nozzles, bottom pairs at z 0.34 / −1.16), lattice of 2026-10-20 16:20 (headlamp joint); gas in brackets: the
+2026-10-20 17:00 layout (pairs at 0.55 / −0.95), same success / failure for every run. The replay replays
+`baseline-soft-landing/20261021-003455` `mppi__nose__s2`. Rows marked † were not re-run (previous layout):
 
 | run | controller | success | vy_td m/s | tilt_td ° | rate_td rad/s | max tilt in hold ° | hull strike | gas kg | parts off |
 |---|---|---|---|---|---|---|---|---|---|
-| nose | ap (`flight-soft`) | ✓ | 0.91 | 0.04 | 0.04 | 1.4 | – | 61.4 | 0 |
-| nose | pd (`flight-pd-nose`) | × | 0.80 | 0.10 | 0.15 | 54.8 | 3.65 s | 46.0 | 10 |
-| nose | replay of Python MPPI (`flight-replay-mppi-nose`) | × | 6.33 | 46.7 | 0.88 | 75.4 | 2.40 s | 79.5 | 9 |
-| nose | mppi, baseline settings | × | 0.76 | 2.0 | 0.29 | 5.3 | 3.57 s | 60.0 | 11 |
-| nose | **mppi-soft** (`flight-mppi-nose`) | ✓ | 0.52 | 0.99 | 0.24 | 1.1 | – | 74.1 | 0 |
-| roof | ap (`flight-recover`) | ✓ | 0.95 | 0.05 | 0.12 | 1.3 | – | 80.8 | 0 |
-| roof | pd (`flight-pd-roof`) | × | 0.80 | 0.08 | 0.14 | 37.8 | 3.68 s | 49.5 | 11 |
-| roof | mppi, baseline settings | × | 0.53 | 7.2 | 0.33 | 7.0 | 3.76 s | 68.7 | 5 |
-| roof | **mppi-soft** (`flight-mppi-roof`) | ✓ | 0.76 | 0.21 | 0.14 | 1.1 | – | 62.6 | 0 |
+| nose | ap (`flight-soft`) | ✓ | 0.92 | 0.04 | 0.04 | 1.4 | – | 65.1 (61.4) | 0 |
+| nose | pd (`flight-pd-nose`) | × | 0.80 | 0.10 | 0.16 | 49.3 | 3.64 s | 45.6 (46.0) | 8 |
+| nose | replay of Python MPPI (`flight-replay-mppi-nose`) | × | 6.35 | 48.5 | 0.81 | 120.0 | 2.36 s | 57.4 (79.5) | 11 |
+| nose | mppi, baseline settings † | × | 0.76 | 2.0 | 0.29 | 5.3 | 3.57 s | 60.0 | 11 |
+| nose | **mppi-soft** (`flight-mppi-nose`) | ✓ | 0.56 | 1.59 | 0.22 | 1.6 | – | 60.9 (74.1) | 0 |
+| roof | ap (`flight-recover`) | ✓ | 0.95 | 0.05 | 0.12 | 1.3 | – | 81.0 (80.8) | 0 |
+| roof | pd (`flight-pd-roof`) | × | 0.80 | 0.09 | 0.14 | 32.6 | 3.63 s | 48.3 (49.5) | 11 |
+| roof | mppi, baseline settings † | × | 0.53 | 7.2 | 0.33 | 7.0 | 3.76 s | 68.7 | 5 |
+| roof | **mppi-soft** (`flight-mppi-roof`) | ✓ | 0.51 | 0.64 | 0.28 | 1.6 | – | 63.7 (62.6) | 0 |
 
-mppi-soft on further soft-body cases (outDir runs): nose seed 1 ✓ 0.77 m/s, nose seed 2 ✓ 0.47, roof seed 1 ✓ 0.84,
+mppi-soft on further soft-body cases (outDir runs, previous layout): nose seed 1 ✓ 0.77 m/s, nose seed 2 ✓ 0.47, roof seed 1 ✓ 0.84,
 roof seed 2 ✓ 0.54, flat ✓ 0.77, rear ✓ 0.46, side ✓ 0.52, corner ✓ 0.63: 8/8 + the two recordings above (the
 corner preset struck its hull 0.27 s after touchdown on the previous spec). After the hold, roof s1 / flat /
 nose s2 / side still roll into something 1.2 / 2.6 / 2.9 / 3.3 s after touchdown (4-8 parts off in the first three).
 
-Twin (`mppi-soft-landing`, 6 presets x seeds 1..10, JS and Python give identical episodes):
+Twin (`mppi-soft-landing`, 6 presets x seeds 1..10, JS and Python give identical episodes; run
+`mppi-soft-landing-js/20261021-003423`):
 
 | controller | n | success | hull strike | vy_td | tilt_td | gas kg | return | corner | flat | nose | rear | roof | side | s/ep JS / Py |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| pd | 60 | 52% | 48% | 0.80 | 0.01 | 47.46 | -1.87 | 0% | 70% | 40% | 100% | 40% | 60% | 0.0 / 1.1 |
-| mppi | 60 | 93% | 0% | 0.89 | 4.71 | 54.60 | 5.78 | 100% | 90% | 90% | 100% | 90% | 90% | 2.6 / 24 |
-| mppi-soft | 60 | 97% | 0% | 0.66 | 1.31 | 49.74 | 6.95 | 100% | 100% | 90% | 90% | 100% | 100% | 2.4 / 33 |
+| pd | 60 | 57% | 43% | 0.80 | 0.01 | 46.43 | -0.87 | 0% | 70% | 60% | 100% | 40% | 70% | 0.0 / 1.1 |
+| mppi | 60 | 93% | 0% | 0.94 | 4.19 | 51.31 | 6.13 | 90% | 100% | 80% | 100% | 90% | 100% | 2.2 / 24 |
+| mppi-soft | 60 | 98% | 2% | 0.72 | 1.17 | 45.81 | 7.14 | 90% | 100% | 100% | 100% | 100% | 100% | 2.0 / 33 |
 
-(Spec of 2026-10-20 17:00: 35 MPa fill, 8.7 kN bottom nozzles; on the previous spec (30 MPa, 6.9 kN) pd / mppi /
-mppi-soft scored 42 / 90 / 93 %. With 3 seeds per preset (and seeds 0 and 1 drawing the same initial condition) the
+(Spec of 2026-10-21: bottom pairs at z 0.34 / −1.16; on the 2026-10-20 17:00 layout (pairs at 0.55 / −0.95) pd /
+mppi / mppi-soft scored 52 / 93 / 97 % at 47.5 / 54.6 / 49.7 kg, on the spec before it (30 MPa, 6.9 kN) 42 / 90 / 93 %. With 3 seeds per preset (and seeds 0 and 1 drawing the same initial condition) the
 spread between noise streams is large (`baseline-soft-landing` once gave mppi 18/18 with numpy's normal RNG, 15/18
 with the shared stream), hence the 10-seed config. Python s/ep measured with 16 workers on 18 cores, previous spec.)
 
+## Twin touchdown calibration (2026-10-21)
+
+Soft-body landing experiments → fitted twin `coldgas-rigid@2` → failure criteria in the MPC → soft-body acceptance;
+report `experiments/reports/touchdown-calibration/README.md`. Tools: `tools/flight/touchdown/` (drop rig + design,
+README there), `tools/flight/calib/` (`fit.mjs` CMA-ES fit, `validate.mjs` held-out errors + thresholds, `accept.mjs`
+soft-body closed loop with Wilson intervals, `root=` runs another source tree). Twin configs
+`experiments/configs/touchdown-accept-{land,roll}.json`; runs `experiments/runs/touchdown-doe/`, `calib/`, `accept/`.
+
+## Brakes and steering (2026-10-21)
+
+Task `escape-land-stop` (land softly, then stop within 8 s of the touchdown without a wheel on a kerb; spec/README.md
+§8, §5.13). The MPC plans the two drive channels with `drive: true` (zero until the touchdown) and the land objective's
+drive terms; config `experiments/configs/drive-stop.json` (`mpc-drive` vs `mpc-nodrive`). Twin: 17/18 vs 0/18. Soft body:
+`tools/flight/calib/accept.mjs sets=stop,rollstop` (24/26 stop cleanly). Drive tests of the soft body and the joint twin
+fit: `tools/flight/drive/`, report `experiments/reports/drive-brakes-steering`.
+
 ## Results so far
 
-`baseline-soft-landing` (escape-soft-landing, 6 presets × 3 seeds, spec 2026-10-20 17:00: 35 MPa, 8.7 kN bottom):
+`baseline-soft-landing` (escape-soft-landing, 6 presets × 3 seeds, spec 2026-10-21: bottom pairs at z 0.34 / −1.16,
+run `baseline-soft-landing/20261021-003455`; in brackets the 2026-10-20 17:00 layout):
 
 | controller | n | success | hull strike | vy_td mean (m/s) | tilt_td mean (°) | gas (kg) | return | s/episode (Py, 8 workers) |
 |---|---|---|---|---|---|---|---|---|
-| zero | 18 | 0 % | 100 % | 12.65 | 150.3 | 0.0 | −32.97 | 0.5 |
-| pd | 18 | 72 % | 28 % | 0.80 | 0.01 | 48.0 | 2.16 | 1.1 |
-| mppi | 18 | 89 % | 0 % | 0.93 | 3.95 | 55.2 | 4.99 | 20.0 |
+| zero | 18 | 0 % | 100 % | 12.66 | 150.3 | 0.0 | −32.97 | 0.5 |
+| pd | 18 | 78 % (72) | 22 % | 0.80 | 0.01 | 47.0 (48.0) | 3.27 | 1.0 |
+| mppi | 18 | 83 % (89) | 6 % | 0.91 | 3.48 | 49.7 (55.2) | 4.83 | 16.8 |
 
-pd fails on every `corner` seed and on one `nose` and one `roof` seed: its slow powered descent carries the car
-onto the sidewalk side of the crossing and it rolls into a kerb within the 1 s upright hold; MPPI sees the kerb in
-its rollouts and steers / times the landing into the kerb-free crossing (its failures: nose s2 hovers into the
-timeout, roof s0 tilts past the limit in the hold). `flight-replay-mppi-nose` replays `mppi__nose__s2` of this run.
+pd fails on every `corner` seed and on one `roof` seed: its slow powered descent carries the car onto the sidewalk
+side of the crossing and it rolls into a kerb within the 1 s upright hold; MPPI sees the kerb in its rollouts and
+steers / times the landing into the kerb-free crossing (its failures: nose s2 / corner s1 touch down at 7.6° / 8.9° tilt,
+corner s0 strikes its hull; on the previous layout nose s2 hovered into the timeout and roof
+s0 tilted past the limit: with 3 seeds that is noise, the 10-seed `mppi-soft-landing` above is the comparison). `flight-replay-mppi-nose` replays `mppi__nose__s2` of this run.
 
 `pd-precision-pad`, `pd-tumble-recovery` (12 task-drawn seeds each): pd 0 % on the pad task (it does not aim: its
 long powered descent lands 20–34 m past the pad), 25 % on tumble-recovery (it rights every car within ~0.5 m of

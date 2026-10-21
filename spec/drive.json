@@ -1,0 +1,16 @@
+{
+  "_doc": "Brakes and steering of the MINI EV: the car's own hardware, shared by the soft body (src/softbody/drive.js) and both rigid twins (spec/README.md 5.13). Commands are two action channels appended after the nozzles: action index NU (= 10) brake, NU + 1 steer (order of `channels`); a controller may return only the NU valve openings (drive commands 0). Like the valves, the drive commands are forced to 0 while the vehicle is not armed (the deck run is the launcher). Body frame as in propulsion.json.",
+  "version": 1,
+  "channels": ["brake", "steer"],
+  "brake": {
+    "_doc": "Hydraulic friction brake on every wheel with ABS. Command b in [0, 1] (clamped, NaN -> 0); brake pressure beta follows it with a first-order lag tau (beta += (b - beta)(1 - exp(-dt/tau)) per integrator step, also used for release); torque limit per wheel T = beta * torque_max ([front, rear], N m), Coulomb: the brake opposes the wheel's spin relative to its hub and never reverses it. ABS: on a loaded wheel the brake never pulls the spin below (1 - abs_slip) x the rolling-matched spin (slip ratio <= abs_slip); an unloaded wheel (in the air) is braked towards zero spin. Front-biased like the stock car; either axle can lock its wheels on dry asphalt without ABS (rear 66 % of the kit car's weight static, about 45 % under 0.8 g braking).",
+    "torque_max": [1200, 900],
+    "tau": 0.05,
+    "abs_slip": 0.10
+  },
+  "steer": {
+    "_doc": "Front-wheel steering: both front wheels turn by the same road-wheel angle delta about the vertical through the wheel centre (parallel steer, no Ackermann), + = front edge of the wheel to the car's right (the sign of wheels.toe in vehicle.json, a positive rotation about body +Y: a right turn). Command s in [-1, 1] (clamped, NaN -> 0) -> target s * max_deg; delta moves towards the target by at most rate_deg_s per second (integrator step by integrator step). MINI EV: 4.2 m turning circle at 1.94 m wheelbase ~ 28 deg lock.",
+    "max_deg": 28,
+    "rate_deg_s": 45
+  }
+}

@@ -51,7 +51,9 @@ import { streetLevel } from '../../world.js';
 
 // Tuned on the twin (flat, experiments/configs/roll-tune*.json, report experiments/reports/barrel-roll): with the MPC
 // settings of experiments/configs/roll-final.json 10/10 flat seeds (19/20 on 1-20) jump >= 2 m, roll 360° and land
-// (~90 kg of gas); soft body: public/sims/flight-mpc-roll.sim succeeds, 4/6 over the report's soft-body cases.
+// (~90 kg of gas); soft body: public/sims/flight-mpc-roll.sim succeeded, 4/6 over the report's soft-body cases, on the
+// 2026-10-20 nozzle layout; since the bottom pairs moved (2026-10-21) it strikes the rear floor after touchdown
+// (twin 9/10; heave exploration x1.3: twin 10/10, soft body 0/6), see the report's 2026-10-21 note.
 // Why these values: w_jump 200 (at 40 a climb 0.1-0.5 m short was cheaper than the gas), w_climb 3 (cold start),
 // jump_first (else the plan rolls at once and the thrust never points up long enough to jump), w_wrong 20 / w_deck 2
 // (the counter-roll / drift back into the parapet), w_inv 2 (upside-down thrust), w_roll_run 0 (the hurry term did
