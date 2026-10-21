@@ -53,7 +53,7 @@ const KEYS = [
   [ 8.0,  155,   8.2,  0.70,  0.00,  40,  0],
   // after the stop: a slow push and a little orbit, the car right of centre (the end card sits on the left)
   [12.0,  145,   6.6,  0.45,  0.05,  36, -1.9],
-  [16.5,  134,   6.0,  0.35,  0.05,  34, -2.1],
+  [18.5,  131,   5.8,  0.33,  0.05,  33.5, -2.2],   // past the segment end at 120-130 BPM: still drifting on the last frame
 ];
 if (P.has('keys')) KEYS.splice(0, KEYS.length, ...JSON.parse(P.get('keys')));
 const CAM_MIN_Y = 0.35;   // never below the street (the descent pulls the rig down with the car)
