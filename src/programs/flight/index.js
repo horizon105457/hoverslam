@@ -38,6 +38,8 @@ const RUNS = [
   { id: 'replay-mppi-nose', label: 'MPPI 开环回放', sub: '车头俯冲 · 孪生 MPPI 轨迹开环回放' },
   { id: 'mppi-nose', label: 'MPPI 闭环 · 软着陆', sub: '车头俯冲 · JS MPPI 在软体上实时重规划（无刹车）' },
   { id: 'mppi-roof', label: 'MPPI 闭环 · 落在路缘', sub: '倒扣车顶 · JS MPPI 软触地，但正落在路缘上（无刹车）' },
+  { id: 'two-costs-first-nose3', label: 'MPC · 托着往下放', sub: '车头俯冲 · 代价无用气项、下落速度计价（gas-two-costs）' },
+  { id: 'two-costs-second-nose3', label: 'MPC · 自杀式点火', sub: '车头俯冲 · 代价加用气项（gas-two-costs）' },
 ];
 const runName = id => (id.startsWith('flight-') ? id.slice(7) : id);
 const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c === 'mppi' ? 'MPPI 闭环' : c === 'mpc' ? '纯 MPC（无 PD）' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);

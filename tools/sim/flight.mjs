@@ -10,6 +10,8 @@
 //               registry); plan count / time (/ rollouts) go into meta.flight.controllerStats
 //   replay: the launch (preset, speed, angle, spin, lead) is taken from the trajectory's `init` so the open-loop
 //           commands meet the same initial condition the twin saw (preset= is then ignored)
+//   launch=<traj.json>: the same for any controller (e.g. a closed-loop MPC on the launch of a twin episode: the twin's
+//           task randomisation of speed / angle / spin is drawn from its seed, the soft body's seed= does not draw it)
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
@@ -28,7 +30,9 @@ const args = parseArgs();
 const ctlSpec = args.controller || 'ap';
 const load = async p => JSON.parse(fs.readFileSync(p.startsWith('/') && !fs.existsSync(p) ? repo(p) : p, 'utf8'));
 const { controller, traj } = await makeController(ctlSpec, { load });
-const init = traj?.init?.type === 'launch' ? traj.init : null;
+const launchOf = t => (t?.init?.type === 'launch' ? t.init : null);
+const init = launchOf(traj) || (args.launch ? launchOf(await load(args.launch)) : null);
+if (args.launch && !init) throw new Error(`launch=${args.launch}: no launch init in that trajectory`);
 const preset = init?.preset || args.preset || 'flat', P = PRESETS[preset];
 if (!P) throw new Error(`unknown preset ${preset}`);
 const name = `flight-${args.out || `${preset}-${ctlSpec.split(/[:{]/)[0]}`}`;
