@@ -220,6 +220,9 @@ trajectory (`scoreTraj`: commands replayed on a fresh twin, objective `step()` p
 cost the cheaper start kept. From one start the start decides the strategy (all-closed: coast + late burn even at
 `w_gas` 0, 53.6 kg; hover: lowered slowly even at 1 / kg); with both starts the cost does (upright presets: w_gas 0
 keeps the slow descent 25/40, 73.8 kg; 1 / kg keeps the late burn 34/40, 43.2 kg, ignition 0.71 s before touchdown).
+v2 (`gas-two-costs-v2.json`, matching the revised script: cost 1 also prices descent speed, `w_sink` 0.02; cost 2 + 2 / kg; three
+cold starts; feasible-first selection): cost 1 picks the slow descent whenever it lands in time (25/30, 78.5 kg), cost 2 the late burn
+(36/39, 43.2 kg); the follow-up tests (failure criteria off, gradient optimizers, ppo's LTV-MPC, a 10x cold plan) are in the report.
 New opt-in MPC settings (default off, old runs bit-identical): `starts` (multi-start cold plan; not used for the
 result, the cold plan's cost is dominated by feasibility) and the land objective's `w_sink` / `sink_ok`.
 

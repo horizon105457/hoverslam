@@ -1,0 +1,217 @@
+{
+ "name": "gas-two-costs-v2",
+ "description": "The FALL script's two experiments, cost-decided version: one MPC (CEM, defaults) from three cold starts (all closed, hover heave 0.33, a late-burn schedule: heave 0 until 1.1 s after arming, full 1.15-1.6 s, then 0.33), whole flights scored by the cost (tools/flight/gas/twocost.mjs) and the cheapest successful start kept (select feasible: the task is the hard constraint, the cost ranks the feasible flights; K1-any / K2-any: cost alone). Cost 1 (K1) = land without gas + w_sink 0.02 (descent faster than 3 m/s priced all the way down: '平稳' is the whole descent, not only the touchdown; without it the cost is indifferent to when the car brakes); cost 2 (K2) = K1 + w_gas 2 per kg. Weights from rescoring gas-two-costs/20261021-175527 (paired, upright presets: K1 prefers holding by 19.2 ± 5.0, K2 the late burn by 29.6 ± 8.9).",
+ "task": "escape-soft-landing",
+ "base": {
+  "name": "mpc"
+ },
+ "controllers": [
+  {
+   "label": "k1-zero",
+   "objective": {
+    "name": "land",
+    "w_gas": 0,
+    "w_sink": 0.02
+   }
+  },
+  {
+   "label": "k1-hover",
+   "objective": {
+    "name": "land",
+    "w_gas": 0,
+    "w_sink": 0.02
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "k1-late",
+   "objective": {
+    "name": "land",
+    "w_gas": 0,
+    "w_sink": 0.02
+   },
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1.1,
+        0
+       ],
+       [
+        1.15,
+        1
+       ],
+       [
+        1.6,
+        1
+       ],
+       [
+        1.65,
+        0.33
+       ]
+      ]
+     }
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  },
+  {
+   "label": "k2-zero",
+   "objective": {
+    "name": "land",
+    "w_gas": 2,
+    "w_sink": 0.02
+   }
+  },
+  {
+   "label": "k2-hover",
+   "objective": {
+    "name": "land",
+    "w_gas": 2,
+    "w_sink": 0.02
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "k2-late",
+   "objective": {
+    "name": "land",
+    "w_gas": 2,
+    "w_sink": 0.02
+   },
+   "optimizer": [
+    {
+     "type": "xinit",
+     "schedule": {
+      "heave": [
+       [
+        0,
+        0
+       ],
+       [
+        1.1,
+        0
+       ],
+       [
+        1.15,
+        1
+       ],
+       [
+        1.6,
+        1
+       ],
+       [
+        1.65,
+        0.33
+       ]
+      ]
+     }
+    },
+    {
+     "type": "cem"
+    }
+   ]
+  }
+ ],
+ "score": {
+  "K1": {
+   "name": "land",
+   "w_gas": 0,
+   "w_sink": 0.02
+  },
+  "K2": {
+   "name": "land",
+   "w_gas": 2,
+   "w_sink": 0.02
+  },
+  "C1": {
+   "name": "land",
+   "w_gas": 0
+  },
+  "C3": {
+   "name": "land",
+   "w_gas": 1
+  }
+ },
+ "select": {
+  "K1": {
+   "score": "K1",
+   "labels": [
+    "k1-zero",
+    "k1-hover",
+    "k1-late"
+   ],
+   "feasible": true
+  },
+  "K2": {
+   "score": "K2",
+   "labels": [
+    "k2-zero",
+    "k2-hover",
+    "k2-late"
+   ],
+   "feasible": true
+  },
+  "K1-any": {
+   "score": "K1",
+   "labels": [
+    "k1-zero",
+    "k1-hover",
+    "k1-late"
+   ]
+  },
+  "K2-any": {
+   "score": "K2",
+   "labels": [
+    "k2-zero",
+    "k2-hover",
+    "k2-late"
+   ]
+  }
+ },
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "record": "all"
+}

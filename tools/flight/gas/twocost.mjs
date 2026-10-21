@@ -6,7 +6,7 @@
 // in the basin of its first plan, so the cost alone cannot move it from one strategy to the other).
 // Config (experiments/configs/gas-two-*.json):
 //   { name, description, task, base: {<mpc settings>}, controllers: [{label, ...}], score: {key: objective},
-//     select: {key: [label, ...]}, presets, seeds, record: 'all'|'first'|'none' }
+//     select: {key: [label, ...]} | {name: {score: key, labels}}, presets, seeds, record: 'all'|'first'|'none' }
 // Per episode (episodes.jsonl): metrics, lib.mjs burnStats, profile (peak sink speed, flight time, bottom thrust
 // over the flight as a fraction of the weight, share of the flight with the bottom nozzles holding >= 1/2 the
 // weight), score[key] = {total, gas_kg (arming -> end), rest = total - w_gas * gas_kg}.
@@ -128,15 +128,21 @@ if (!isMainThread) { // --------------------------------------------------------
   console.log(`\n-> ${path.relative(ROOT, out)}`);
 }
 
-/** Per cost key: for every (preset, seed), the candidate episode with the lowest realized score of that cost. */
+/** Per selection: for every (preset, seed), the candidate episode with the lowest realized score of its cost.
+ *  sel = {name: [label, ...]} (the cost is the score key `name`) or {name: {score: key, labels: [...], feasible}};
+ *  feasible: true = the task is a hard constraint, only successful episodes compete (the cost ranks feasible plans;
+ *  the land objective prices a landing past the deadline or a touchdown just over the task's speed cap only mildly),
+ *  the cheapest failure only if no candidate succeeded. */
 export function select(rows, sel) {
   const res = {};
-  for (const [key, labels] of Object.entries(sel)) {
+  for (const [name, sv] of Object.entries(sel)) {
+    const key = Array.isArray(sv) ? name : sv.score, labels = Array.isArray(sv) ? sv : sv.labels, fz = !Array.isArray(sv) && sv.feasible;
+    const better = (r, b) => (fz && r.metrics.success !== b.metrics.success ? r.metrics.success : r.score[key].total < b.score[key].total);
     const by = new Map();
-    for (const r of rows) if (labels.includes(r.label)) { const id = `${r.preset}|${r.seed}`, b = by.get(id); if (!b || r.score[key].total < b.score[key].total) by.set(id, r); }
+    for (const r of rows) if (labels.includes(r.label)) { const id = `${r.preset}|${r.seed}`, b = by.get(id); if (!b || better(r, b)) by.set(id, r); }
     const ps = [...by.values()], picks = {};
     for (const r of ps) picks[r.label] = (picks[r.label] || 0) + 1;
-    res[key] = { n: ps.length, picks, success: ps.filter(r => r.metrics.success).length, gas: ps.reduce((s, r) => s + r.metrics.gas_used_kg, 0) / (ps.length || 1),
+    res[name] = { score: key, n: ps.length, picks, success: ps.filter(r => r.metrics.success).length, gas: ps.reduce((s, r) => s + r.metrics.gas_used_kg, 0) / (ps.length || 1),
       episodes: ps.map(r => ({ preset: r.preset, seed: r.seed, label: r.label, score: r.score[key].total, gas: r.metrics.gas_used_kg, success: r.metrics.success })) };
   }
   return res;

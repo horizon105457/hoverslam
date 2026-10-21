@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 652" width="760" height="652" role="img"><style>
+svg{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.t3{fill:#898781}.grid{stroke:#e1e0d9;stroke-width:1}.axis{stroke:#c3c2b7;stroke-width:1}
+.shade{fill:#0b0b0b;fill-opacity:0.05}.ref{stroke:#52514e;stroke-width:1;stroke-dasharray:4 3;fill:none}
+.ln{fill:none!important;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.band{stroke:none!important;fill-opacity:0.12}
+.mk{stroke:#fcfcfb!important;stroke-width:2}.err{stroke-width:1.5;fill:none!important}
+.s0{stroke:#2a78d6;fill:#2a78d6}.s1{stroke:#eb6834;fill:#eb6834}.s2{stroke:#1baf7a;fill:#1baf7a}.s3{stroke:#eda100;fill:#eda100}.s4{stroke:#e87ba4;fill:#e87ba4}.s5{stroke:#008300;fill:#008300}
+@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#f0efec}.t2{fill:#c3c2b7}.grid{stroke:#2c2c2a}.axis{stroke:#383835}.shade{fill:#f0efec}.ref{stroke:#c3c2b7}.mk{stroke:#1a1a19!important}.s0{stroke:#3987e5;fill:#3987e5}.s1{stroke:#d95926;fill:#d95926}.s2{stroke:#199e70;fill:#199e70}.s3{stroke:#c98500;fill:#c98500}.s4{stroke:#d55181;fill:#d55181}.s5{stroke:#008300;fill:#008300}}
+</style>
+<rect class="bg" width="760" height="652"/>
+<text class="t1" x="12" y="20" font-size="15" font-weight="600">图 5  按发射预设：用气与成功率（每点 10 回合）</text>
+<text class="t1" x="56" y="48" font-size="13" font-weight="600">(a) 用气（成功回合，均值 ± 标准差）</text>
+<line class="grid" x1="56" x2="744" y1="257.71" y2="257.71"/><text class="t3" x="50" y="261.21" font-size="10" text-anchor="end">40</text>
+<line class="grid" x1="56" x2="744" y1="197.14" y2="197.14"/><text class="t3" x="50" y="200.64" font-size="10" text-anchor="end">60</text>
+<line class="grid" x1="56" x2="744" y1="136.57" y2="136.57"/><text class="t3" x="50" y="140.07" font-size="10" text-anchor="end">80</text>
+<line class="grid" x1="56" x2="744" y1="76" y2="76"/><text class="t3" x="50" y="79.5" font-size="10" text-anchor="end">100</text>
+<text class="t3" x="113.33" y="303" font-size="10" text-anchor="middle">flat</text>
+<text class="t3" x="228" y="303" font-size="10" text-anchor="middle">nose</text>
+<text class="t3" x="342.67" y="303" font-size="10" text-anchor="middle">rear</text>
+<text class="t3" x="457.33" y="303" font-size="10" text-anchor="middle">side</text>
+<text class="t3" x="572" y="303" font-size="10" text-anchor="middle">roof</text>
+<text class="t3" x="686.67" y="303" font-size="10" text-anchor="middle">corner</text>
+<line class="axis" x1="56" x2="744" y1="288" y2="288"/>
+<text class="t2" x="400" y="322" font-size="11" text-anchor="middle">发射预设</text>
+<text class="t2" transform="translate(13,182) rotate(-90)" font-size="11" text-anchor="middle">kg</text>
+<line class="err s0" x1="78.93" x2="78.93" y1="220.67" y2="210.96"/>
+<line class="err s0" x1="193.6" x2="193.6" y1="234.51" y2="208.76"/>
+<line class="err s0" x1="308.27" x2="308.27" y1="228.91" y2="214.08"/>
+<line class="err s0" x1="422.93" x2="422.93" y1="227.95" y2="215.16"/>
+<line class="err s0" x1="537.6" x2="537.6" y1="218.37" y2="179.96"/>
+<line class="err s0" x1="652.27" x2="652.27" y1="194.45" y2="166.05"/>
+<circle class="mk s0" cx="78.93" cy="215.81" r="4.5"><title>第一种 · 全关起步 @ flat: 53.84 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="193.6" cy="221.63" r="4.5"><title>第一种 · 全关起步 @ nose: 51.91 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="308.27" cy="221.49" r="4.5"><title>第一种 · 全关起步 @ rear: 51.96 (成功 9/10)</title></circle>
+<circle class="mk s0" cx="422.93" cy="221.55" r="4.5"><title>第一种 · 全关起步 @ side: 51.94 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="537.6" cy="199.17" r="4.5"><title>第一种 · 全关起步 @ roof: 59.33 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="652.27" cy="180.25" r="4.5"><title>第一种 · 全关起步 @ corner: 65.58 (成功 10/10)</title></circle>
+<line class="err s1" x1="92.69" x2="92.69" y1="168.4" y2="101"/>
+<line class="err s1" x1="207.36" x2="207.36" y1="178.31" y2="119.16"/>
+<line class="err s1" x1="322.03" x2="322.03" y1="173.71" y2="135.75"/>
+<line class="err s1" x1="436.69" x2="436.69" y1="166.23" y2="123.21"/>
+<line class="err s1" x1="551.36" x2="551.36" y1="169.18" y2="102.85"/>
+<line class="err s1" x1="666.03" x2="666.03" y1="160.25" y2="93.06"/>
+<circle class="mk s1" cx="92.69" cy="134.7" r="4.5"><title>第一种 · 托住起步 @ flat: 80.62 (成功 7/10)</title></circle>
+<circle class="mk s1" cx="207.36" cy="148.74" r="4.5"><title>第一种 · 托住起步 @ nose: 75.98 (成功 7/10)</title></circle>
+<circle class="mk s1" cx="322.03" cy="154.73" r="4.5"><title>第一种 · 托住起步 @ rear: 74.00 (成功 8/10)</title></circle>
+<circle class="mk s1" cx="436.69" cy="144.72" r="4.5"><title>第一种 · 托住起步 @ side: 77.31 (成功 8/10)</title></circle>
+<circle class="mk s1" cx="551.36" cy="136.01" r="4.5"><title>第一种 · 托住起步 @ roof: 80.18 (成功 10/10)</title></circle>
+<circle class="mk s1" cx="666.03" cy="126.65" r="4.5"><title>第一种 · 托住起步 @ corner: 83.28 (成功 6/10)</title></circle>
+<line class="err s2" x1="106.45" x2="106.45" y1="240.05" y2="171.39"/>
+<line class="err s2" x1="221.12" x2="221.12" y1="229.84" y2="202.41"/>
+<line class="err s2" x1="335.79" x2="335.79" y1="224.64" y2="202.65"/>
+<line class="err s2" x1="450.45" x2="450.45" y1="227.36" y2="202.56"/>
+<line class="err s2" x1="565.12" x2="565.12" y1="208.86" y2="178.43"/>
+<line class="err s2" x1="679.79" x2="679.79" y1="176.71" y2="106.1"/>
+<circle class="mk s2" cx="106.45" cy="205.72" r="4.5"><title>第一种 · 晚点火起步 @ flat: 57.17 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="221.12" cy="216.13" r="4.5"><title>第一种 · 晚点火起步 @ nose: 53.73 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="335.79" cy="213.64" r="4.5"><title>第一种 · 晚点火起步 @ rear: 54.55 (成功 9/10)</title></circle>
+<circle class="mk s2" cx="450.45" cy="214.96" r="4.5"><title>第一种 · 晚点火起步 @ side: 54.12 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="565.12" cy="193.65" r="4.5"><title>第一种 · 晚点火起步 @ roof: 61.15 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="679.79" cy="141.41" r="4.5"><title>第一种 · 晚点火起步 @ corner: 78.40 (成功 9/10)</title></circle>
+<line class="err s3" x1="120.21" x2="120.21" y1="257.3" y2="246.74"/>
+<line class="err s3" x1="234.88" x2="234.88" y1="265.12" y2="256.05"/>
+<line class="err s3" x1="349.55" x2="349.55" y1="260.51" y2="233.78"/>
+<line class="err s3" x1="464.21" x2="464.21" y1="264.24" y2="236.39"/>
+<line class="err s3" x1="578.88" x2="578.88" y1="240.9" y2="211.86"/>
+<line class="err s3" x1="693.55" x2="693.55" y1="235.96" y2="232.29"/>
+<circle class="mk s3" cx="120.21" cy="252.02" r="4.5"><title>第二种 · 全关起步 @ flat: 41.88 (成功 10/10)</title></circle>
+<circle class="mk s3" cx="234.88" cy="260.59" r="4.5"><title>第二种 · 全关起步 @ nose: 39.05 (成功 8/10)</title></circle>
+<circle class="mk s3" cx="349.55" cy="247.14" r="4.5"><title>第二种 · 全关起步 @ rear: 43.49 (成功 8/10)</title></circle>
+<circle class="mk s3" cx="464.21" cy="250.31" r="4.5"><title>第二种 · 全关起步 @ side: 42.44 (成功 10/10)</title></circle>
+<circle class="mk s3" cx="578.88" cy="226.38" r="4.5"><title>第二种 · 全关起步 @ roof: 50.35 (成功 9/10)</title></circle>
+<circle class="mk s3" cx="693.55" cy="234.12" r="4.5"><title>第二种 · 全关起步 @ corner: 47.79 (成功 2/10)</title></circle>
+<line class="err s4" x1="133.97" x2="133.97" y1="207.91" y2="163.17"/>
+<line class="err s4" x1="248.64" x2="248.64" y1="199.1" y2="175.92"/>
+<line class="err s4" x1="363.31" x2="363.31" y1="242.29" y2="168.8"/>
+<line class="err s4" x1="477.97" x2="477.97" y1="221.94" y2="173.2"/>
+<line class="err s4" x1="592.64" x2="592.64" y1="198.96" y2="186.6"/>
+<line class="err s4" x1="707.31" x2="707.31" y1="156.43" y2="125.41"/>
+<circle class="mk s4" cx="133.97" cy="185.54" r="4.5"><title>第二种 · 托住起步 @ flat: 63.83 (成功 6/10)</title></circle>
+<circle class="mk s4" cx="248.64" cy="187.51" r="4.5"><title>第二种 · 托住起步 @ nose: 63.18 (成功 3/10)</title></circle>
+<circle class="mk s4" cx="363.31" cy="205.54" r="4.5"><title>第二种 · 托住起步 @ rear: 57.23 (成功 5/10)</title></circle>
+<circle class="mk s4" cx="477.97" cy="197.57" r="4.5"><title>第二种 · 托住起步 @ side: 59.86 (成功 6/10)</title></circle>
+<circle class="mk s4" cx="592.64" cy="192.78" r="4.5"><title>第二种 · 托住起步 @ roof: 61.44 (成功 6/10)</title></circle>
+<circle class="mk s4" cx="707.31" cy="140.92" r="4.5"><title>第二种 · 托住起步 @ corner: 78.56 (成功 2/10)</title></circle>
+<line class="err s5" x1="147.73" x2="147.73" y1="261.77" y2="231.16"/>
+<line class="err s5" x1="262.4" x2="262.4" y1="257.63" y2="232.77"/>
+<line class="err s5" x1="377.07" x2="377.07" y1="259.68" y2="237.14"/>
+<line class="err s5" x1="491.73" x2="491.73" y1="260.12" y2="235.8"/>
+<line class="err s5" x1="606.4" x2="606.4" y1="238.9" y2="216.06"/>
+<line class="err s5" x1="721.07" x2="721.07" y1="248.59" y2="196.43"/>
+<circle class="mk s5" cx="147.73" cy="246.46" r="4.5"><title>第二种 · 晚点火起步 @ flat: 43.71 (成功 7/10)</title></circle>
+<circle class="mk s5" cx="262.4" cy="245.2" r="4.5"><title>第二种 · 晚点火起步 @ nose: 44.13 (成功 8/10)</title></circle>
+<circle class="mk s5" cx="377.07" cy="248.41" r="4.5"><title>第二种 · 晚点火起步 @ rear: 43.07 (成功 8/10)</title></circle>
+<circle class="mk s5" cx="491.73" cy="247.96" r="4.5"><title>第二种 · 晚点火起步 @ side: 43.22 (成功 9/10)</title></circle>
+<circle class="mk s5" cx="606.4" cy="227.48" r="4.5"><title>第二种 · 晚点火起步 @ roof: 49.98 (成功 9/10)</title></circle>
+<circle class="mk s5" cx="721.07" cy="222.51" r="4.5"><title>第二种 · 晚点火起步 @ corner: 51.62 (成功 3/10)</title></circle>
+<line class="ln s0" x1="56" x2="70" y1="66" y2="66"/><text class="t2" x="74" y="69.5" font-size="10">第一种 · 全关起步</text>
+<line class="ln s1" x1="172.8" x2="186.8" y1="66" y2="66"/><text class="t2" x="190.8" y="69.5" font-size="10">第一种 · 托住起步</text>
+<line class="ln s2" x1="289.6" x2="303.6" y1="66" y2="66"/><text class="t2" x="307.6" y="69.5" font-size="10">第一种 · 晚点火起步</text>
+<line class="ln s3" x1="416.4" x2="430.4" y1="66" y2="66"/><text class="t2" x="434.4" y="69.5" font-size="10">第二种 · 全关起步</text>
+<line class="ln s4" x1="533.2" x2="547.2" y1="66" y2="66"/><text class="t2" x="551.2" y="69.5" font-size="10">第二种 · 托住起步</text>
+<line class="ln s5" x1="650" x2="664" y1="66" y2="66"/><text class="t2" x="668" y="69.5" font-size="10">第二种 · 晚点火起步</text>
+<text class="t1" x="56" y="348" font-size="13" font-weight="600">(b) 成功率</text>
+<line class="grid" x1="56" x2="744" y1="588" y2="588"/><text class="t3" x="50" y="591.5" font-size="10" text-anchor="end">0%</text>
+<line class="grid" x1="56" x2="744" y1="533.71" y2="533.71"/><text class="t3" x="50" y="537.21" font-size="10" text-anchor="end">25%</text>
+<line class="grid" x1="56" x2="744" y1="479.43" y2="479.43"/><text class="t3" x="50" y="482.93" font-size="10" text-anchor="end">50%</text>
+<line class="grid" x1="56" x2="744" y1="425.14" y2="425.14"/><text class="t3" x="50" y="428.64" font-size="10" text-anchor="end">75%</text>
+<line class="grid" x1="56" x2="744" y1="370.86" y2="370.86"/><text class="t3" x="50" y="374.36" font-size="10" text-anchor="end">100%</text>
+<text class="t3" x="113.33" y="603" font-size="10" text-anchor="middle">flat</text>
+<text class="t3" x="228" y="603" font-size="10" text-anchor="middle">nose</text>
+<text class="t3" x="342.67" y="603" font-size="10" text-anchor="middle">rear</text>
+<text class="t3" x="457.33" y="603" font-size="10" text-anchor="middle">side</text>
+<text class="t3" x="572" y="603" font-size="10" text-anchor="middle">roof</text>
+<text class="t3" x="686.67" y="603" font-size="10" text-anchor="middle">corner</text>
+<line class="axis" x1="56" x2="744" y1="588" y2="588"/>
+<text class="t2" x="400" y="622" font-size="11" text-anchor="middle">发射预设</text>
+<text class="t2" transform="translate(13,474) rotate(-90)" font-size="11" text-anchor="middle">成功率</text>
+<circle class="mk s0" cx="78.93" cy="370.86" r="4.5"><title>第一种 · 全关起步 @ flat: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="193.6" cy="370.86" r="4.5"><title>第一种 · 全关起步 @ nose: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="308.27" cy="392.57" r="4.5"><title>第一种 · 全关起步 @ rear: 0.90 (成功 9/10)</title></circle>
+<circle class="mk s0" cx="422.93" cy="370.86" r="4.5"><title>第一种 · 全关起步 @ side: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="537.6" cy="370.86" r="4.5"><title>第一种 · 全关起步 @ roof: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s0" cx="652.27" cy="370.86" r="4.5"><title>第一种 · 全关起步 @ corner: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s1" cx="92.69" cy="436" r="4.5"><title>第一种 · 托住起步 @ flat: 0.70 (成功 7/10)</title></circle>
+<circle class="mk s1" cx="207.36" cy="436" r="4.5"><title>第一种 · 托住起步 @ nose: 0.70 (成功 7/10)</title></circle>
+<circle class="mk s1" cx="322.03" cy="414.29" r="4.5"><title>第一种 · 托住起步 @ rear: 0.80 (成功 8/10)</title></circle>
+<circle class="mk s1" cx="436.69" cy="414.29" r="4.5"><title>第一种 · 托住起步 @ side: 0.80 (成功 8/10)</title></circle>
+<circle class="mk s1" cx="551.36" cy="370.86" r="4.5"><title>第一种 · 托住起步 @ roof: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s1" cx="666.03" cy="457.71" r="4.5"><title>第一种 · 托住起步 @ corner: 0.60 (成功 6/10)</title></circle>
+<circle class="mk s2" cx="106.45" cy="370.86" r="4.5"><title>第一种 · 晚点火起步 @ flat: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="221.12" cy="370.86" r="4.5"><title>第一种 · 晚点火起步 @ nose: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="335.79" cy="392.57" r="4.5"><title>第一种 · 晚点火起步 @ rear: 0.90 (成功 9/10)</title></circle>
+<circle class="mk s2" cx="450.45" cy="370.86" r="4.5"><title>第一种 · 晚点火起步 @ side: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="565.12" cy="370.86" r="4.5"><title>第一种 · 晚点火起步 @ roof: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s2" cx="679.79" cy="392.57" r="4.5"><title>第一种 · 晚点火起步 @ corner: 0.90 (成功 9/10)</title></circle>
+<circle class="mk s3" cx="120.21" cy="370.86" r="4.5"><title>第二种 · 全关起步 @ flat: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s3" cx="234.88" cy="414.29" r="4.5"><title>第二种 · 全关起步 @ nose: 0.80 (成功 8/10)</title></circle>
+<circle class="mk s3" cx="349.55" cy="414.29" r="4.5"><title>第二种 · 全关起步 @ rear: 0.80 (成功 8/10)</title></circle>
+<circle class="mk s3" cx="464.21" cy="370.86" r="4.5"><title>第二种 · 全关起步 @ side: 1.00 (成功 10/10)</title></circle>
+<circle class="mk s3" cx="578.88" cy="392.57" r="4.5"><title>第二种 · 全关起步 @ roof: 0.90 (成功 9/10)</title></circle>
+<circle class="mk s3" cx="693.55" cy="544.57" r="4.5"><title>第二种 · 全关起步 @ corner: 0.20 (成功 2/10)</title></circle>
+<circle class="mk s4" cx="133.97" cy="457.71" r="4.5"><title>第二种 · 托住起步 @ flat: 0.60 (成功 6/10)</title></circle>
+<circle class="mk s4" cx="248.64" cy="522.86" r="4.5"><title>第二种 · 托住起步 @ nose: 0.30 (成功 3/10)</title></circle>
+<circle class="mk s4" cx="363.31" cy="479.43" r="4.5"><title>第二种 · 托住起步 @ rear: 0.50 (成功 5/10)</title></circle>
+<circle class="mk s4" cx="477.97" cy="457.71" r="4.5"><title>第二种 · 托住起步 @ side: 0.60 (成功 6/10)</title></circle>
+<circle class="mk s4" cx="592.64" cy="457.71" r="4.5"><title>第二种 · 托住起步 @ roof: 0.60 (成功 6/10)</title></circle>
+<circle class="mk s4" cx="707.31" cy="544.57" r="4.5"><title>第二种 · 托住起步 @ corner: 0.20 (成功 2/10)</title></circle>
+<circle class="mk s5" cx="147.73" cy="436" r="4.5"><title>第二种 · 晚点火起步 @ flat: 0.70 (成功 7/10)</title></circle>
+<circle class="mk s5" cx="262.4" cy="414.29" r="4.5"><title>第二种 · 晚点火起步 @ nose: 0.80 (成功 8/10)</title></circle>
+<circle class="mk s5" cx="377.07" cy="414.29" r="4.5"><title>第二种 · 晚点火起步 @ rear: 0.80 (成功 8/10)</title></circle>
+<circle class="mk s5" cx="491.73" cy="392.57" r="4.5"><title>第二种 · 晚点火起步 @ side: 0.90 (成功 9/10)</title></circle>
+<circle class="mk s5" cx="606.4" cy="392.57" r="4.5"><title>第二种 · 晚点火起步 @ roof: 0.90 (成功 9/10)</title></circle>
+<circle class="mk s5" cx="721.07" cy="522.86" r="4.5"><title>第二种 · 晚点火起步 @ corner: 0.30 (成功 3/10)</title></circle>
+<text class="t3" x="12" y="645" font-size="10.5">gas-two-costs-v2 20261021-184741</text>
+</svg>

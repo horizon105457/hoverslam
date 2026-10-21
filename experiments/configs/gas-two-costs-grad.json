@@ -1,0 +1,400 @@
+{
+ "name": "gas-two-costs-grad",
+ "description": "Follow-up of gas-two-costs (user: without the post-touchdown failure criteria, and with a gradient-based MPC, does the conclusion come out from one start?). The land objective without its soft-body failure criteria (touchdown sideslip crash / penalty, ground wheel lateral load crash / penalty; hull strike still a crash), w_gas 0 or 1, optimizers cem (sampling), xlbfgs and grad (finite-difference gradient), cem>xlbfgs (hybrid), each from the all-closed and the hover cold start. Upright presets, seeds 1-5. Scores S0 / S1 = the same simplified objective at w_gas 0 / 1; selections keep the cheaper start per optimizer.",
+ "task": "escape-soft-landing",
+ "base": {
+  "name": "mpc"
+ },
+ "controllers": [
+  {
+   "label": "cem-g0-zero",
+   "optimizer": "cem",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   }
+  },
+  {
+   "label": "cem-g0-hover",
+   "optimizer": "cem",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "cem-g1-zero",
+   "optimizer": "cem",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   }
+  },
+  {
+   "label": "cem-g1-hover",
+   "optimizer": "cem",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "xlbfgs-g0-zero",
+   "optimizer": "xlbfgs",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   }
+  },
+  {
+   "label": "xlbfgs-g0-hover",
+   "optimizer": "xlbfgs",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "xlbfgs-g1-zero",
+   "optimizer": "xlbfgs",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   }
+  },
+  {
+   "label": "xlbfgs-g1-hover",
+   "optimizer": "xlbfgs",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "grad-g0-zero",
+   "optimizer": "grad",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   }
+  },
+  {
+   "label": "grad-g0-hover",
+   "optimizer": "grad",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "grad-g1-zero",
+   "optimizer": "grad",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   }
+  },
+  {
+   "label": "grad-g1-hover",
+   "optimizer": "grad",
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "cem>xlbfgs-g0-zero",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ],
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   }
+  },
+  {
+   "label": "cem>xlbfgs-g0-hover",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ],
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 0
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "cem>xlbfgs-g1-zero",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ],
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   }
+  },
+  {
+   "label": "cem>xlbfgs-g1-hover",
+   "optimizer": [
+    {
+     "type": "cem",
+     "iters": 2
+    },
+    {
+     "type": "xlbfgs",
+     "iters": 1
+    }
+   ],
+   "objective": {
+    "name": "land",
+    "td_lat_crash": 1000000000.0,
+    "w_td_lat": 0,
+    "gnd_lat_crash": 1000000000.0,
+    "w_gnd_lat": 0,
+    "w_gas": 1
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ ],
+ "score": {
+  "S0": {
+   "name": "land",
+   "td_lat_crash": 1000000000.0,
+   "w_td_lat": 0,
+   "gnd_lat_crash": 1000000000.0,
+   "w_gnd_lat": 0,
+   "w_gas": 0
+  },
+  "S1": {
+   "name": "land",
+   "td_lat_crash": 1000000000.0,
+   "w_td_lat": 0,
+   "gnd_lat_crash": 1000000000.0,
+   "w_gnd_lat": 0,
+   "w_gas": 1
+  }
+ },
+ "select": {
+  "cem@S0": {
+   "score": "S0",
+   "labels": [
+    "cem-g0-zero",
+    "cem-g0-hover"
+   ]
+  },
+  "cem@S1": {
+   "score": "S1",
+   "labels": [
+    "cem-g1-zero",
+    "cem-g1-hover"
+   ]
+  },
+  "xlbfgs@S0": {
+   "score": "S0",
+   "labels": [
+    "xlbfgs-g0-zero",
+    "xlbfgs-g0-hover"
+   ]
+  },
+  "xlbfgs@S1": {
+   "score": "S1",
+   "labels": [
+    "xlbfgs-g1-zero",
+    "xlbfgs-g1-hover"
+   ]
+  },
+  "grad@S0": {
+   "score": "S0",
+   "labels": [
+    "grad-g0-zero",
+    "grad-g0-hover"
+   ]
+  },
+  "grad@S1": {
+   "score": "S1",
+   "labels": [
+    "grad-g1-zero",
+    "grad-g1-hover"
+   ]
+  },
+  "cem>xlbfgs@S0": {
+   "score": "S0",
+   "labels": [
+    "cem>xlbfgs-g0-zero",
+    "cem>xlbfgs-g0-hover"
+   ]
+  },
+  "cem>xlbfgs@S1": {
+   "score": "S1",
+   "labels": [
+    "cem>xlbfgs-g1-zero",
+    "cem>xlbfgs-g1-hover"
+   ]
+  }
+ },
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "all"
+}

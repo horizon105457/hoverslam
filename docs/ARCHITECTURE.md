@@ -194,6 +194,9 @@ The user asked for the two experiments of the film script (文案 04–05): the 
 - the slow descent is genuinely "smoother" under `land` without gas (−8.6 points, CI 3.7–13.5) and costs 20–25 kg more;
   at the shipped `w_gas` 0.3 the two cancel (toss-up), at 1 / kg the late burn wins 34/40
 - every strategy flies with a mean bottom thrust ≈ the weight, so gas ≈ 19 kg/s × time in the air
+- follow-up (report §9): dropping the soft-body failure criteria, the gradient optimizers (`xlbfgs`, `grad`), ppo's
+  LTV-MPC (convex QP: there the safe-descent envelope, not the linear fuel term, makes it brake late; `w_fuel` 0 costs
+  only 3-5 % more) and a 10x larger cold plan from the hover start all fail to give the result from one start
 - MPC additions (opt-in, default off): `starts` in `src/flight/mpc/index.js` (multi-start cold plan, ctl.start), `w_sink` /
   `sink_ok` in `objectives/land.js`
 

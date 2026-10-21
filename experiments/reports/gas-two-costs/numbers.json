@@ -931,83 +931,155 @@
  "select": {
   "C1@up": {
    "n": 40,
-   "hover": 25,
-   "zero": 15,
+   "picks": {
+    "zero": 15,
+    "hover": 25
+   },
    "success": 38,
-   "gas": 64.97483454179613,
-   "gas_hover": 73.90876629747636,
-   "gas_zero": 50.08494828232896,
-   "margin": 16.640184754442664
+   "kinds": {
+    "hold": 23,
+    "late": 14,
+    "mid": 1
+   },
+   "gas": 66.01695449839448,
+   "gas_sd": 11.358456463205036,
+   "gas_hold": 73.75053135289794,
+   "gas_late": 53.33856776650297,
+   "ign_before_td": 0.8312142857142858,
+   "gas_pre_ign": 45.77212524394391
   },
   "C1@all": {
    "n": 60,
-   "hover": 29,
-   "zero": 31,
+   "picks": {
+    "zero": 31,
+    "hover": 29
+   },
    "success": 55,
-   "gas": 66.00255428706643,
-   "gas_hover": 77.31189985945532,
-   "gas_zero": 55.42284391289612,
-   "margin": 36.28977134303191
+   "kinds": {
+    "hold": 25,
+    "late": 28,
+    "mid": 2
+   },
+   "gas": 65.30746546991925,
+   "gas_sd": 11.352046939653734,
+   "gas_hold": 74.94934880263918,
+   "gas_late": 56.65536482057483,
+   "ign_before_td": 0.8535714285714288,
+   "gas_pre_ign": 40.99358777484605
   },
   "C2@up": {
    "n": 40,
-   "hover": 19,
-   "zero": 21,
+   "picks": {
+    "zero": 21,
+    "hover": 19
+   },
    "success": 39,
-   "gas": 56.794439548290065,
-   "gas_hover": 70.21022151728766,
-   "gas_zero": 44.656351100149344,
-   "margin": 22.976927939672585
+   "kinds": {
+    "hold": 18,
+    "late": 20,
+    "mid": 1
+   },
+   "gas": 58.201239027853894,
+   "gas_sd": 13.070964118990167,
+   "gas_hold": 70.91551079719878,
+   "gas_late": 46.792705662891784,
+   "ign_before_td": 0.7984285714285713,
+   "gas_pre_ign": 39.52129009988065
   },
   "C2@all": {
    "n": 60,
-   "hover": 25,
-   "zero": 35,
+   "picks": {
+    "zero": 35,
+    "hover": 25
+   },
    "success": 56,
-   "gas": 59.962997090257524,
-   "gas_hover": 74.24710094378946,
-   "gas_zero": 49.76006576630613,
-   "margin": 37.459012103489805
+   "kinds": {
+    "hold": 21,
+    "late": 33,
+    "mid": 2
+   },
+   "gas": 59.24524195699392,
+   "gas_sd": 12.886065391022832,
+   "gas_hold": 72.40692824463608,
+   "gas_late": 50.84423914651583,
+   "ign_before_td": 0.8815999999999998,
+   "gas_pre_ign": 36.44629683348524
   },
   "C3@up": {
    "n": 40,
-   "hover": 6,
-   "zero": 34,
+   "picks": {
+    "zero": 34,
+    "hover": 6
+   },
    "success": 39,
-   "gas": 44.493668386320905,
-   "gas_hover": 51.18403428143403,
-   "gas_zero": 43.313015581300945,
-   "margin": 35.44048202776313
+   "kinds": {
+    "hold": 3,
+    "late": 35,
+    "mid": 1
+   },
+   "gas": 45.63042302532669,
+   "gas_sd": 8.79040320861704,
+   "gas_hold": 68.43575780834571,
+   "gas_late": 43.54694813860437,
+   "ign_before_td": 0.7205757575757576,
+   "gas_pre_ign": 23.253905646454008
   },
   "C3@all": {
    "n": 60,
-   "hover": 13,
-   "zero": 47,
+   "picks": {
+    "zero": 47,
+    "hover": 13
+   },
    "success": 54,
-   "gas": 49.85072673519428,
-   "gas_hover": 65.25441148721245,
-   "gas_zero": 45.59013308038076,
-   "margin": 54.686844864117894
+   "kinds": {
+    "hold": 7,
+    "late": 46,
+    "mid": 1
+   },
+   "gas": 49.53070167272667,
+   "gas_sd": 12.432183696694546,
+   "gas_hold": 74.69027106165383,
+   "gas_late": 45.68891202574157,
+   "ign_before_td": 0.8468260869565217,
+   "gas_pre_ign": 24.42521379638856
   },
   "C1s@up": {
    "n": 40,
-   "hover": 32,
-   "zero": 8,
+   "picks": {
+    "zero": 8,
+    "hover": 32
+   },
    "success": 36,
-   "gas": 70.36902472189043,
-   "gas_hover": 75.76639716319315,
-   "gas_zero": 48.77953495667947,
-   "margin": 21.925299534665026
+   "kinds": {
+    "hold": 28,
+    "late": 7,
+    "mid": 1
+   },
+   "gas": 69.94025419899954,
+   "gas_sd": 9.513161178469064,
+   "gas_hold": 73.80375164011231,
+   "gas_late": 55.10028630707755,
+   "ign_before_td": 0.8584285714285713,
+   "gas_pre_ign": 53.37142354966544
   },
   "C1s@all": {
    "n": 60,
-   "hover": 39,
-   "zero": 21,
+   "picks": {
+    "zero": 21,
+    "hover": 39
+   },
    "success": 53,
-   "gas": 69.82724666344747,
-   "gas_hover": 77.58601533534694,
-   "gas_zero": 55.41810484420553,
-   "margin": 38.84329327745972
+   "kinds": {
+    "hold": 30,
+    "late": 21,
+    "mid": 2
+   },
+   "gas": 68.20432861225738,
+   "gas_sd": 10.476350478932666,
+   "gas_hold": 74.79921816241573,
+   "gas_late": 59.00124789398507,
+   "ign_before_td": 1.088190476190476,
+   "gas_pre_ign": 44.55034348980842
   }
  },
  "decomp": {
@@ -1033,6 +1105,7 @@
   {
    "file": "traj/first-flat-s1.json",
    "from": "traj/c1-hover__flat__s1.json",
+   "label": "c1-hover",
    "kind": "first",
    "preset": "flat",
    "seed": 1,
@@ -1046,6 +1119,7 @@
   {
    "file": "traj/second-flat-s1.json",
    "from": "traj/c3-zero__flat__s1.json",
+   "label": "c3-zero",
    "kind": "second",
    "preset": "flat",
    "seed": 1,
@@ -1059,6 +1133,7 @@
   {
    "file": "traj/first-nose-s3.json",
    "from": "traj/c1-hover__nose__s3.json",
+   "label": "c1-hover",
    "kind": "first",
    "preset": "nose",
    "seed": 3,
@@ -1072,6 +1147,7 @@
   {
    "file": "traj/second-nose-s3.json",
    "from": "traj/c3-zero__nose__s3.json",
+   "label": "c3-zero",
    "kind": "second",
    "preset": "nose",
    "seed": 3,
@@ -1085,6 +1161,7 @@
   {
    "file": "traj/first-nose-s5.json",
    "from": "traj/c1-hover__nose__s5.json",
+   "label": "c1-hover",
    "kind": "first",
    "preset": "nose",
    "seed": 5,
@@ -1098,6 +1175,7 @@
   {
    "file": "traj/second-nose-s5.json",
    "from": "traj/c3-zero__nose__s5.json",
+   "label": "c3-zero",
    "kind": "second",
    "preset": "nose",
    "seed": 5,

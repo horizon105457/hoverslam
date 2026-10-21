@@ -1,0 +1,103 @@
+{
+ "name": "gas-two-costs-cold",
+ "description": "Follow-up of gas-two-costs: one start only (hover, the intuitive 'hold the car' plan) with a much larger cold first plan (first_passes 40 / 100 instead of 10, CEM), land objective w_gas 0 vs 1: without a gas price the plan has no reason to let go; with one, can the first plan find the late burn on its own? Upright presets, seeds 1-5.",
+ "task": "escape-soft-landing",
+ "base": {
+  "name": "mpc"
+ },
+ "controllers": [
+  {
+   "label": "hover-fp40-g0",
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "first_passes": 40,
+   "objective": {
+    "name": "land",
+    "w_gas": 0
+   }
+  },
+  {
+   "label": "hover-fp40-g1",
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "first_passes": 40,
+   "objective": {
+    "name": "land",
+    "w_gas": 1
+   }
+  },
+  {
+   "label": "hover-fp100-g0",
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "first_passes": 100,
+   "objective": {
+    "name": "land",
+    "w_gas": 0
+   }
+  },
+  {
+   "label": "hover-fp100-g1",
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "first_passes": 100,
+   "objective": {
+    "name": "land",
+    "w_gas": 1
+   }
+  }
+ ],
+ "score": {
+  "C1": {
+   "name": "land",
+   "w_gas": 0
+  },
+  "C3": {
+   "name": "land",
+   "w_gas": 1
+  }
+ },
+ "select": {},
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "record": "all"
+}
