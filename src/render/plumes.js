@@ -267,7 +267,7 @@ function mergeGeoms(list) {
 // ------------------------------------------------------------------------------------------------ puffs
 const PUFF_VS = /* glsl */`
   attribute vec4 a0, a1, a2, a3;  // pos+birth | dir+C | carry vel+x0 | life, seed, kind, intensity
-  uniform float uTime; uniform vec3 uSun;
+  uniform float uTime; uniform vec3 uSun; uniform vec3 uWind;   // uWind: ambient drift (m/s), zero unless a program sets it
   varying vec2 vUv; varying float vAlpha; varying float vShade; varying float vSeed; varying float vKind; varying float vWy; varying float vErode;
   void main() {
     float age = uTime - a0.w, life = a3.x, kind = a3.z;
@@ -289,6 +289,7 @@ const PUFF_VS = /* glsl */`
     } else if (kind < 1.5) {     // residual fog: slow, large, lingering
       size = (0.6 + 1.8 * (1.0 - exp(-1.5 * age))) * (0.7 + 0.6 * vSeed);
       p.y += -0.25 * age + 0.06 * age * age;
+      p += uWind * age;
       alpha *= smoothstep(0.0, 0.25, age) * pow(1.0 - u, 1.8);
     } else {                     // ground sheet (2) / dust (3): radial wall jet hugging the road
       size = (0.3 + 0.34 * x) * (kind > 2.5 ? 0.6 : 1.0);
@@ -336,7 +337,7 @@ class PuffField {
     g.instanceCount = 0;
     this.mat = new THREE.ShaderMaterial({
       vertexShader: PUFF_VS, fragmentShader: PUFF_FS, transparent: true, depthWrite: false,
-      uniforms: { uTime: { value: 0 }, uTex: { value: puffTexture() }, uSun: { value: stage.sunDir }, uSunCol: { value: new THREE.Color(0xfff1df).multiplyScalar(1.1) }, uAmb: { value: new THREE.Color(0.50, 0.55, 0.62) } },
+      uniforms: { uTime: { value: 0 }, uTex: { value: puffTexture() }, uSun: { value: stage.sunDir }, uSunCol: { value: new THREE.Color(0xfff1df).multiplyScalar(1.1) }, uAmb: { value: new THREE.Color(0.50, 0.55, 0.62) }, uWind: { value: new THREE.Vector3() } },
     });
     this.mesh = new THREE.Mesh(g, this.mat);
     this.mesh.frustumCulled = false; this.mesh.userData.noAO = true; this.mesh.renderOrder = 7;
@@ -354,9 +355,18 @@ class PuffField {
 
 // ------------------------------------------------------------------------------------------------ plumes
 export class Plumes {
-  constructor(scene, stage, { maxPuffs = 60000 } = {}) {
+  /**
+   * style 'default': the look every program had so far (length, density and fog all ∝ sqrt(thrust): a jet at 10 % of
+   * full thrust already reads as a column). style 'thrust' (opt-in, 直到用计算机模拟 04 / 05): each nozzle's jet length,
+   * core density, fog emission, reach and opacity scale ~linearly with its own thrust, so a trimming valve at 0.1-0.3
+   * shows a short faint wisp and only 0.8+ makes a column down to the road; the fog keeps less of the vehicle's velocity
+   * and the lingering residual drifts with `wind` (m/s, world) instead of hanging as a vertical column.
+   */
+  constructor(scene, stage, { maxPuffs = 60000, style = 'default', wind = null } = {}) {
     this.jets = new JetVolumes(scene, stage);
     this.puffs = new PuffField(scene, stage, maxPuffs);
+    this.style = style;
+    if (wind) this.puffs.mat.uniforms.uWind.value.set(wind[0], wind[1], wind[2]);
     this.nom = nozzleNominal();
     this.groups = PROPULSION.nozzles.map(z => z.group);
     this.track = null;
@@ -380,25 +390,26 @@ export class Plumes {
         const F = track.thrustAt(t, i), f = F / this.nom.F[i];
         if (f < 0.01) { accJ = accR = accG = 0; continue; }
         track.poseAt(t, i, pos, dir, vel);
-        const C = 4.4 * Math.sqrt(F / RHO), L = jetLength(f), x0 = 0.8 * L;
+        const C = 4.4 * Math.sqrt(F / RHO), L = jetLength(f, this.style), x0 = 0.8 * L, lin = this.style === 'thrust';
         // jet parcels: continuous enough at the jet speed (more when strong), residual fog at the end
-        accJ += EMIT_DT * 900 * Math.sqrt(f);
+        const xm = lin ? 0.6 + 5.0 * f : 2.6 + 3.6 * Math.sqrt(f), carry = lin ? 0.35 : 1;
+        accJ += EMIT_DT * 900 * (lin ? f : Math.sqrt(f));
         while (accJ >= 1) {
           accJ -= 1;
-          const tb = t + r() * EMIT_DT, xm = 2.6 + 3.6 * Math.sqrt(f), life = (xm * xm - x0 * x0) / (2 * C) * (0.7 + 0.6 * r());
+          const tb = t + r() * EMIT_DT, life = (xm * xm - x0 * x0) / (2 * C) * (0.7 + 0.6 * r());
           const j = jitterDir(dir, 0.07, r);
-          P.push([pos[0], pos[1], pos[2], tb], [j[0], j[1], j[2], C * (0.8 + 0.4 * r())], [vel[0], vel[1], vel[2], x0], [Math.max(0.05, life), r(), 0, 0.14 + 0.1 * Math.sqrt(f)]);
+          P.push([pos[0], pos[1], pos[2], tb], [j[0], j[1], j[2], C * (0.8 + 0.4 * r())], [vel[0] * carry, vel[1] * carry, vel[2] * carry, x0], [Math.max(0.05, life), r(), 0, lin ? 0.13 + 0.1 * f : 0.14 + 0.1 * Math.sqrt(f)]);
         }
         accR += EMIT_DT * 34 * f;
         while (accR >= 1) {
           accR -= 1;
-          const xm = 2.6 + 3.6 * Math.sqrt(f), j = jitterDir(dir, 0.12, r);
-          P.push([pos[0] + j[0] * xm, pos[1] + j[1] * xm, pos[2] + j[2] * xm, t + r() * EMIT_DT], [j[0], j[1], j[2], 6 * Math.sqrt(f)], [vel[0] * 0.5, vel[1] * 0.5, vel[2] * 0.5, 0.2], [1.6 + 1.6 * r(), r(), 1, 0.03 + 0.035 * f]);
+          const j = jitterDir(dir, 0.12, r), cr = lin ? 0.2 : 0.5;
+          P.push([pos[0] + j[0] * xm, pos[1] + j[1] * xm, pos[2] + j[2] * xm, t + r() * EMIT_DT], [j[0], j[1], j[2], 6 * Math.sqrt(f)], [vel[0] * cr, vel[1] * cr, vel[2] * cr, 0.2], [1.6 + 1.6 * r(), r(), 1, lin ? 0.012 + 0.05 * f : 0.03 + 0.035 * f]);
         }
-        // ground sheet where the jet axis reaches the road
-        const lam = groundHit(pos, dir);
-        if (lam < GROUND_REACH) {
-          const k = smooth01((GROUND_REACH - lam) / (GROUND_REACH - 1.0)) * Math.sqrt(f);
+        // ground sheet where the jet axis reaches the road ('thrust': only where the jet's own reach gets there)
+        const lam = groundHit(pos, dir), reach = lin ? Math.min(GROUND_REACH, 0.9 * xm + 0.3) : GROUND_REACH;
+        if (lam < reach) {
+          const k = smooth01((reach - lam) / Math.max(0.3, reach - 1.0)) * (lin ? f : Math.sqrt(f));
           accG += EMIT_DT * 110 * k;
           const hx = pos[0] + dir[0] * lam, hy = pos[1] + dir[1] * lam, hz = pos[2] + dir[2] * lam;
           const bias = [dir[0], dir[2]], bl = Math.hypot(bias[0], bias[1]);
@@ -428,14 +439,14 @@ export class Plumes {
     for (let i = 0; i < NZ; i++) {
       const F = tr.thrustAt(t, i), f = F / this.nom.F[i];
       if (nodePos && tr.fitter) tr.fitter.pose(nodePos, i, pos, dir, iters); else tr.poseAt(t, i, pos, dir);
-      const L = jetLength(f);
-      this.jets.set(i, pos, dir, f > 0.005 ? f : 0, L, this.nom.re[i], groundHit(pos, dir));
+      const L = jetLength(f, this.style), I = this.style === 'thrust' ? Math.max(0, f) ** 1.6 : f;   // the shader's density goes as I^0.6
+      this.jets.set(i, pos, dir, f > 0.005 ? I : 0, L, this.nom.re[i], groundHit(pos, dir));
     }
     this.jets.commit();
   }
 }
 
-const jetLength = f => 0.5 + 2.6 * Math.sqrt(Math.max(0, f));
+const jetLength = (f, style) => (style === 'thrust' ? 0.25 + 3.3 * Math.max(0, f) : 0.5 + 2.6 * Math.sqrt(Math.max(0, f)));
 const smooth01 = u => { u = u < 0 ? 0 : u > 1 ? 1 : u; return u * u * (3 - 2 * u); };
 function jitterDir(d, s, r) {
   const j = [d[0] + (r() - 0.5) * 2 * s, d[1] + (r() - 0.5) * 2 * s, d[2] + (r() - 0.5) * 2 * s], l = Math.hypot(j[0], j[1], j[2]);

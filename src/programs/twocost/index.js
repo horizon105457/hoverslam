@@ -10,7 +10,8 @@
 //   node tools/film/film.mjs program=twocost port=<p> q="run=...&shot=hold" out=<.mp4> w=1920 h=1080 fps=30 samples=16 marks=1
 // Look-dev (all optional): ramp=[[T,t],...] (film s, sim s) and keys=[[T,...],...] (the shot's camera table, JSON)
 // replace the shot's own; devt=<sim s> freezes sim time; total=<s>; nocar=1 hides the car, kit and jets (a clean plate
-// of the same camera, for difference mattes); nojets=1 hides only the jets.
+// of the same camera, for difference mattes); nojets=1 hides only the jets; jets=default draws the jets the flight program's
+// way (∝ sqrt thrust; this program defaults to render/plumes.js style 'thrust'), wind=x,y,z the residual fog's drift (m/s).
 // Camera rigs (columns after T):
 //   car   az, d, h, fy, fov, vf, ahead: around the car's centre of mass A (smoothed once it is on the street) in the
 //         launch frame (az 0 = behind, 90 = the outer side, away from the viaduct; d m out, h m up), the camera height
@@ -158,7 +159,10 @@ export default class TwoCostProgram extends Program {
     this.yEdge = E.y;
 
     // jets: poses from the recording's mount clusters, thrust from the log (as the flight program)
-    this.plumes = new Plumes(stage.scene, stage);
+    // jets drawn ∝ each nozzle's own thrust (render/plumes.js style 'thrust'; jets=default: the flight program's look);
+    // the residual fog drifts on a light breeze (wind=x,y,z m/s)
+    const wind = (P.get('wind') || '1.2,0,-0.8').split(',').map(Number);
+    this.plumes = new Plumes(stage.scene, stage, { style: P.get('jets') === 'default' ? 'default' : 'thrust', wind });
     this.view.extraProbeHidden = this.plumes.objects;
     this.plumes.setTrack(trackFromRecording(player, meta.propulsion));
     this._lastPlumeT = null;
