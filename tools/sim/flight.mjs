@@ -11,7 +11,9 @@
 //   replay: the launch (preset, speed, angle, spin, lead) is taken from the trajectory's `init` so the open-loop
 //           commands meet the same initial condition the twin saw (preset= is then ignored)
 //   launch=<traj.json>: the same for any controller (e.g. a closed-loop MPC on the launch of a twin episode: the twin's
-//           task randomisation of speed / angle / spin is drawn from its seed, the soft body's seed= does not draw it)
+//           task randomisation of speed / angle / spin is drawn from its seed, the soft body's seed= does not draw it;
+//           or zero: the car of that drive-in, unpowered); spin=p,y,r overrides the kerb kick (rad/s, car axes;
+//           0,0,0 = it just drives off)
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
@@ -31,8 +33,9 @@ const ctlSpec = args.controller || 'ap';
 const load = async p => JSON.parse(fs.readFileSync(p.startsWith('/') && !fs.existsSync(p) ? repo(p) : p, 'utf8'));
 const { controller, traj } = await makeController(ctlSpec, { load });
 const launchOf = t => (t?.init?.type === 'launch' ? t.init : null);
-const init = launchOf(traj) || (args.launch ? launchOf(await load(args.launch)) : null);
-if (args.launch && !init) throw new Error(`launch=${args.launch}: no launch init in that trajectory`);
+const init0 = launchOf(traj) || (args.launch ? launchOf(await load(args.launch)) : null);
+if (args.launch && !init0) throw new Error(`launch=${args.launch}: no launch init in that trajectory`);
+const init = init0 && args.spin ? { ...init0, spin: args.spin.split(',').map(Number) } : init0;
 const preset = init?.preset || args.preset || 'flat', P = PRESETS[preset];
 if (!P) throw new Error(`unknown preset ${preset}`);
 const name = `flight-${args.out || `${preset}-${ctlSpec.split(/[:{]/)[0]}`}`;

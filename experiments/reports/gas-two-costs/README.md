@@ -104,8 +104,8 @@
 
 ## 4. 给 04 / 05 画面的轨迹
 
-刚体孪生体轨迹（`coldgas-traj@1`），已复制到本目录 `traj/`（运行目录是 git 忽略的）。在 `sim/` 的 flight 节目里回放：
-`node tools/film/film.mjs program=flight port=5176 q=traj=/experiments/reports/gas-two-costs/traj/first-flat-s1.json out=...`
+刚体孪生体轨迹（`coldgas-traj@1`），已复制到本目录 `traj/`（运行目录是 git 忽略的）。在 flight 节目里回放：
+`node tools/film/film.mjs program=flight port=<p> q=traj=/experiments/reports/gas-two-costs/traj/first-flat-s1.json out=...`
 
 | 文件 | 段 | 预设 · 种子 | 出桥速度 | 用气 | 触地速度 | 点火距触地 |
 |---|---|---|---|---|---|---|
@@ -333,3 +333,5 @@ node tools/flight/gas/twocost-report.mjs run=experiments/runs/gas-two-costs-v2/<
 - **数字的口径**：文案 05c"约 45 / 约 75 公斤，省了整整四成"是孪生体 v2 的统计（第 10 节：第二种 43.2–45.7 kg，托着的第一种
   78.5–80.4 kg，代表回合 45.3 / 74.9）。片子里这一对软体录像是 43.6 / 87.7 kg（省一半）。**决定（2026-10-21）：口播保留统计口径，画面上不显示具体公斤数**，气罐读数只做
   不标数字的比例条，也不把两条的最终气量并排对比（写进了两段的 `画面构想.md`）。
+  **后来改了（2026-10-21 晚，用户）**：05c 改用这对软体录像的数字——"整趟只用了约 44 公斤气，而与此同时第一种用了约 88 公斤，整整多了一倍"
+  （本人补录），上面"不显示公斤数"的限制随之取消。

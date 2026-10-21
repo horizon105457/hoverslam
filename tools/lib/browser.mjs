@@ -23,7 +23,11 @@ export async function openApp(page, args, query, { w, h, timeout = 300000, log =
     page.on('console', m => { if (m.type() === 'error') console.log('[error]', m.text()); });
   }
   const size = w ? `&w=${w}&h=${h}&pr=1` : '';
-  await page.goto(`${appBase(args)}/?capture&paused&film${size}&${query}`);
+  const base = appBase(args);
+  try { await page.goto(`${base}/?capture&paused&film${size}&${query}`); } catch (e) {
+    if (/ERR_CONNECTION_REFUSED/.test(e.message)) throw new Error(`no dev server at ${base}: start one (FREEZE=1 npm run dev -- --port <p>) and pass port=<p>`);
+    throw e;
+  }
   await page.waitForFunction(() => window.app?.ready || window.app?.error, null, { timeout });
   const err = await page.evaluate(() => window.app.error && String(window.app.error));
   if (err) throw new Error(`app failed: ${err}`);

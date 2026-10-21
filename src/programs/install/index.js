@@ -150,7 +150,7 @@ export default class InstallProgram extends Program {
     if (sh) stage.camera.position.add(new THREE.Vector3(Math.sin(T * 91) * 0.02, Math.cos(T * 77) * 0.02, 0).multiplyScalar(sh));
     stage.finish.uniforms.uTime.value = T % 100;
     stage.render(dt);
-    this.drawHud(T, ev);
+    if (!this.ctx.params.has('nohud')) this.drawHud(T, ev); // opening film: clean plates (own typography on top)
     this.transport.setProgress(T / this.seq.total);
     this.transport.setLabel(`${T.toFixed(2)} s`);
   }
@@ -162,7 +162,7 @@ export default class InstallProgram extends Program {
     const evalT = x => { const e = seq.evaluate(Math.min(seq.total - 1e-4, Math.max(0, x))); e.shake = this.shake(x); return e; };
     renderFilmFrame(stage, T, evalT, (t, T0, ev) => this.apply(t, ev), { samples, shutter });
     const ev = evalT(T);
-    this.drawHud(T, ev);
+    if (!this.ctx.params.has('nohud')) this.drawHud(T, ev); // opening film: clean plates (own typography on top)
     this.transport.setProgress(T / seq.total);
   }
 

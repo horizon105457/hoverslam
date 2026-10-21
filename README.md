@@ -15,7 +15,8 @@ npm run dev              # http://127.0.0.1:5173/?program=crash&preset=roof
 npm run film -- program=crash preset=roof out=renders/x.mp4 w=1920 h=1080 samples=16   # 导出成片，需 dev 运行中
 ```
 
-`?program=<id>` 选择节目：`crash`（默认，坠车查看器）、`flight`（冷气辅助逃逸/着陆）、`install`（喷口安装 motion design）。
+`?program=<id>` 选择节目：`crash`（默认，坠车查看器）、`flight`（冷气辅助逃逸/着陆）、`install`（喷口安装 motion design），
+以及短片《直到用计算机模拟》的镜头 `opening`、`slam`。渲染用的服务器另开端口、冻结热更新：`FREEZE=1 npm run dev -- --port 5177`，工具加 `port=5177`。
 
 ### 冷气推进
 
@@ -42,7 +43,7 @@ npm run film:install && npm run film:flight     # 导出三段成片到 renders/
 - `src/playback/view.js`：在仿真时间 t 呈现一段录制（车身、碎片、特效、反射探针）
 - `src/cinema/`：镜头序列（成片时间 → 仿真时间 + 机位）、镜头库、关键时刻分析、离线成片帧
 - `src/scene/layout.js`：碰撞体与预设（数据来自 spec）；`world.js`：场景建模
-- `tools/`：`sim/`（预计算、settle、短跑测试）、`film/`（成片、单帧、截图）、`audit/`（物理与材质审计）、`spec/`（生成）、`dev/`（一次性分析脚本）
+- `tools/`：`sim/`（预计算、settle、短跑测试）、`film/`（成片、单帧、标记点、截图）、`audit/`（物理与材质审计）、`spec/`（生成）、`flight/`（各项实验的脚本）
 
 ## 注意事项
 

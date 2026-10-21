@@ -10,3 +10,5 @@ next to the study's tools (`tools/flight/<study>/`).
 - `gas-late-burn/` — MPC (gradient / sampling / hybrid): is "free fall first, burn late" the gas-optimal soft landing?
 - `gas-two-costs/` — the FALL script's two experiments: MPC with a cost without / with a gas term ("lower the car slowly" vs
   "suicide burn"), gas used by each, trajectories for the film
+- `touchdown-calibration/` — grey-box fit of the twin's touchdown model to designed soft-body landings (`coldgas-rigid@2`)
+- `drive-brakes-steering/` — kit rear arms, brakes with ABS and steering after the landing (`coldgas-rigid@3`)

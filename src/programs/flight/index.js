@@ -6,7 +6,10 @@
 //                                       undeformed car posed per spec/README §1, plumes from the logged thrust
 // Other params: mode=director|free|follow, T=<film s>, paused, hud=0 (no telemetry in films),
 //   look-dev: devcam=px,py,pz,tx,ty,tz[,fov] (relative to the car's COM) devt=<sim s>: film T -> sim devt + T.
-// Film: node tools/film/film.mjs program=flight q=run=soft out=renders/x.mp4 port=5175
+//   devfollow: the devcam moves with the car; devtrack: only horizontally (fixed height: a descent crosses the frame);
+//   devpan: the camera stays put and only its look point follows the car horizontally (a pan at fixed tilt), e.g. two
+//   flights from the same launch shot with the same camera for a side-by-side (直到用计算机模拟 04 / 05).
+// Film: node tools/film/film.mjs program=flight q=run=soft out=renders/x.mp4
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Program } from '../../app/program.js';
@@ -312,8 +315,11 @@ export default class FlightProgram extends Program {
       shots: [shot],
       evaluate: T => {
         const t = t0 + T, p = this.log.p(t0), d = this.log.p(t);
-        const o = new THREE.Vector3(d[0] - p[0], d[1] - p[1], d[2] - p[2]).multiplyScalar(this.params.has('devfollow') ? 1 : 0);
-        return { t, shot, u: 0, shake: 0, roll: 0, pos: new THREE.Vector3(p[0] + v[0], p[1] + v[1], p[2] + v[2]).add(o), tgt: new THREE.Vector3(p[0] + v[3], p[1] + v[4], p[2] + v[5]).add(o), fov: v[6] || 40, aperture: 0.002 };
+        const pr = this.params, o = new THREE.Vector3(d[0] - p[0], d[1] - p[1], d[2] - p[2]).multiplyScalar(pr.has('devfollow') || pr.has('devtrack') || pr.has('devpan') ? 1 : 0);
+        if (pr.has('devtrack') || pr.has('devpan')) o.y = 0;
+        const pos = new THREE.Vector3(p[0] + v[0], p[1] + v[1], p[2] + v[2]);
+        if (!pr.has('devpan')) pos.add(o);
+        return { t, shot, u: 0, shake: 0, roll: 0, pos, tgt: new THREE.Vector3(p[0] + v[3], p[1] + v[4], p[2] + v[5]).add(o), fov: v[6] || 40, aperture: 0.002 };
       },
     };
   }

@@ -1,3 +1,5 @@
+// Diagnose a program that does not load: open the app headless and print console messages, page errors, failed
+// requests and the GPU. usage: node tools/film/debug-page.mjs "program=<id>&<query>" [wait ms, 20000] [port=<p> via $PORT]
 import { chromium } from 'playwright-core';
 import { appBase } from '../lib/browser.mjs';
 const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });

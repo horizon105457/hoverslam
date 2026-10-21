@@ -1,0 +1,112 @@
+{
+ "controller": "zero",
+ "task": "escape-soft-landing",
+ "armDelay": 0,
+ "events": [
+  {
+   "t": 0.7800000000000523,
+   "type": "edge"
+  },
+  {
+   "t": 0.7800000000000523,
+   "type": "armed"
+  },
+  {
+   "t": 2.059999999999645,
+   "type": "touchdown",
+   "hull": true
+  },
+  {
+   "t": 2.059999999999645,
+   "type": "hull_strike"
+  },
+  {
+   "t": 4.840000000000058,
+   "type": "stopped"
+  }
+ ],
+ "metrics": {
+  "touchdown_t": 2.06,
+  "touchdown_vertical_speed": 12.555,
+  "touchdown_horizontal_speed": 19.634,
+  "touchdown_tilt_deg": 102.45,
+  "touchdown_angular_rate": 1.437,
+  "hull_strike": true,
+  "hull_strike_any": true,
+  "max_tilt_hold_deg": 153.08,
+  "landing_point": [
+   -24.61,
+   16.12
+  ],
+  "gas_used_touchdown_kg": 0,
+  "kerb": false,
+  "kerb_after_td": null,
+  "stopped": true,
+  "stop_time": 2.78,
+  "stop_distance": 17.89,
+  "gas_used_kg": 0,
+  "peak_accel_g": 19.86,
+  "success": false,
+  "fails": [
+   "vertical_speed",
+   "tilt",
+   "angular_rate",
+   "hull_strike",
+   "upright_hold"
+  ]
+ },
+ "damage": {
+  "detached": [
+   "mirror_R",
+   "seat_P",
+   "mirror_L",
+   "glass_rear",
+   "glass_qR",
+   "glass_qL",
+   "bumper_rear",
+   "seat_D",
+   "fender_front_R"
+  ],
+  "glass": [
+   "lamp_R",
+   "fog",
+   "mirror_gR",
+   "windshield",
+   "glass_dR",
+   "repeater_R",
+   "lamp_L",
+   "glass_rear",
+   "stop",
+   "glass_qR",
+   "repeater_L",
+   "glass_dL",
+   "glass_qL"
+  ],
+  "torn_tets": 983,
+  "max_plastic": 12.0674,
+  "damage_sum": 29507.68,
+  "particles": 4106
+ },
+ "preset": "corner",
+ "spinScale": 1,
+ "init": {
+  "type": "launch",
+  "speed": 81.2729192795232,
+  "angle": 15.879052041098475,
+  "spin": [
+   0,
+   0,
+   0
+  ],
+  "lead": 0.55,
+  "preset": "corner",
+  "draws": {
+   "speed_kmh": 3.272919279523194,
+   "angle_deg": -1.1209479589015245,
+   "spin_scale": 1.0492715288884937
+  }
+ },
+ "replayOf": null,
+ "computeSeconds": 142.136,
+ "settled": "settled-coldgas.bin"
+}
