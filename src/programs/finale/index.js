@@ -12,6 +12,8 @@
 // is real time before the first knot and after the last, a monotone C¹ ramp through the knots in between (default:
 // the slowest stretch is the first half of the roll). Camera keys are in beats after the drop too, so a new tempo
 // stretches the whole move with the music.
+// hold=b0:b1:k:r (after the last knot, e.g. the music's silent half beat): from beat b0 to b1 sim time and the camera
+// run at k (0 = a freeze frame), easing down over r beats from b0 and back up over r beats from b1.
 // Other params: total (s), keys=<JSON camera table> (look-dev), devt=<sim s> (frozen sim time), run=<flight run>.
 // film.marks(T): sim time, beat, roll |φ| (the barrel-roll report's definition, held from the touchdown: 360.1°), gas used
 // and the car's screen point for the compositor.
@@ -32,6 +34,7 @@ const P = new URLSearchParams(location.search);
 const num = (k, d) => (P.has(k) ? +P.get(k) : d);
 
 const BPM = num('bpm', 120), BEAT = 60 / BPM, DROP = num('drop', 2.56), TOTAL = num('total', 10.6);
+const HOLD = P.has('hold') ? P.get('hold').split(':').map(Number) : null;   // [b0, b1, k, r]
 const TK = (P.get('tk') || '0:ign,1:r15,2.5:r90,4:r180,5:r270,6:r345,8:td').split(',').map(x => x.split(':')).map(([b, e]) => [+b, e]);
 
 // ------------------------------------------------------------------ camera keys (u = beats after the drop)
@@ -139,7 +142,7 @@ export default class FinaleProgram extends Program {
       total: TOTAL,
       render: (T, o) => this.render(T, o),
       marks: T => this.marks(T),
-      describe: () => ({ total: TOTAL, run, bpm: BPM, drop: DROP, tk: TK.map(k => k.join(':')).join(','),
+      describe: () => ({ total: TOTAL, run, bpm: BPM, drop: DROP, tk: TK.map(k => k.join(':')).join(','), hold: HOLD,
         sim: { edge: m.tEdge, ignition: self.tIgn, roll0: roll.t0, apex: roll.tApex, inverted: +self.tInv.toFixed(3), roll1: roll.t1, touchdown: m.tTouch, stopped: meta.flight.events.find(e => e.type === 'stopped')?.t ?? null },
         // segment times of the same moments
         film: { edge: at(m.tEdge), ignition: at(self.tIgn), roll0: at(roll.t0), apex: at(roll.tApex), inverted: at(self.tInv), roll1: at(roll.t1), touchdown: at(m.tTouch),
@@ -193,39 +196,61 @@ export default class FinaleProgram extends Program {
       if (s > 9) { const tau = 3 / Math.sqrt(s); M[k] = tau * al * d(k); M[k + 1] = tau * be * d(k); }
     }
     this.K = K; this.M = M;
+    // after the last knot: real time, except the hold. Table of the "clock" beats U(u) = uLast + ∫ speed, step du
+    const uL = K[n - 1][0], du = 1 / 2000, uMax = (TOTAL + 1 - DROP) / BEAT;
+    const sp = u => {
+      if (!HOLD) return 1;
+      const [b0, b1, k, r] = HOLD, e = x => smoother(Math.min(1, Math.max(0, x)));
+      if (u < b0 || u >= b1 + r) return 1;
+      if (u < b0 + r) return 1 - (1 - k) * e((u - b0) / r);
+      if (u < b1) return k;
+      return k + (1 - k) * e((u - b1) / r);
+    };
+    const m = Math.max(1, Math.ceil((uMax - uL) / du)), U = new Float64Array(m + 1); U[0] = uL;
+    for (let i = 1; i <= m; i++) U[i] = U[i - 1] + sp(uL + (i - 0.5) * du) * du;
+    this.clockT = { uL, du, U };
+  }
+  /** Beats on the post-touchdown clock (= u, except it stands still through the hold). */
+  clock(u) {
+    const c = this.clockT; if (u <= c.uL) return u;
+    const f = (u - c.uL) / c.du, i = Math.min(c.U.length - 2, Math.floor(f)), a = Math.min(1, f - i);
+    return f >= c.U.length - 1 ? c.U[c.U.length - 1] + (u - c.uL - (c.U.length - 1) * c.du) : c.U[i] * (1 - a) + c.U[i + 1] * a;
   }
   simT(s) {
     const u = (s - DROP) / BEAT, K = this.K, M = this.M, n = K.length;
     if (u <= K[0][0]) return K[0][1] + (u - K[0][0]) * BEAT;
-    if (u >= K[n - 1][0]) return K[n - 1][1] + (u - K[n - 1][0]) * BEAT;
+    if (u >= K[n - 1][0]) return K[n - 1][1] + (this.clock(u) - K[n - 1][0]) * BEAT;
     let i = 0; while (K[i + 1][0] < u) i++;
     const hh = K[i + 1][0] - K[i][0], x = (u - K[i][0]) / hh, x2 = x * x, x3 = x2 * x;
     return (2 * x3 - 3 * x2 + 1) * K[i][1] + (x3 - 2 * x2 + x) * hh * M[i] + (-2 * x3 + 3 * x2) * K[i + 1][1] + (x3 - x2) * hh * M[i + 1];
   }
   sOf(t) { let a = -5, b = TOTAL + 5; for (let k = 0; k < 60; k++) { const c = (a + b) / 2; if (this.simT(c) < t) a = c; else b = c; } return (a + b) / 2; }
 
-  /** Camera anchor per segment time: the centre of mass, smoothed (Gaussian in film time) once the car is on the street. */
+  /** Camera anchor per segment time: the centre of mass, smoothed once the car is on the street (Gaussian over sim time,
+   *  so a hold freezes the camera exactly with the car). */
   buildAnchor() {
-    const h = 1 / 240, s0 = -0.5, n = Math.ceil((TOTAL + 1 - s0) / h), raw = [], sTouch = this.sOf(this.m.tTouch);
-    for (let i = 0; i <= n; i++) raw.push(this.log.p(this.simT(s0 + i * h)));
-    const sig = s => 0.3 * smoother((s - sTouch + 0.1) / 0.6);
+    const h = 1 / 240, t0 = this.m.tTouch - 0.3, t1 = this.simT(TOTAL + 1) + 1, n = Math.ceil((t1 - t0) / h), raw = [];
+    for (let i = 0; i <= n; i++) raw.push(this.log.p(t0 + i * h));
+    const sig = t => 0.3 * smoother((t - this.m.tTouch + 0.1) / 0.6);
     this.anchor = raw.map((_, i) => {
-      const sg = sig(s0 + i * h);
+      const sg = sig(t0 + i * h);
       if (sg < 1e-3) return raw[i];
       const w = Math.ceil(3 * sg / h), out = [0, 0, 0]; let W = 0;
       for (let j = Math.max(0, i - w); j <= Math.min(n, i + w); j++) { const k = Math.exp(-0.5 * ((j - i) * h / sg) ** 2); W += k; for (let ax = 0; ax < 3; ax++) out[ax] += k * raw[j][ax]; }
       return out.map(v => v / W);
     });
-    this.anchorH = h; this.anchorS0 = s0;
+    this.anchorH = h; this.anchorT0 = t0;
   }
   anchorAt(s) {
-    const f = Math.max(0, s - this.anchorS0) / this.anchorH, i = Math.min(this.anchor.length - 2, Math.floor(f)), a = f - i, A = this.anchor;
+    const t = this.simT(s);
+    if (t <= this.anchorT0) return v3(...this.log.p(t));
+    const f = (t - this.anchorT0) / this.anchorH, i = Math.min(this.anchor.length - 2, Math.floor(f)), a = Math.min(1, f - i), A = this.anchor;
     return v3(A[i][0] * (1 - a) + A[i + 1][0] * a, A[i][1] * (1 - a) + A[i + 1][1] * a, A[i][2] * (1 - a) + A[i + 1][2] * a);
   }
 
   // ------------------------------------------------------------------ camera
   evaluate(s) {
-    const t = P.has('devt') ? +P.get('devt') : this.simT(s), u = (s - DROP) / BEAT;
+    const t = P.has('devt') ? +P.get('devt') : this.simT(s), u = this.clock((s - DROP) / BEAT);   // the camera holds with the hold
     const A = this.anchorAt(s), az = keyed(KEYS, u, 1) * Math.PI / 180, d = keyed(KEYS, u, 2);
     const dir = this.f.clone().multiplyScalar(-Math.cos(az)).addScaledVector(this.r, Math.sin(az));
     const pos = A.clone().addScaledVector(dir, d).add(v3(0, keyed(KEYS, u, 3), 0));
