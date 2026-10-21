@@ -28,7 +28,7 @@ if (!isMainThread) { // --------------------------------------------------------
     if (job.traj) { r.traj.controller = job.controller; fs.writeFileSync(job.traj, JSON.stringify(r.traj)); }
     const um = cc.umax, scale = typeof um === 'number' ? um : um?.bottom ?? 1; // ignition thresholds relative to the ceiling
     parentPort.postMessage({ label: job.label, preset: r.traj.preset, seed: job.seed, metrics: r.metrics, burn: burnStats(r.traj, { scale }), wall_s: wall,
-      plans: inner.plans ?? null, plan_s: inner.planMs != null ? inner.planMs / 1000 : null, evals: inner.evals ?? null, traj: job.traj ? path.relative(job.out, job.traj) : null });
+      plans: inner.plans ?? null, plan_s: inner.planMs != null ? inner.planMs / 1000 : null, evals: inner.evals ?? null, start: inner.start ?? null, start_costs: inner.startCosts ?? null, traj: job.traj ? path.relative(job.out, job.traj) : null });
   });
 } else { // ---------------------------------------------------------------------------------------- main
   const { parseArgs } = await import('../../lib/args.mjs');

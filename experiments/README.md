@@ -211,6 +211,18 @@ drive terms; config `experiments/configs/drive-stop.json` (`mpc-drive` vs `mpc-n
 `tools/flight/calib/accept.mjs sets=stop,rollstop` (24/26 stop cleanly). Drive tests of the soft body and the joint twin
 fit: `tools/flight/drive/`, report `experiments/reports/drive-brakes-steering`.
 
+## Two costs: lower slowly vs suicide burn (2026-10-21)
+
+The FALL script's two experiments (report `experiments/reports/gas-two-costs`, config `gas-two-costs.json`, runner
+`tools/flight/gas/twocost.mjs`): the default `mpc` with the `land` objective at `w_gas` 0 / 0.3 / 1, each from the
+all-closed and from a hover cold start (`init` heave 0.33), every flight scored afterwards by each cost on its realized
+trajectory (`scoreTraj`: commands replayed on a fresh twin, objective `step()` per control step from arming), and per
+cost the cheaper start kept. From one start the start decides the strategy (all-closed: coast + late burn even at
+`w_gas` 0, 53.6 kg; hover: lowered slowly even at 1 / kg); with both starts the cost does (upright presets: w_gas 0
+keeps the slow descent 25/40, 73.8 kg; 1 / kg keeps the late burn 34/40, 43.2 kg, ignition 0.71 s before touchdown).
+New opt-in MPC settings (default off, old runs bit-identical): `starts` (multi-start cold plan; not used for the
+result, the cold plan's cost is dominated by feasibility) and the land objective's `w_sink` / `sink_ok`.
+
 ## Results so far
 
 `baseline-soft-landing` (escape-soft-landing, 6 presets × 3 seeds, spec 2026-10-21: bottom pairs at z 0.34 / −1.16,

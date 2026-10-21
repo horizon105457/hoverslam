@@ -9,7 +9,8 @@
 // A Controller like the others (src/flight/contract.js): reset({task, seed}), act(FlightState) -> u_cmd, so it runs
 // on the twin (tools/flight/run.mjs, bench.mjs) and closed loop on the soft body (tools/sim/flight.mjs,
 // controller=mpc:{...}). Deterministic for (config, task, seed): noise from mulberry32(seed·1000003 + episode seed + 1).
-// Stats: plans, evals (rollouts), planMs, lastCost; with trace: true, ctl.trace = [{t, cost, evals, ms}] per plan.
+// Stats: plans, evals (rollouts), planMs, lastCost; with trace: true, ctl.trace = [{t, cost, evals, ms}] per plan;
+// with `starts` (multi-start cold plan): ctl.start (index of the start that won), ctl.startCosts.
 import defaults from './defaults.json' with { type: 'json' };
 import { ControlParam } from './param.js';
 import { Planner } from './planner.js';
@@ -43,7 +44,7 @@ export function createMPC(cfg = {}) {
     param.initial(c.init, theta);
     since = 1e9; tArm = null; tGround = null;
     ctl.objective = obj; ctl.planner = planner; ctl.optimizer = opt;
-    ctl.plans = 0; ctl.evals = 0; ctl.planMs = 0; ctl.lastCost = null; ctl.trace = c.trace ? [] : null;
+    ctl.plans = 0; ctl.evals = 0; ctl.planMs = 0; ctl.lastCost = null; ctl.trace = c.trace ? [] : null; ctl.start = null; ctl.startCosts = null;
   };
 
   ctl.act = (s) => {
@@ -58,9 +59,25 @@ export function createMPC(cfg = {}) {
       if (since < 1e9) param.shift(theta, since * CONTROL_DT);
       const t0 = performance.now(), e0 = planner.evals;
       planner.begin(s, tArm + c.coast, cutAt);
-      let r = opt.solve(theta, planner);
-      // cold start: the first plan has no warm start worth the name, give it extra passes
-      for (let k = 1; k < (ctl.plans ? 1 : c.first_passes); k++) r = opt.solve(theta, planner);
+      let r;
+      if (!ctl.plans && c.starts?.length) { // multi-start cold plan: the receding horizon never leaves the basin of its
+        // first plan (all-closed -> coast and burn late, hover -> lower the car slowly, whatever the cost), so each
+        // start gets first_passes solves and the cheapest plan is kept: the objective picks the basin, not init
+        const tb = new Float64Array(theta.length);
+        let bc = Infinity;
+        ctl.startCosts = c.starts.map((st, i) => {
+          startTheta(param, st, theta);
+          let ri = null;
+          for (let k = 0; k < c.first_passes; k++) ri = opt.solve(theta, planner);
+          if (ri.cost < bc) { bc = ri.cost; tb.set(theta); ctl.start = i; }
+          return ri.cost;
+        });
+        theta.set(tb); r = { cost: bc };
+      } else {
+        r = opt.solve(theta, planner);
+        // cold start: the first plan has no warm start worth the name, give it extra passes
+        for (let k = 1; k < (ctl.plans ? 1 : c.first_passes); k++) r = opt.solve(theta, planner);
+      }
       const ms = performance.now() - t0;
       ctl.plans++; ctl.planMs += ms; ctl.evals = planner.evals; ctl.lastCost = r.cost;
       if (ctl.trace) ctl.trace.push({ t: s.t, cost: r.cost, evals: planner.evals - e0, ms });
@@ -84,4 +101,23 @@ export function createMPC(cfg = {}) {
   };
 
   return ctl;
+}
+
+/** θ of one start of the multi-start cold plan: an `init` (number or nv channel values) or {init, schedule}, schedule
+ *  = {channel: [[τ, v], ...]} piecewise linear in s since the plan start (held beyond the ends). */
+function startTheta(param, st, theta) {
+  const o = st !== null && typeof st === 'object' && !Array.isArray(st) ? st : { init: st };
+  param.initial(o.init ?? 0, theta);
+  for (const [name, pts] of Object.entries(o.schedule || {})) {
+    const k = param.names.indexOf(name);
+    if (k < 0) throw new Error(`mpc starts: unknown channel ${name} (have ${param.names.join(', ')})`);
+    for (let j = 0; j < param.nk; j++) {
+      const t = param.tk[j];
+      let i = 0;
+      while (i < pts.length - 1 && pts[i + 1][0] < t) i++;
+      const [t0, v0] = pts[i], [t1, v1] = pts[Math.min(i + 1, pts.length - 1)];
+      theta[j * param.nv + k] = t <= t0 || t1 <= t0 ? (t <= t0 ? v0 : v1) : t >= t1 ? v1 : v0 + (v1 - v0) * (t - t0) / (t1 - t0);
+    }
+  }
+  return param.project(theta);
 }

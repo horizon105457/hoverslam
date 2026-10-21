@@ -183,6 +183,20 @@ Open after the drive round:
 - the land objective's drive terms only know raised street boxes: render-only scenery (park trees beyond the crossing
   road's end) is open ground to the physics
 
+## Two-cost round (2026-10-21 evening): numbers for the FALL script
+
+The user asked for the two experiments of the film script (文案 04–05): the MPC with a cost that has no gas term
+("holds the car and lowers it slowly") and with one ("suicide burn"), and the gas of each. Report
+`experiments/reports/gas-two-costs/README.md` (trajectories for segments 04 / 05 in its `traj/`). Findings worth keeping:
+- the receding-horizon MPC keeps the basin of its first plan: setting `w_gas` 0 alone does not make it hover-lower
+  (it still coasts and burns late, 54 vs 46 kg), and from a hover cold start no gas weight makes it let go; the
+  cost decides only when both starts are run and whole flights are scored by it (`tools/flight/gas/twocost.mjs`)
+- the slow descent is genuinely "smoother" under `land` without gas (−8.6 points, CI 3.7–13.5) and costs 20–25 kg more;
+  at the shipped `w_gas` 0.3 the two cancel (toss-up), at 1 / kg the late burn wins 34/40
+- every strategy flies with a mean bottom thrust ≈ the weight, so gas ≈ 19 kg/s × time in the air
+- MPC additions (opt-in, default off): `starts` in `src/flight/mpc/index.js` (multi-start cold plan, ctl.start), `w_sink` /
+  `sink_ok` in `objectives/land.js`
+
 ## Integration backlog (from the first parallel round, 2026-10-20)
 
 Promote to shared modules (each requested by a work stream, currently living in its program folder):

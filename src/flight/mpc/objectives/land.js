@@ -7,6 +7,8 @@
 // Costs (weights below, all per control step unless 'once' / 'terminal'; tilt terms use 1 - cos(tilt)):
 //   gas        w_gas · kg used
 //   airborne   w_tilt · (1 - cos tilt) + w_rate · |ω|² (+ w_slip · sin²(slip), soft body)
+//              + w_sink · (descent speed − sink_ok)⁺² (opt-in, 0: "fall slowly all the way down", not only at the
+//              touchdown; without w_gas it decides the otherwise free braking schedule, experiments/reports/gas-two-costs)
 //   crash      once at the first hull strike: w_crash · (2 - h/H) (earlier is worse), then the lane is dead
 //   touchdown  once at the first street contact: w_vy · max(0, |v_y| - v_ok)² + w_vy2 · v_y² + w_td_tilt · (1 - cos)
 //              + w_td_rate · |ω|² (+ w_td_slip · sin²(slip), w_pad · pad distance² on pad tasks)
@@ -64,7 +66,7 @@ import { WORLD, PROPULSION, VEHICLE, GENERATED } from '../../../core/spec.js';
 // 48 kg): without a base pilot the attitude terms have to be much stronger than in controllers/mppi.js (40 / 3 /
 // 0.3 there), and a plan that ends in the air must cost more than any landing (w_air) or it learns to hover.
 export const LAND_DEFAULTS = {
-  w_gas: 0.3, w_tilt: 3, w_rate: 0.05, w_slip: 0,
+  w_gas: 0.3, w_tilt: 3, w_rate: 0.05, w_slip: 0, w_sink: 0, sink_ok: 3,
   w_crash: 60, w_vy: 6, v_ok: 1.0, w_vy2: 0, w_td_tilt: 400, w_td_rate: 10, w_td_slip: 0, w_pad: 2,
   w_gnd_tilt: 20, w_gnd_rate: 0.05, w_gnd_slip: 0, w_gnd_yaw: 0,
   w_air: 50, w_air_h: 20, w_stop: 0.5, stop_frac: 0.7, w_deadline: 20,
@@ -147,6 +149,7 @@ export function createLand(cfg = {}) {
       if (!L.td) {
         cs += c.w_tilt * (1 - ct) + c.w_rate * r2;
         if (c.w_slip) cs += c.w_slip * slip2(q, tw.v);
+        if (c.w_sink) { const e = -tw.v[1] - c.sink_ok; if (e > 0) cs += c.w_sink * e * e; }
       } else {
         cs += c.w_gnd_tilt * (1 - ct) + c.w_gnd_rate * r2;
         if (c.w_gnd_slip || c.w_gnd_yaw) cs += c.w_gnd_slip * slip2(q, tw.v) + c.w_gnd_yaw * w[1] * w[1];

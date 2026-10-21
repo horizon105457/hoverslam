@@ -1,0 +1,134 @@
+{
+ "name": "gas-two-costs",
+ "description": "The two experiments of the FALL script (文案 03a-05c). One pure MPC (CEM, defaults) and three costs: C1 = the land objective without its gas term (w_gas 0: touchdown speed / tilt / rate, attitude in the air and on the ground, crash, wheel loads; gas only bounded by the tank), C2 = the land objective as shipped (+ 0.3 per kg), C3 = + 1 per kg. Each from the default all-closed cold start (zero) and from a hover cold start (heave 0.33 ≈ the weight at full tank): the receding horizon keeps the basin of its first plan, so a single start cannot show which strategy a cost prefers. Every flight is scored afterwards by every cost on its realized trajectory (tools/flight/gas/twocost.mjs); `select` keeps per (preset, seed) the cheaper of the two starts under each cost (two-start MPC). C1s: C1 + w_sink 0.02 (descent faster than 3 m/s priced all the way down), a sensitivity score only.",
+ "task": "escape-soft-landing",
+ "base": {
+  "name": "mpc"
+ },
+ "controllers": [
+  {
+   "label": "c1-zero",
+   "objective": {
+    "name": "land",
+    "w_gas": 0
+   }
+  },
+  {
+   "label": "c1-hover",
+   "objective": {
+    "name": "land",
+    "w_gas": 0
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "c2-zero",
+   "objective": {
+    "name": "land"
+   }
+  },
+  {
+   "label": "c2-hover",
+   "objective": {
+    "name": "land"
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "label": "c3-zero",
+   "objective": {
+    "name": "land",
+    "w_gas": 1
+   }
+  },
+  {
+   "label": "c3-hover",
+   "objective": {
+    "name": "land",
+    "w_gas": 1
+   },
+   "init": [
+    0.33,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ ],
+ "score": {
+  "C1": {
+   "name": "land",
+   "w_gas": 0
+  },
+  "C2": {
+   "name": "land"
+  },
+  "C3": {
+   "name": "land",
+   "w_gas": 1
+  },
+  "C1s": {
+   "name": "land",
+   "w_gas": 0,
+   "w_sink": 0.02
+  }
+ },
+ "select": {
+  "C1": [
+   "c1-zero",
+   "c1-hover"
+  ],
+  "C2": [
+   "c2-zero",
+   "c2-hover"
+  ],
+  "C3": [
+   "c3-zero",
+   "c3-hover"
+  ],
+  "C1s": [
+   "c1-zero",
+   "c1-hover"
+  ]
+ },
+ "presets": [
+  "flat",
+  "nose",
+  "rear",
+  "side",
+  "roof",
+  "corner"
+ ],
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "record": "all"
+}
