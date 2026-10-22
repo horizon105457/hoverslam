@@ -95,9 +95,13 @@ void main() {
   float rim = pow(f, 2.2);
   float ln = 0.82 + 0.18 * smoothstep(0.3, 0.5, abs(fract(vB.y * uLines) - 0.5));
   float band = exp(-s * s / (uBand * uBand));
-  float a = clamp((uFill + rim * uRimK) * ln + band * 0.9, 0.0, 0.95) * uAmt;
+#if MODE == 1
+  gl_FragColor = vec4(uTint * ln, uFill * ln * uAmt);   // the tinted fill alone (front-most surface only, see buildGhosts)
+#else
+  float a = clamp((MODE == 2 ? 0.0 : uFill) * ln + rim * uRimK * ln + band * 0.9, 0.0, 0.95) * uAmt;
   vec3 c = mix(uTint, uRim, clamp(rim * 1.4, 0.0, 1.0)) * ln + uEdge * band * 2.5;
   gl_FragColor = vec4(c, a);
+#endif
 }`;
 const KEEP = /^(Paint|Glass|Trim|Rubber|Wheel|Fascia|Headlamp • (black|bright)|Optics • (deep red|ruby)|Mirror|Underfloor)/;
 
@@ -139,7 +143,8 @@ export default class ValvesProgram extends SlamProgram {
   }
 
   // ------------------------------------------------------------------ ghosts
-  ghostMeshes(mat) {
+  /** The shell's meshes in rest pose, once per pass: [material, renderOrder] pairs. */
+  ghostMeshes(passes) {
     const cv = this.view.carView, car = this.car, R = car.nodes.rest, TN = car.render.tetNodes;
     const g = new THREE.Group(); g.matrixAutoUpdate = false;
     this._geo ||= new Map();
@@ -159,27 +164,34 @@ export default class ValvesProgram extends SlamProgram {
         geo.setIndex(src.index);
         this._geo.set(m, geo);
       }
-      const mesh = new THREE.Mesh(this._geo.get(m), mat);
-      mesh.frustumCulled = false; mesh.userData.noAO = true; mesh.renderOrder = 3;
-      g.add(mesh);
+      for (const [mat, order] of passes) {
+        const mesh = new THREE.Mesh(this._geo.get(m), mat);
+        mesh.frustumCulled = false; mesh.userData.noAO = true; mesh.renderOrder = order;
+        g.add(mesh);
+      }
     }
     this.ctx.stage.scene.add(g);
     return g;
   }
-  ghostMat(o) {
-    const u = {
+  ghostMat(o, mode = 0, uniforms = null) {
+    const u = uniforms || {
       uTint: { value: new THREE.Color(o.tint) }, uRim: { value: new THREE.Color(o.rim) }, uEdge: { value: new THREE.Color(0x9fe8d0) },
       uAmt: { value: 1 }, uFill: { value: o.fill }, uRimK: { value: o.rimK }, uScan: { value: -10 }, uDir: { value: -1 }, uBand: { value: 0.03 }, uLines: { value: 90 },
     };
-    return new THREE.ShaderMaterial({ uniforms: u, vertexShader: GHOST_VS, fragmentShader: GHOST_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    return new THREE.ShaderMaterial({ uniforms: u, defines: { MODE: mode }, vertexShader: GHOST_VS, fragmentShader: GHOST_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false });
   }
   buildGhosts() {
     this.xmat = this.ghostMat({ tint: 0x10262c, rim: 0x8fe6ff, fill: num('gfill', 0.22), rimK: num('grim', 0.75) });
-    this.ghost = this.ghostMeshes(this.xmat); this.ghost.matrix.copy(this.M);
-    // the drop ghost: mint (the car's colour), no scan
-    this.dmat = this.ghostMat({ tint: 0x16302a, rim: 0xb8f0d8, fill: 0.2, rimK: 0.85 });
-    this.dmat.uniforms.uScan.value = 1e3;
-    this.drop = this.ghostMeshes(this.dmat); this.drop.visible = false;
+    this.ghost = this.ghostMeshes([[this.xmat, 3]]); this.ghost.matrix.copy(this.M);
+    // the drop ghost: mint (the car's colour), no scan. Its dark fill must not stack: seen head-on, the tail, floor and
+    // nose panels line up and their fills summed to an opaque black patch next to the see-through corners. So the rims
+    // and scan lines of every layer first, then a depth-only pass, then the fill once on the front-most surface
+    // (after the x-ray ghost, which it must not hide)
+    const rim = this.ghostMat({ tint: 0x16302a, rim: 0xb8f0d8, fill: 0.2, rimK: 0.85 }, 2);
+    this.dmat = rim; this.dmat.uniforms.uScan.value = 1e3;
+    const depth = this.ghostMat(null, 0, rim.uniforms), fill = this.ghostMat(null, 1, rim.uniforms);
+    depth.colorWrite = false; depth.depthWrite = true;   // same vertex shader as the fill (no z-fighting), transparent (in order)
+    this.drop = this.ghostMeshes([[rim, 5], [depth, 6], [fill, 7]]); this.drop.visible = false;
   }
 
   /** Scan plane at body z = scan; dir -1: ghost behind it (z < scan), the solid shell in front of it. */
