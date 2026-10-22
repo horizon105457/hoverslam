@@ -85,7 +85,7 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 const GHOST_FS = /* glsl */`
-uniform vec3 uTint, uRim, uEdge; uniform float uAmt, uFill, uScan, uDir, uBand, uLines, uRimK;
+uniform vec3 uTint, uRim, uEdge, uBody; uniform float uAmt, uFill, uScan, uDir, uBand, uLines, uRimK, uBodyA, uBackK;
 varying vec3 vW; varying vec3 vN; varying vec3 vB;
 void main() {
   float s = (vB.z - uScan) * uDir;
@@ -96,9 +96,9 @@ void main() {
   float ln = 0.82 + 0.18 * smoothstep(0.3, 0.5, abs(fract(vB.y * uLines) - 0.5));
   float band = exp(-s * s / (uBand * uBand));
 #if MODE == 1
-  gl_FragColor = vec4(uTint * ln, uFill * ln * uAmt);   // the tinted fill alone (front-most surface only, see buildGhosts)
+  gl_FragColor = vec4(uBody * ln, uBodyA * (0.75 + 0.25 * rim) * ln * uAmt);   // the body alone (front-most surface, see buildGhosts)
 #else
-  float a = clamp((MODE == 2 ? 0.0 : uFill) * ln + rim * uRimK * ln + band * 0.9, 0.0, 0.95) * uAmt;
+  float a = clamp((MODE >= 2 ? 0.0 : uFill) * ln + rim * uRimK * ln + band * 0.9, 0.0, 0.95) * uAmt * (MODE == 3 ? uBackK : 1.0);
   vec3 c = mix(uTint, uRim, clamp(rim * 1.4, 0.0, 1.0)) * ln + uEdge * band * 2.5;
   gl_FragColor = vec4(c, a);
 #endif
@@ -176,6 +176,7 @@ export default class ValvesProgram extends SlamProgram {
   ghostMat(o, mode = 0, uniforms = null) {
     const u = uniforms || {
       uTint: { value: new THREE.Color(o.tint) }, uRim: { value: new THREE.Color(o.rim) }, uEdge: { value: new THREE.Color(0x9fe8d0) },
+      uBody: { value: new THREE.Color(o.body ?? o.tint) }, uBodyA: { value: o.bodyA ?? 0 }, uBackK: { value: o.backK ?? 1 },
       uAmt: { value: 1 }, uFill: { value: o.fill }, uRimK: { value: o.rimK }, uScan: { value: -10 }, uDir: { value: -1 }, uBand: { value: 0.03 }, uLines: { value: 90 },
     };
     return new THREE.ShaderMaterial({ uniforms: u, defines: { MODE: mode }, vertexShader: GHOST_VS, fragmentShader: GHOST_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false });
@@ -183,15 +184,19 @@ export default class ValvesProgram extends SlamProgram {
   buildGhosts() {
     this.xmat = this.ghostMat({ tint: 0x10262c, rim: 0x8fe6ff, fill: num('gfill', 0.22), rimK: num('grim', 0.75) });
     this.ghost = this.ghostMeshes([[this.xmat, 3]]); this.ghost.matrix.copy(this.M);
-    // the drop ghost: mint (the car's colour), no scan. Its dark fill must not stack: seen head-on, the tail, floor and
-    // nose panels line up and their fills summed to an opaque black patch next to the see-through corners. So the rims
-    // and scan lines of every layer first, then a depth-only pass, then the fill once on the front-most surface
-    // (after the x-ray ghost, which it must not hide)
-    const rim = this.ghostMat({ tint: 0x16302a, rim: 0xb8f0d8, fill: 0.2, rimK: 0.85 }, 2);
-    this.dmat = rim; this.dmat.uniforms.uScan.value = 1e3;
-    const depth = this.ghostMat(null, 0, rim.uniforms), fill = this.ghostMat(null, 1, rim.uniforms);
-    depth.colorWrite = false; depth.depthWrite = true;   // same vertex shader as the fill (no z-fighting), transparent (in order)
-    this.drop = this.ghostMeshes([[rim, 5], [depth, 6], [fill, 7]]); this.drop.visible = false;
+    // the drop ghost: mint (the car's colour), no scan. It must read front from back. Seen head-on (the landing), a
+    // dark fill per layer summed to an opaque black patch where tail, floor and nose panels line up; and when every
+    // layer is equally see-through the tailgate's inner face (smaller, inside the nose's outline) reads as the face
+    // you are looking at, the car turned round. So: a depth-only pass (the front-most surface), the rims of what is
+    // behind it, faint (backK), the front-most surface's light mint body once (slightly see-through), and its rims on
+    // top. After the x-ray ghost, which it must not hide.
+    const o = { tint: 0x16302a, rim: 0xb8f0d8, fill: 0.2, rimK: 0.85, body: 0x7fbfa6, bodyA: num('dbodyA', 0.6), backK: num('dbackK', 0.2) };
+    const front = this.ghostMat(o, 2), u = front.uniforms;
+    this.dmat = front; u.uScan.value = 1e3;
+    const depth = this.ghostMat(null, 0, u), back = this.ghostMat(null, 3, u), body = this.ghostMat(null, 1, u);
+    depth.colorWrite = false; depth.depthWrite = true;   // same vertex shader as the others (no z-fighting), transparent (in order)
+    back.depthFunc = THREE.GreaterDepth;                  // only what lies behind the front-most surface
+    this.drop = this.ghostMeshes([[depth, 5], [back, 6], [body, 7], [front, 8]]); this.drop.visible = false;
   }
 
   /** Scan plane at body z = scan; dir -1: ghost behind it (z < scan), the solid shell in front of it. */
