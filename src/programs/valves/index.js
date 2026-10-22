@@ -1,9 +1,10 @@
 // Program "valves" (直到用计算机模拟 段落/02_冷气推进): "这一次我们打开冷气推进系统". 01's slam is rewound (2D, in the
-// film's compositor) back to the car at the deck edge; this shot picks up on that frame (slam film time `sf`, the
-// slam's own chase camera) and freezes the world there. The car's shell turns into an x-ray ghost (a scan plane
+// film's compositor) back to the car just off the deck edge, in the air; this shot picks up on that frame (slam film
+// time `sf`, the slam's own camera there) and freezes the world. The car's shell turns into an x-ray ghost (a scan plane
 // sweeps from the tail to the nose; the solid shell is clipped on the other side), the cold-gas kit inside shows
-// (six COPV bottles, manifold, feed lines, ten nozzle modules), the camera swings out to the outer side, the ten
-// nozzles light up one by one (a pulse down each feed line, then the status ring), all close and all open with the
+// (six COPV bottles, manifold, feed lines, ten nozzle modules) while the camera dives under the car (looking up at its
+// floor against the sky, the deck slab cutting across), the ten nozzles light up one by one (a pulse down each feed
+// line, then the status ring), the camera rises to the car's outer side, all close and all open with the
 // compositor's valve grid; then a cut to the street looking back up at the edge, and a ghost of the car drops to a spot
 // part of the way out to 01's crash site, the camera tilting down with it and pushing in, the ghost slowing
 // down and levelling out ("落地时下落得尽量慢，车身尽量端正"). The world stays frozen throughout, nothing is darkened:
@@ -15,7 +16,7 @@
 // Film time T = the segment's time (s): the compositor plays the rewind until `th`, this render from there on.
 // film.marks(T): nozzle exits, the car's centre, the drop ghost (centre, ground point, axes, path) in screen px, for
 // the compositor's tags, glows, arrows and the dashed path.
-// Look-dev: pose=az,d,h,fy,fov,fs (camera, see KEYS) and x=<0..1> (scan) override the timeline at any T.
+// Look-dev: pose=az,d,h,fy,fov,fs (camera, see KEYS), vkeys=<KEYS as JSON> and x=<0..1> (scan) override the timeline.
 // only=drop: the drop ghost alone on black (段落/03_代价 lays it over its graphics board, tools/render_ghost.py).
 import * as THREE from 'three';
 import SlamProgram from '../slam/index.js';
@@ -33,7 +34,7 @@ const smooth = u => (u = clamp(u), u * u * (3 - 2 * u));
 const GOLD = new THREE.Color(0xffd24a);
 
 // ------------------------------------------------------------------ timeline (segment s; defaults = out/vo.json 2026-10-22)
-const S_FREEZE = num('sf', 0.2);      // slam film time the rewind lands on (the car at the deck edge, before it tips)
+const S_FREEZE = num('sf', 0.9);      // slam film time the rewind lands on (the car just off the deck edge, in the air)
 const TL = {
   hand: num('th', 0.55),              // the cut from the rewind to this render
   scan: [num('x0', 0.62), num('x1', 1.5)],     // x-ray scan, tail -> nose ("冷气推进系统")
@@ -53,11 +54,13 @@ const TL = {
 // From the cut on, dropCam() (below) takes over.
 const KEYS = [
   // T,     az,   d,    h,    fy,    fov, fs
-  [TL.hand,  0,   4.38, 1.15, 0.51,  60,  0],
-  [2.30,    68,   6.0,  1.7,  0.0,   42,  1.3],
-  [6.60,    75,   5.7,  1.5, -0.05,  42,  1.35],
+  [TL.hand,  0,   7.0, -0.6,  0.0,   54,  0],     // (the slam's pose at the freeze, set in init)
+  [1.65,    22,   4.2, -2.6,  0.15,  52,  0.2],    // dives under the car with the scan: looking up at the floor, the kit
+  [3.20,    34,   3.8, -2.6,  0.15,  50,  0.9],    //   against the sky, the deck slab cutting across, pushing in (the nozzles light)
+  [4.10,    76,   6.8, -1.9,  0.35,  42,  1.75],   // rises to its outer side, a little below it, car on the left (the
+  [6.60,    80,   6.6, -1.8,  0.3,   42,  1.8],    //   valve grid comes in on the right)
 ];
-if (P.has('keys')) KEYS.splice(0, KEYS.length, ...JSON.parse(P.get('keys')));
+if (P.has('vkeys')) KEYS.splice(0, KEYS.length, ...JSON.parse(P.get('vkeys')));   // look-dev (not `keys`: the slam reads that)
 
 function keyed(s, c) {   // monotone cubic through the keys (as the slam)
   const K = KEYS, n = K.length;
