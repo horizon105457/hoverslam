@@ -1,6 +1,6 @@
 {
   "name": "dual-recovery",
-  "description": "Flat seed-0 precision landing: coast all off, burn each bottom nozzle at 40-100%. Minimum available steady bottom thrust exceeds weight along this case; original valve lag remains.",
+  "description": "Flat seed-0 precision recovery: shared bottom ignition at 35-100%; restart penalty = 2 / seconds since last shutdown; first ignition free.",
   "task": "precision-pad",
   "controllers": [
     {
@@ -28,8 +28,8 @@
       },
       "recovery": {
         "enabled": true,
-        "minThrottle": 0.4,
-        "switchPenalty": 0
+        "minThrottle": 0.35,
+        "switchPenalty": 2
       },
       "lower_replan_steps": 2,
       "lower_dt": 0.08,

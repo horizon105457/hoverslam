@@ -155,7 +155,7 @@ resultTemplate({
 
 喷口开度条以蓝色横线表示最小允许油门，红色横线表示最大允许油门。无额外约束的现有录制默认分别为 0 和 1，因此蓝线在底部、红线在顶部。白色标记仍是实际阀门开度，填充仍是相对额定推力。后续案例可在软体 `meta.flight.commandLimits` 或刚体轨迹根级 `commandLimits` 保存 `{min, max}`；字段支持统一标量或按喷口顺序排列的数组。刻度只反映录制所声明的指令边界，不会截断回放值，也不代表求解器已实施非凸限制。
 
-## 非凸回收（dual-recovery / flat）
+## 非凸回收（40% 历史案例 / flat）
 
 配置为 `experiments/configs/dual-recovery.json`，在定点降落任务上开启
 `recovery: {enabled: true, minThrottle: 0.4}`，原硬件、气体参数、阀门动态及触地判据均不修改。
@@ -214,3 +214,45 @@ node tools/flight/recovery-audit.mjs input=public/sims/flight-dual-recovery-flat
 软体对照在最后记录到 3.25 s 后进程退出 143，未生成完整录制，终止原因未确认，不计为通过。
 当前可视化展示已通过的 `dual-recovery.json`（switchPenalty=0）；惩罚实现及独立对照配置保留，
 不将未完成结果覆盖已验收录制。审计的切换次数包括首次点火，统计窗口止于首次触地，不包含强制地面关机。
+
+
+## 35% 回收与重启间隔惩罚
+
+当前 `dual-recovery.json` 与 `dual-recovery-switch.json` 已切换为 35% 最小开启油门、
+`switchPenalty: 2`。上述 40% 历史实验对应提交 `015a9d4` 的配置与计次惩罚实现，
+其已生成录制保持原样，不把旧录制的 40% 刻度改成 35%。
+
+上下层每个候选的新增成本为
+`switchPenalty × Σ 1 / (本次开启时间 − 最近一次关闭时间)`，时间单位为秒。
+只对 off→on 收费，关机不收费；首次点火没有历史关机时间，成本为零。
+实际关闭时刻在输出指令发生 on→off 时更新，跨上下层重规划保存；预测中的关机时刻仅用于
+该候选，不修改实际历史。重置任务或切换飞行模式会清除历史。候选评估使用实际阶段时长，
+不按阶段数近似间隔，也不在预测窗口末尾人为添加一次关机。
+
+正间隔直接取倒数，不添加任意平滑常数；零间隔重启成本为无穷大（权重为零时成本仍为零）。
+原有正步长和控制周期保证可执行重启有正间隔。终端可行性仍优先于成本；该惩罚不等价于
+硬性最小关闭时长，也不保证实际切换次数必然减少。
+
+现有模型底部四喷口在初始气压下的 35% 合推力约 12.217 kN，初始重量约 11.258 kN，
+稳态推重比约 1.085。仍保留阀门滞后，瞬时点火推力不保证大于重量。
+新录制使用 `dual-recovery35-flat`，以避免与旧 40% 录制混淆。
+
+当前版本复现命令：
+
+```sh
+recovery_controller=$(node --input-type=module -e 'import fs from "node:fs"; console.log(JSON.stringify(JSON.parse(fs.readFileSync("experiments/configs/dual-recovery.json","utf8")).controllers[0]))')
+node tools/flight/run.mjs task=precision-pad preset=flat seed=0 controller="$recovery_controller" out=public/sims/dual-recovery35-rigid.json
+node tools/sim/flight.mjs task=precision-pad preset=flat launch=public/sims/dual-recovery35-rigid.json controller="$recovery_controller" out=dual-recovery35-flat dur=6 hz=100
+node tools/flight/recovery-audit.mjs input=public/sims/flight-dual-recovery35-flat.sim
+# ?program=flight&run=dual-recovery35-flat&mode=follow&paused
+```
+
+
+35% 固定 flat / seed 0 实测：刚体落点误差 0.380 m、水平速度 0.352 m/s；
+软体误差 0.27 m、水平速度 0.054 m/s、垂速 1.336 m/s、倾角 4.92°，原任务判据通过，
+无车身或路缘碰撞，触地后 1.011 s 停车。软体 6 s / 601 帧计算 319.3 s，规划 67.04 s。
+指令违规为零，沿途最小可用稳态推重比 1.0852；空中 4 次点火、3 次关机，三次重启关闭间隔
+分别为 0.08、0.32、0.12 s。相对历史 40% 案例切换减少，但最低油门也同时改变，不能作单因素归因。
+
+构建、首次点火/预测关机/跨窗口间隔边界核验，以及刚体记录中的 741 条候选倒数惩罚核验通过。
+未扩大既有全套测试范围。指标见 `experiments/reports/dual-recovery35/metrics.json`。

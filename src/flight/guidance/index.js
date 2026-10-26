@@ -135,12 +135,12 @@ export function createDual(cfg = {}) {
     lastUpperDiagnostics: null, lastLowerDiagnostics: null, lastDiagnostics: null };
   const ctl = { name: 'dual', config: c, plans: 0, evals: 0, planMs: 0, lastCost: null, diagnostics: null, planningTrace: [] };
   if (c.recovery.enabled) ctl.commandLimits = commandLimits(c.recovery);
-  let previousBurn = false; // Last executed gate; replanning must not clear this boundary state.
+  let previousBurn = false, lastShutdownTime = null; // Last executed gate; replanning must not clear this boundary state.
   const now = () => globalThis.performance?.now?.() ?? Date.now();
 
   // Clear live planner state on either transition; cumulative solve counters remain episode diagnostics.
   function resetFlight() {
-    previousBurn = false;
+    previousBurn = false; lastShutdownTime = null;
     upper = null; upperAt = -Infinity; lowerAt = -Infinity; lowerAction = null;
     upperPath = []; upperTimes = []; lowerPath = []; lowerTimes = [];
     upperCandidates = []; landingDeadline = null;
@@ -246,7 +246,7 @@ export function createDual(cfg = {}) {
         const options = { model, initial: states[0], controls, dts, references,
           iterations: c.upper_iterations, weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust,
           terminalConstraints: terminalConstraints() };
-        result = c.recovery.enabled ? optimizeRecovery(options, c.recovery, 'upper', previousBurn) : optimizeTrajectory(options);
+        result = c.recovery.enabled ? optimizeRecovery(options, c.recovery, 'upper', { previousBurn, lastShutdownTime, time: s.t }) : optimizeTrajectory(options);
       } catch (error) {
         const failure = { duration, error: String(error), solver: error.diagnostics ?? null };
         candidates.push(failure);
@@ -350,7 +350,7 @@ export function createDual(cfg = {}) {
       const options = { model, initial, controls, dts, references, iterations: c.lower_iterations,
         weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust,
         terminalConstraints: reachesLanding ? terminalConstraints() : undefined };
-      result = c.recovery.enabled ? optimizeRecovery(options, c.recovery, 'lower', previousBurn) : optimizeTrajectory(options);
+      result = c.recovery.enabled ? optimizeRecovery(options, c.recovery, 'lower', { previousBurn, lastShutdownTime, time: s.t }) : optimizeTrajectory(options);
     } catch (error) {
       ctl.diagnostics = { stage: 'lower', predictionOnly: true, error: String(error), solver: error.diagnostics ?? null,
         upper: stats.lastUpperDiagnostics };
@@ -409,7 +409,11 @@ export function createDual(cfg = {}) {
       if (replanned) recordPlanning(s.t, 'flight');
       tracedMode = 'flight';
       out.set(lowerAction.subarray(0, NU));
-      if (c.recovery.enabled) previousBurn = ctl.commandLimits.bottomIndices.some(i => out[i] > 0);
+      if (c.recovery.enabled) {
+        const burn = ctl.commandLimits.bottomIndices.some(i => out[i] > 0);
+        if (previousBurn && !burn) lastShutdownTime = s.t;
+        previousBurn = burn;
+      }
       if (c.ground.enabled) out.set(flightDrive, NU);
       return out;
     },

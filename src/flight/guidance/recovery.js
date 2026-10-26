@@ -72,7 +72,28 @@ export function recoveryBounds(pattern, minimum) {
   return { lower, upper };
 }
 
-export function optimizeRecovery(options, c, stage = 'upper', previousBurn = false) {
+// Only off->on events pay: lambda / seconds since the most recent shutdown.
+// The first ignition has no shutdown history and is free. Predicted shutdowns are local to each candidate.
+export function restartCost(pattern, dts, { previousBurn = false, lastShutdownTime = null, time = 0 } = {}) {
+  let on = previousBurn, shutdown = lastShutdownTime, t = time, reciprocal = 0, switchCount = 0;
+  const restarts = [];
+  for (let k = 0; k < pattern.length; k++) {
+    const next = !!pattern[k];
+    if (next !== on) {
+      switchCount++;
+      if (!next) shutdown = t;
+      else if (shutdown !== null) {
+        const offSeconds = t - shutdown;
+        reciprocal += offSeconds > 0 ? 1 / offSeconds : Infinity;
+        restarts.push({ time: t, offSeconds });
+      }
+    }
+    on = next; t += dts[k];
+  }
+  return { reciprocal, switchCount, restarts };
+}
+
+export function optimizeRecovery(options, c, stage = 'upper', history = {}) {
   let relaxed, relaxationError = null, evaluations = 0;
   try {
     relaxed = optimizeTrajectory(options);
@@ -88,13 +109,10 @@ export function optimizeRecovery(options, c, stage = 'upper', previousBurn = fal
         controlBounds: recoveryBounds(pattern, c.minThrottle) });
       evaluations += result.diagnostics?.iterations ?? 0;
       const terminal = result.diagnostics?.terminalConstraints, feasible = terminal?.feasible ?? true;
-      // Charge the first transition from the last executed command as well as every planned transition.
-      // Do not invent a terminal shutdown: the next receding-horizon solve accounts for it when selected.
-      let last = previousBurn, switchCount = 0;
-      for (const on of pattern) { if (on !== last) switchCount++; last = on; }
-      const switchingCost = c.switchPenalty * switchCount;
+      const { reciprocal, switchCount, restarts } = restartCost(pattern, options.dts, history);
+      const switchingCost = c.switchPenalty === 0 ? 0 : c.switchPenalty * reciprocal;
       const score = result.cost + switchingCost + (options.terminalConstraints?.penalty ?? 1e4) * (terminal?.violation ?? 0);
-      const item = { source, pattern: pattern.map(Number), cost: result.cost, score, feasible, switchCount, switchingCost,
+      const item = { source, pattern: pattern.map(Number), cost: result.cost, score, feasible, switchCount, switchingCost, restarts,
         terminalConstraints: terminal ?? null, stop: result.diagnostics?.stop ?? null };
       candidates.push(item);
       if (!best || (feasible && !best.feasible) || (feasible === best.feasible && score < best.score))
@@ -106,7 +124,7 @@ export function optimizeRecovery(options, c, stage = 'upper', previousBurn = fal
     error.diagnostics = { stage, relaxationError, candidates }; throw error;
   }
   best.result.diagnostics.recovery = { ...commandLimits(c), stage, search: 'bounded-single-burn-arc',
-    previousBurn, switchPenalty: c.switchPenalty, switchCount: best.item.switchCount, switchingCost: best.item.switchingCost,
+    ...history, penaltyKind: 'inverse-off-duration', switchPenalty: c.switchPenalty, switchCount: best.item.switchCount, switchingCost: best.item.switchingCost,
     selected: best.item.pattern, source: best.item.source, candidateCount: candidates.length, evaluations,
     relaxationError, relaxedCost: relaxed?.cost ?? null, candidates };
   return best.result;

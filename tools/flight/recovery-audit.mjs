@@ -24,7 +24,8 @@ const touch = events.find(e => e.type === 'touchdown')?.t ?? Infinity;
 let violations = 0, burnRows = 0, coastRows = 0, switches = 0, previous = null;
 let minSteadyTwr = Infinity, minActualTwr = Infinity, minAvailableTwr = Infinity;
 let minGas = Infinity, maxGas = 0;
-const intervals = [];
+const intervals = [], restarts = [];
+let lastShutdownTime = null;
 for (let k=0;k<log.t.length;k++) {
   const t=log.t[k], u=log.u_cmd[k];
   if (t < armed - 1e-6 || t >= touch) continue;
@@ -32,6 +33,8 @@ for (let k=0;k<log.t.length;k++) {
   const valid = on ? bottom.every(i=>u[i]>=limits.minThrottle-1e-7) && u.every(v=>v>=0 && v<=1+1e-7) : u.every(v=>Math.abs(v)<=1e-7);
   if (!valid) violations++;
   if (on) burnRows++; else coastRows++;
+  if (!on && previous === true) lastShutdownTime = t;
+  if (on && previous === false && lastShutdownTime !== null) restarts.push({ t, offSeconds: t-lastShutdownTime });
   if (on !== previous) { if(previous!==null || on) switches++; intervals.push({t,mode:on?'burn':'coast'}); previous=on; }
   minGas=Math.min(minGas,mg); maxGas=Math.max(maxGas,mg);
   prop.m=mg; prop.T=log.tank[k][1]; prop.p=log.tank[k][2];
@@ -45,7 +48,7 @@ for (let k=0;k<log.t.length;k++) {
     minActualTwr=Math.min(minActualTwr,bottom.reduce((s,i)=>s+log.thrust[k][i],0)/weight);
   }
 }
-const report={input:a.input,limits,metrics:flight.metrics,commandViolations:violations,burnRows,coastRows,switches,intervals,
+const report={input:a.input,limits,metrics:flight.metrics,commandViolations:violations,burnRows,coastRows,switches,intervals,restarts,
   airborneWindowSeconds:touch-armed, switchingRateHz:Number.isFinite(touch)?switches/(touch-armed):null,
   gasRangeKg:[minGas,maxGas],minimumAvailableBottomSteadyTwr:minAvailableTwr,minimumCommandedBottomSteadyTwr:minSteadyTwr,
   minimumMeasuredBottomTwrDuringBurn:minActualTwr,

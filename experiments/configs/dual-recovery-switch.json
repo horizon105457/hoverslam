@@ -1,6 +1,6 @@
 {
   "name": "dual-recovery-switch",
-  "description": "Same recovery case with a cost of 2 per ignition/shutdown transition; compare actual switching and touchdown metrics.",
+  "description": "Flat seed-0 precision recovery: shared bottom ignition at 35-100%; restart penalty = 2 / seconds since last shutdown; first ignition free.",
   "task": "precision-pad",
   "controllers": [
     {
@@ -28,7 +28,7 @@
       },
       "recovery": {
         "enabled": true,
-        "minThrottle": 0.4,
+        "minThrottle": 0.35,
         "switchPenalty": 2
       },
       "lower_replan_steps": 2,
