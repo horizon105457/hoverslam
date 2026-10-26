@@ -74,6 +74,7 @@ export default class FlightProgram extends Program {
     this.controls.enableDamping = true; this.controls.enabled = false;
     this.mode = params.get('mode') || 'director';
     this.speed = 1; this.playing = !params.has('paused');
+    this.looping = false;
     this.T = +(params.get('T') || 0); this.simT = 0;
     this.setupUI();
     await this.world.ready;
@@ -168,9 +169,19 @@ export default class FlightProgram extends Program {
   setupUI() {
     const { ui } = this.ctx, $ = ui.$;
     const tr = (this.transport = new Transport(ui, {
-      onPlay: () => { this.playing = !this.playing; tr.setPlaying(this.playing); },
-      onSeek: u => { if (this.mode === 'director' && this.edit) this.T = u * this.edit.total; else { const [a, b] = this.timeRange(); this.simT = a + u * (b - a); } },
+      onPlay: () => {
+        if (!this.playing && this.atPlaybackEnd()) this.restartPlayback();
+        this.playing = !this.playing; tr.setPlaying(this.playing);
+      },
+      onReset: () => { this.restartPlayback(); this.playing = false; tr.setPlaying(false); },
+      onLoop: on => { this.looping = on; tr.setLooping(on); },
+      onSeek: u => {
+        if (this.mode === 'director' && this.edit) this.T = u >= 1 ? Math.max(0, this.edit.total - 1e-8) : u * this.edit.total;
+        else { const [a, b] = this.timeRange(); this.simT = a + u * (b - a); }
+        if (u >= 1) { this.playing = false; tr.setPlaying(false); }
+      },
     }));
+    tr.setPlaying(this.playing);
     tr.addGroup(FLIGHT_GROUPS.modes, 'modes');
     tr.addGroup(FLIGHT_GROUPS.speeds, 'speeds');
     tr.addGroup(FLIGHT_GROUPS.view);
@@ -179,20 +190,39 @@ export default class FlightProgram extends Program {
     $('b-plume').onclick = () => { const on = !$('b-plume').classList.contains('on'); this.plumes.visible = on; $('b-plume').classList.toggle('on', on); };
     $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); this.hud.canvas.style.display = on ? '' : 'none'; $('b-tele').classList.toggle('on', on); };
     $('b-ui').onclick = () => document.body.classList.toggle('clean');
-    addEventListener('keydown', e => { if (e.key === 'h' || e.key === 'H') document.body.classList.toggle('clean'); if (e.key === ' ') $('b-play').click(); });
+    addEventListener('keydown', e => {
+      if (e.key === 'h' || e.key === 'H') document.body.classList.toggle('clean');
+      if (e.key === ' ') {
+        const target = e.target, tag = target?.tagName;
+        if (target?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault(); $('b-play').click();
+      }
+    });
     this.setMode(this.mode);
   }
 
   setMode(mode) {
+    const prevMode = this.mode;
     this.mode = mode;
     document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
     this.controls.enabled = mode === 'free';
     document.body.classList.toggle('cinema', mode === 'director');
-    if (mode !== 'director' && this.lastEval) this.simT = this.lastEval.t;
+    if (prevMode === 'director' && mode !== 'director' && this.lastEval) this.simT = this.lastEval.t;
     if (mode === 'free' && this.log) { const c = this.log.p(this.simT); this.controls.target.set(c[0], c[1], c[2]); }
     this.buildMarks();
   }
   timeRange() { return [-2.5, this.log?.duration || 6]; }
+
+  atPlaybackEnd() {
+    const end = this.mode === 'director' ? this.edit?.total || 0 : this.timeRange()[1];
+    const t = this.mode === 'director' ? this.T : this.simT;
+    return end > 0 && t >= end - 1e-8;
+  }
+
+  restartPlayback() {
+    if (this.mode === 'director') this.T = 0;
+    else this.simT = this.timeRange()[0];
+  }
 
   buildMarks() {
     if (!this.edit) { this.transport.setMarks([]); return; }
@@ -269,14 +299,21 @@ export default class FlightProgram extends Program {
     let t;
     if (this.mode === 'director') {
       if (this.playing) this.T += dt * this.speed;
+      if (this.T >= this.edit.total) {
+        if (this.looping) this.T %= this.edit.total;
+        else { this.T = Math.max(0, this.edit.total - 1e-8); this.playing = false; this.transport.setPlaying(false); }
+      }
       const ev = (this.lastEval = this.edit.evaluate(this.T));
       t = ev.t; applyPose(cam, ev);
       ui.setShot(`镜头 ${this.edit.shots.indexOf(ev.shot) + 1}<b>${ev.shot.name}</b>`);
-      this.transport.setProgress((this.T % this.edit.total) / this.edit.total);
+      this.transport.setProgress(this.T / this.edit.total);
     } else {
       const [a, b] = this.timeRange();
       if (this.playing) this.simT += dt * this.speed;
-      if (this.simT > b) this.simT = a;
+      if (this.playing && this.simT >= b) {
+        if (this.looping) this.simT = a + ((this.simT - a) % (b - a));
+        else { this.simT = b; this.playing = false; this.transport.setPlaying(false); }
+      }
       t = this.simT;
       const c = this.log.p(t);
       if (this.mode === 'follow') {
