@@ -71,7 +71,7 @@ body.program-flight.cinema .shot { bottom: calc(6.5vh + 96px); }
 
 export const FLIGHT_UI = `
 <header id="title">
-  <h1 aria-label="御风 · Jet-Car Mini">御风<span>Jet-Car Mini</span></h1>
+  <h1 aria-label="QQ飞车 · Jet-Car Mini">QQ飞车<span>Jet-Car Mini</span></h1>
   <p>冷气推力 · 飞出高架 · 着陆</p>
   <p class="sub" id="techline">10 喷口冷气推力套件 · XPBD 软体 · 闭环控制</p>
 </header>
