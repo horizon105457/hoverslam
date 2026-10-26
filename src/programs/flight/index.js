@@ -133,7 +133,7 @@ export default class FlightProgram extends Program {
     this.metrics = meta.flight?.metrics || {};
     this.task = loadTask(TASKS[meta.flight?.task] ? meta.flight.task : 'escape-soft-landing');
     const preset = PRESETS[meta.flight?.preset];
-    this.label = { title: 'QQ飞车', sub: `Jet-Car Mini · 冷气推力 · ${preset?.label || meta.flight?.preset || ''} · ${ctlLabel(meta.flight?.controller)}${meta.flight?.armDelay ? ` · 点火延迟 ${meta.flight.armDelay} s` : ''} · 软体` };
+    this.label = { title: 'QQ飛車', sub: `Jet-Car Mini · 冷气推力 · ${preset?.label || meta.flight?.preset || ''} · ${ctlLabel(meta.flight?.controller)}${meta.flight?.armDelay ? ` · 点火延迟 ${meta.flight.armDelay} s` : ''} · 软体` };
     this.afterLoad();
     document.querySelectorAll('#runs button').forEach(b => b.classList.toggle('on', b.dataset.run === id));
     const r = this.runs?.find(x => x.id === id); if (r) document.querySelector(`#runs button[data-run="${id}"]`)?.classList.add(this.metrics.success ? 'ok' : 'fail');
@@ -154,7 +154,7 @@ export default class FlightProgram extends Program {
     this.metrics = traj.metrics || {};
     { const id = typeof traj.task === 'string' ? traj.task : traj.task?.id; this.task = loadTask(TASKS[id] ? id : 'escape-soft-landing'); }
     const ctl = typeof traj.controller === 'string' ? traj.controller : traj.controller?.name || traj.controller?.type || '';
-    this.label = { title: 'QQ飞车', sub: `Jet-Car Mini · 刚体回放 · ${traj.preset || ''} · ${ctl} · ${traj.producer || ''}` };
+    this.label = { title: 'QQ飛車', sub: `Jet-Car Mini · 刚体回放 · ${traj.preset || ''} · ${ctl} · ${traj.producer || ''}` };
     this.ctx.ui.$('runs').innerHTML = '';
     this.ctx.ui.$('fnote').innerHTML = `刚体孪生轨迹回放（未变形车身）<br><code>${url}</code>`;
     this.afterLoad();
