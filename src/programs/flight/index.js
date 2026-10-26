@@ -207,10 +207,19 @@ export default class FlightProgram extends Program {
     const prevMode = this.mode;
     this.mode = mode;
     document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
-    this.controls.enabled = mode === 'free';
+    this.controls.enabled = mode === 'free' || mode === 'follow';
+    this.controls.enablePan = mode !== 'follow';
     document.body.classList.toggle('cinema', mode === 'director');
     if (prevMode === 'director' && mode !== 'director' && this.lastEval) this.simT = this.lastEval.t;
     if (mode === 'free' && this.log) { const c = this.log.p(this.simT); this.controls.target.set(c[0], c[1], c[2]); }
+    if (mode === 'follow' && this.log) {
+      const c = this.log.p(this.simT), cam = this.ctx.stage.camera;
+      this.controls.target.set(c[0], c[1], c[2]);
+      if (!this._followReady) cam.position.copy(this.controls.target).add(new THREE.Vector3(7.5, 3.0, 6.5));
+      this._followReady = true;
+      cam.fov = 45; cam.updateProjectionMatrix();
+      this.controls.update();
+    }
     this.buildMarks();
   }
   timeRange() { return [-2.5, this.log?.duration || 6]; }
@@ -319,10 +328,11 @@ export default class FlightProgram extends Program {
       t = this.simT;
       const c = this.log.p(t);
       if (this.mode === 'follow') {
-        const tgt = new THREE.Vector3(c[0], c[1] * 0.7 + 0.3, c[2]);
-        this._follow ||= cam.position.clone();
-        this._follow.lerp(tgt.clone().add(new THREE.Vector3(7.5, 3.0, 6.5)), 1 - Math.exp(-dt * 3));
-        cam.position.copy(this._follow); cam.fov = 45; cam.updateProjectionMatrix(); cam.lookAt(tgt);
+        const tgt = new THREE.Vector3(c[0], c[1], c[2]);
+        // Move the orbit centre and camera together; only user input changes the relative view.
+        cam.position.add(tgt.clone().sub(this.controls.target));
+        this.controls.target.copy(tgt);
+        this.controls.update();
       } else { this.controls.target.lerp(new THREE.Vector3(c[0], c[1], c[2]), 1 - Math.exp(-dt * 2)); this.controls.update(); }
       ui.setShot('');
       this.transport.setProgress((t - a) / (b - a));
