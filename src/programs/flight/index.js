@@ -209,7 +209,7 @@ export default class FlightProgram extends Program {
     document.querySelectorAll('#modes button').forEach(b => (b.onclick = () => this.setMode(b.dataset.mode)));
     document.querySelectorAll('#speeds button').forEach(b => (b.onclick = () => { this.speed = +b.dataset.speed; document.querySelectorAll('#speeds button').forEach(x => x.classList.toggle('on', x === b)); }));
     $('b-plume').onclick = () => { const on = !$('b-plume').classList.contains('on'); this.plumes.visible = on; $('b-plume').classList.toggle('on', on); };
-    $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); $('instrument-dock').hidden = !on; $('status-dock').hidden = !on; $('b-tele').classList.toggle('on', on); };
+    $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); $('instrument-dock').hidden = !on; $('status-dock').hidden = !on; this.hud.live.verdict.style.display = on ? '' : 'none'; $('b-tele').classList.toggle('on', on); };
     const setClean = hidden => {
       document.body.classList.toggle('clean', hidden);
       // Hidden controls must also leave keyboard navigation, while the restore button stays accessible.

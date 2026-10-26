@@ -22,8 +22,18 @@ body.program-flight.clean #status-dock { visibility: hidden; }
 body.program-flight #instrument-dock[hidden] { display: none; }
 body.program-flight.clean #instrument-dock { visibility: hidden; }
 body.program-flight .instrument-card { flex: 0 0 auto; display: block; }
-body.program-flight .instrument-card[hidden], body.program-flight .instrument-verdict[hidden] { display: none; }
-body.program-flight .instrument-verdict { flex: 0 0 300px; white-space: pre-line; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--glass); font-size: 13px; line-height: 1.8; }
+body.program-flight .instrument-card[hidden], body.program-flight .experiment-result[hidden] { display: none; }
+body.program-flight .experiment-result { position: fixed; top: clamp(100px, 13.89vh, 200px); left: 280px; right: 326px; text-align: center; color: var(--fg); text-shadow: 0 2px 18px rgba(0,0,0,.55); z-index: 2; max-height: max(48px, calc(100dvh - var(--playback-space,90px) - var(--instrument-height,230px) - clamp(100px,13.89vh,200px) - 16px)); overflow: auto; scrollbar-width: thin; }
+body.program-flight .experiment-result h2 { margin: 0 0 18px; font-size: clamp(32px,5.2vh,64px); font-weight: 300; line-height: 1.15; }
+body.program-flight .experiment-result p { margin: 8px 0; font-size: 16px; line-height: 1.6; }
+body.program-flight .experiment-result .result-note { font-size: 13px; color: var(--dim); }
+body.program-flight .experiment-result p:empty { display: none; }
+body.program-flight.clean .experiment-result { visibility: hidden; }
+@media (max-width: 900px) { body.program-flight .experiment-result { left: 22px; top: 86px; } }
+@media (max-width: 650px) {
+  body.program-flight #status-dock { max-height: min(30dvh,304px); }
+  body.program-flight .experiment-result { right: 22px; top: calc(min(30dvh,304px) + 36px); max-height: max(48px,calc(70dvh - var(--playback-space,90px) - var(--instrument-height,230px) - 52px)); }
+}
 body.program-flight .flight-hud { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
 body.program-flight.clean .flight-hud { opacity: 0; }
 body.program-flight #b-ui-restore { display: none; position: fixed; right: 22px; bottom: 22px; z-index: 3; align-items: center; gap: 7px; background: var(--glass); }

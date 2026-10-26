@@ -5,6 +5,8 @@
 // touchdown verdict against the task criteria (stop tasks: stopping time / distance, kerb).
 import { PROPULSION, DRIVE } from '../../core/spec.js';
 import { GROUPS } from '../../flight/contract.js';
+import { flightResult } from './result.js';
+export { verdictLabel } from './result.js';
 
 const FONT = '-apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif';
 const MINT = '#93d3b8', HOT = '#ff8a3d', RED = '#ff5a4e', FG = 'rgba(238,242,240,0.95)', DIM = 'rgba(238,242,240,0.58)';
@@ -29,8 +31,10 @@ export class FlightHUD {
       dock.appendChild(canvas); this.live[name] = canvas;
     }
     this.live.verdict = document.createElement('section');
-    this.live.verdict.className = 'instrument-verdict';
-    dock.appendChild(this.live.verdict);
+    this.live.verdict.className = 'experiment-result';
+    this.live.verdict.setAttribute('aria-label', '实验结果');
+    this.live.verdict.innerHTML = '<h2></h2><div class="result-metrics"></div><p class="result-note"></p>';
+    dock.parentElement.parentElement.appendChild(this.live.verdict);
   }
 
   drawLive(s) {
@@ -51,10 +55,15 @@ export class FlightHUD {
     const v = s.verdict, box = this.live.verdict;
     box.hidden = !v;
     if (v) {
-      const pad = padVerdict(v, '\n');
-      const text = `${verdictLabel(v)}\n触地垂速 ${v.vs.toFixed(2)} m/s · 倾角 ${v.tilt.toFixed(1)}°\n角速度 ${v.rate.toFixed(2)} rad/s · ${v.hull ? '车身触地' : '四轮着地'}${pad ? `\n${pad}` : ''}${v.stop ? `\n${v.stop}` : ''}${v.note ? `\n${v.note}` : ''}`;
-      if (box.textContent !== text) box.textContent = text;
-      box.style.color = v.success ? MINT : RED;
+      const result = flightResult(v), key = JSON.stringify(result);
+      if (key !== this.resultKey) {
+        this.resultKey = key;
+        box.querySelector('h2').textContent = result.title;
+        box.querySelector('h2').style.color = result.color;
+        const rows = result.lines.map(text => { const p = document.createElement('p'); p.textContent = text; return p; });
+        box.querySelector('.result-metrics').replaceChildren(...rows);
+        box.querySelector('.result-note').textContent = result.note || '';
+      }
     }
   }
 
@@ -145,19 +154,13 @@ export class FlightHUD {
     g.fillStyle = fr > 0.35 ? MINT : HOT; g.fillRect(tx, gy, tw * fr, px(4));
     // ---- verdict (centre) after touchdown
     if (s.verdict) {
-      const v = s.verdict, ok = v.success, col = ok ? MINT : RED;
-      const cx = W / 2, cy = lb + px(150);
+      const result = flightResult(s.verdict), cx = W / 2, cy = lb + px(150);
       shadow(g, k);
       g.textAlign = 'center';
-      g.fillStyle = col; g.font = `300 ${px(56)}px ${FONT}`; g.fillText(verdictLabel(v), cx, cy);
+      g.fillStyle = result.color; g.font = `300 ${px(56)}px ${FONT}`; g.fillText(result.title, cx, cy);
       g.fillStyle = FG; g.font = `400 ${px(16)}px ${FONT}`;
-      const cr = v.crit || {};
-      const mark = (val, lim, unit, d = 2) => `${val.toFixed(d)}${unit}${lim !== undefined ? (val <= lim ? ' ✓' : ' ✗') : ''}`;
-      g.fillText(`触地垂直速度 ${mark(v.vs, cr.max_vertical_speed, ' m/s')}   ·   倾角 ${mark(v.tilt, cr.max_tilt_deg, '°', 1)}   ·   角速度 ${mark(v.rate, cr.max_angular_rate, ' rad/s')}   ·   ${v.hull ? '车身触地 ✗' : '四轮着地 ✓'}${v.hold !== undefined && cr.upright_hold ? `   ·   ${cr.upright_hold} s 内最大倾角 ${mark(v.hold, cr.max_tilt_deg, '°', 0)}` : ''}`, cx, cy + px(34));
-      const pad = padVerdict(v), extra = pad ? 24 : 0;
-      if (pad) { g.fillStyle = FG; g.font = `400 ${px(16)}px ${FONT}`; g.fillText(pad, cx, cy + px(58)); }
-      if (v.stop) { g.fillStyle = FG; g.font = `400 ${px(16)}px ${FONT}`; g.fillText(v.stop, cx, cy + px(58 + extra)); }
-      if (v.note) { g.fillStyle = DIM; g.font = `400 ${px(13)}px ${FONT}`; g.fillText(v.note, cx, cy + px((v.stop ? 82 : 58) + extra)); }
+      result.lines.forEach((line, i) => g.fillText(line, cx, cy + px(34 + i * 24)));
+      if (result.note) { g.fillStyle = DIM; g.font = `400 ${px(13)}px ${FONT}`; g.fillText(result.note, cx, cy + px(34 + result.lines.length * 24)); }
       g.textAlign = 'left';
       noShadow(g);
     }
@@ -166,27 +169,6 @@ export class FlightHUD {
 }
 
 const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
-function padVerdict(v, separator = '   ·   ') {
-  if (!Number.isFinite(v.padDistance) && !Number.isFinite(v.horizontalSpeed)) return '';
-  const c = v.crit || {}, metric = (label, value, limit, unit) => {
-    if (!Number.isFinite(value)) return null;
-    const threshold = Number.isFinite(limit) ? ` / ${limit.toFixed(1)}${unit}` : '';
-    const mark = Number.isFinite(limit) ? (value <= limit ? ' ✓' : ' ✗') : '';
-    return `${label} ${value.toFixed(2)}${unit}${threshold}${mark}`;
-  };
-  return [metric('距靶心', v.padDistance, c.max_pad_distance, ' m'), metric('水平速度', v.horizontalSpeed, c.max_horizontal_speed, ' m/s')].filter(Boolean).join(separator);
-}
-/** 软着陆 = task success; 硬着陆 = the touchdown itself broke a limit; 着陆后翻车 = soft touchdown, then a hull strike / roll-over. */
-export function verdictLabel(v) {
-  if (v.success) return v.crit?.max_pad_distance !== undefined ? '定点降落' : v.crit?.stop_speed !== undefined ? '软着陆 · 刹停' : '软着陆';
-  if (v.kerb) return '冲上路缘';
-  const c = v.crit || {};
-  const hardTd = (c.max_vertical_speed !== undefined && v.vs > c.max_vertical_speed) || (c.max_tilt_deg !== undefined && v.tilt > c.max_tilt_deg) || (c.max_angular_rate !== undefined && v.rate > c.max_angular_rate);
-  const missedPad = (Number.isFinite(c.max_pad_distance) && Number.isFinite(v.padDistance) && v.padDistance > c.max_pad_distance)
-    || (Number.isFinite(c.max_horizontal_speed) && Number.isFinite(v.horizontalSpeed) && v.horizontalSpeed > c.max_horizontal_speed);
-  if (!hardTd && missedPad) return '定点降落未达标';
-  return hardTd ? '硬着陆' : '着陆后翻车';
-}
 const phaseLabel = p => ({ deck: '桥面', air: '空中', ground: '着地' })[p] || p || '';
 function panel(g, x, y, w, h, k) {
   g.save(); g.fillStyle = 'rgba(14,18,20,0.46)'; g.strokeStyle = 'rgba(255,255,255,0.12)'; g.lineWidth = Math.max(1, k);
