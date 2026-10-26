@@ -33,29 +33,7 @@
     "control": 0.5
   },
   "ground": {
-    "_doc": "After first touchdown, reuse the contact-aware rigid-twin land MPC for automatic braking and steering. Valve limits are forced to zero and drive channels remain active only after touchdown.",
-    "enabled": true,
-    "horizon": 2.0,
-    "knot": 0.2,
-    "replan": 5,
-    "plan_dt": 0.002,
-    "samples": 32,
-    "iters": 2,
-    "elites": 8,
-    "first_passes": 2,
-    "objective": {
-      "name": "land",
-      "kerb_crash": true,
-      "w_kerb": 2.0,
-      "kerb_margin": 1.0,
-      "w_dist": 0.3,
-      "w_stop_kerb": 1.0,
-      "a_stop": 7.0,
-      "w_v_end": 0.1,
-      "w_stop_late": 2.0,
-      "w_crash_v": 0.2,
-      "stop_kerb_air": true,
-      "w_kerb_reach": 1.0
-    }
+    "_doc": "Landing mode uses the brake-only ground controller. No steering optimization, throttle or RCS boost.",
+    "enabled": true
   }
 }

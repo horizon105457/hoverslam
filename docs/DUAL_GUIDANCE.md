@@ -33,13 +33,19 @@ node tools/flight/bench.mjs experiments/configs/dual-landing.json out=/tmp/dual-
 
 每次 SQP 将阶段动力学线性化成等式约束，加入输入范围、状态信赖域、气体和阀门界，构成凸 QP。OSQP 只处理该 QP；非凸动力学的局部搜索在 JS 层。控制更新后重新积分完整非线性模型，用实际目标值决定是否接受。
 
-空中两层预测面向着陆，不包含接触和车身变形。触地后切换到已有的含接触刚体预测模型，规划刹车和转向；软体变形仍由真实被控对象计算。上层时间目前采用有限个候选，不能称为连续自由终端时间优化。还没有发动机离散启停、障碍规避、翻转阶段约束或全局最优保证，因此不能将本实现表述为完整 Falcon 9 制导系统。扩展这些问题需要明确增加相应决策变量和约束。
+空中两层预测面向着陆，不包含接触和车身变形。触地后切换到仅刹停控制器，不再求解飞行或地面轨迹优化；轮地接触与软体变形仍由真实被控对象计算。上层时间目前采用有限个候选，不能称为连续自由终端时间优化。还没有发动机离散启停、障碍规避、翻转阶段约束或全局最优保证，因此不能将本实现表述为完整 Falcon 9 制导系统。扩展这些问题需要明确增加相应决策变量和约束。
 
 悬停起飞与外部脚本驱动任务仍会明确拒绝。定点着陆任务会生成水平减速参考，但本轮没有验证定点任务的可达性。
 
-默认开启 `ground.enabled`：首次触地后锁定地面模式，回弹不会重新开启喷口；输出扩展为原合同的 12 通道（10 喷口、刹车、转向）。地面复用已有 CEM MPC，预测 2 秒、控制结点间隔 0.2 秒，每 5 个控制步重规划，32 个样本、2 轮优化。它依据接触模型自动选择制动量和转向量，所有喷口指令固定为零。水平速度达到任务的 `stop_speed`（未指定则为 0.5 m/s）后保持全刹车、方向回中。空中仍使用两层 SQP，地面不是第三层 SQP。
+默认开启 `ground.enabled`，控制职责分为：
 
-`ground.enabled:false` 恢复 10 通道空中接口，并明确拒绝要求刹停的任务。控制器总规划统计包含空中和地面，`statistics.ground` 另列地面统计。
+- `src/flight/landing-modes.js`：着陆任务的上层模式管理。首次触地选择地面模式，回弹不会自动重启飞行；后续任务可通过 `controller.setMode('flight' | 'ground')` 明确切换。
+- `src/flight/guidance/index.js`：仅在飞行模式运行两层规划。切换时清空上下层轨迹、缓存指令、着陆时刻、PD 初值生成器和当前诊断；累计求解次数保留用于运行统计。地面模式下 `predict()` 返回空计划。
+- `src/flight/controllers/ground-stop.js`：初版行驶控制器只负责刹停，输出 100% 车轮制动、零转向和零 RCS。达到停车速度后继续保持制动；沿用原制动压力动态和 ABS，不改变物理模型。
+
+飞行模式下检测到离地边沿时，仅执行一次制动、转向命令清零；之后保持该命令，不重置执行器物理状态。地面模式下的短暂回弹不触发飞行模式复位。`statistics` 提供 `mode`、`modeTransitions`、`departureResets` 和 `flightActive`。`ground.enabled:false` 保留 10 通道空中接口，并拒绝刹停任务。
+
+未来地面油门约定为 0～100% 对应轮端油门，100～200% 在满油门基础上将同向 RCS 从 0 增至 80%；制动始终为 0～100%，无 RCS 补偿。该助推与电机本轮均未实现，不影响飞行模式的推力分配。
 
 ## 运行核验
 
@@ -62,16 +68,22 @@ node tools/flight/bench.mjs experiments/configs/dual-landing.json out=/tmp/dual-
 
 本轮输出保存在 `/tmp/hoverslam-dual-final/`（两例刚体轨迹和汇总）、`/tmp/hoverslam-dual-soft-final/`（软体录制和指标）。这些是本机临时结果，长期复现以本页命令及 `experiments/configs/dual-landing.json` 为准。
 
-## 自动落地制动与转向
+## 落地刹停复现
 
 ```sh
 node tools/flight/bench.mjs experiments/configs/dual-land-stop.json out=/tmp/dual-land-stop
-node tools/sim/flight.mjs controller=dual task=escape-land-stop preset=flat seed=0 dur=7 out=dual-stop-flat outDir=public/sims
-# 打开 ?program=flight&run=dual-stop-flat&mode=follow
+node tools/sim/flight.mjs controller=dual task=escape-land-stop preset=flat seed=0 dur=6 out=dual-brake-flat outDir=public/sims
+# 打开 ?program=flight&run=dual-brake-flat&mode=follow
 ```
 
-seed=0 的刚体 `escape-land-stop` 样例中，flat 和 nose 均完成着陆与刹停，全程无路缘事件和车身碰撞；触地后分别用 1.804 秒、2.087 秒达到停车速度。两例均实际输出了非零转向，触地锁定后喷口指令全零。这是两个具体样例的运行结果，不是全工况验收。
+以下为此前地面 CEM 制动与转向版本的历史结果。seed=0 的刚体 `escape-land-stop` 样例中，flat 和 nose 均完成着陆与刹停，全程无路缘事件和车身碰撞；触地后分别用 1.804 秒、2.087 秒达到停车速度。两例均实际输出了非零转向，触地锁定后喷口指令全零。这是两个具体样例的运行结果，不是全工况验收。
 
 播放器提供“回到起点｜播放/暂停｜循环”控件，默认播放结束后停止；回到起点时暂停，循环需手动开启。页面继续播放计算完成的录制，在线仿真界面仍暂停实施。
 
 软体 `flat`、seed=0 实际运行 7 秒仿真：3.03 秒触地，5.20 秒达到停车判据（触地后 2.17 秒，距离 19.12 米），直到 7 秒结束未发生路缘事件或车身碰撞。计算耗时 308.92 秒，空中规划约 0.73 秒、地面规划约 1.51 秒；保留原 8000 Hz 软体求解。该录制在总统计修正前启动，元数据顶层 `plan_s` 仅含空中部分，地面耗时须读取 `controllerStats.ground.planMs`；当前实现已合并总统计。结果位于 `/tmp/hoverslam-dual-stop-soft/`，页面副本位于忽略跟踪的 `public/sims/flight-dual-stop-flat.*`。
+
+### 模式管理与仅刹停版本
+
+本版删除了 dual 内的地面 CEM 调用和相应默认调参项。seed=0、`escape-land-stop` 的 flat/nose 刚体样例均完成刹停，无车身碰撞和路缘事件，触地后分别 1.804/2.087 秒达到停车判据；整段计算约 0.87/0.90 秒。结果保存在 `/tmp/hoverslam-brake-only-final/`。该结果只覆盖两个样例。
+
+软体 flat、seed=0 的 6 秒录制在 3.03 秒触地、5.18 秒刹停（触地后 2.15 秒、18.89 米），全程无路缘或车身碰撞，计算耗时约 230 秒。触地后的 296 条日志均为全刹车、零转向和零 RCS 指令。输出位于 `/tmp/hoverslam-brake-only-soft/`。录制启动时尚未补齐“首次调用已在空中”的边沿初始化，故元数据 `departureResets=0`；该分支已修正并单独验证一次清零，输出原本就是零，未改变此次录制的控制动作。刚体运行探针另行确认地面不再求解、旧预测清空、回弹不启飞行、显式重入飞行重新规划。未新增测试框架。

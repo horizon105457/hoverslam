@@ -5,8 +5,9 @@ import defaults from './defaults.json' with { type: 'json' };
 import { FlightModel, ND, NU } from './model.js';
 import { optimizeTrajectory } from './optimizer.js';
 import { createPD } from '../controllers/pd.js';
-import { createMPC } from '../mpc/index.js';
-import { CONTROL_DT, NA, DRIVE_IDX } from '../contract.js';
+import { createGroundStop } from '../controllers/ground-stop.js';
+import { LandingModes } from '../landing-modes.js';
+import { CONTROL_DT, NA } from '../contract.js';
 import { WORLD } from '../../core/spec.js';
 import { streetLevel } from '../world.js';
 import { heightOf } from '../tasks.js';
@@ -74,8 +75,7 @@ function makeReferences(model, s, task, seedStates, dts, c) {
 function validateConfig(input) {
   const c = { ...defaults, ...input };
   delete c._doc;
-  c.ground = { ...defaults.ground, ...(input.ground || {}),
-    objective: { ...defaults.ground.objective, ...(input.ground?.objective || {}) } };
+  c.ground = { ...defaults.ground, ...(input.ground || {}) };
   delete c.ground._doc;
   if (typeof c.ground.enabled !== 'boolean') throw new TypeError('guidance ground.enabled must be boolean');
   c.upper_nodes = Math.trunc(finitePositive(c.upper_nodes, 'upper_nodes'));
@@ -119,19 +119,25 @@ export function createDual(cfg = {}) {
   const c = validateConfig(cfg), model = new FlightModel(), pd = createPD(cfg.pd || {});
   const outputSize = c.ground.enabled ? NA : NU;
   const zero = new Float64Array(NU);
-  const groundMpc = c.ground.enabled ? createMPC({
-    horizon: c.ground.horizon, knot: c.ground.knot, replan: c.ground.replan,
-    plan_dt: c.ground.plan_dt, first_passes: c.ground.first_passes,
-    optimizer: 'cem', mixer: 'raw', umax: 0, drive: true, drive_air: false, drive_init: [1, 0],
-    init: 0, objective: c.ground.objective,
-    cem: { samples: c.ground.samples, iters: c.ground.iters, elites: c.ground.elites },
-  }) : null;
-  let task = null, upper = null, upperAt = -Infinity, lowerAt = -Infinity, lowerAction = null, landingDeadline = null;
-  let stopTask = false, groundLatched = false, groundStopped = false;
+  const groundController = c.ground.enabled ? createGroundStop() : null;
+  const flightDrive = new Float64Array(NA - NU);
+  let task = null, episodeSeed = 0, upper = null, upperAt = -Infinity, lowerAt = -Infinity, lowerAction = null, landingDeadline = null;
+  const modes = new LandingModes({ onChange: () => {
+    resetFlight();
+    groundController?.reset({ task });
+  }, onDeparture: () => flightDrive.fill(0) });
   const stats = { upperSolves: 0, lowerSolves: 0, durationCandidates: 0, lastUpperCost: null, lastLowerCost: null,
     lastUpperDiagnostics: null, lastLowerDiagnostics: null, lastDiagnostics: null };
   const ctl = { name: 'dual', config: c, plans: 0, evals: 0, planMs: 0, lastCost: null, diagnostics: null };
   const now = () => globalThis.performance?.now?.() ?? Date.now();
+
+  // Clear live planner state on either transition; cumulative solve counters remain episode diagnostics.
+  function resetFlight() {
+    upper = null; upperAt = -Infinity; lowerAt = -Infinity; lowerAction = null; landingDeadline = null;
+    pd.reset({ task, seed: episodeSeed });
+    for (const k of Object.keys(stats)) if (k.startsWith('last')) stats[k] = null;
+    ctl.lastCost = null; ctl.diagnostics = null;
+  }
 
   function rolloutPD(s, dts) {
     const x0 = model.pack(s), states = [x0], controls = [];
@@ -303,41 +309,23 @@ export function createDual(cfg = {}) {
     reset({ task: t, seed = 0 } = {}) {
       task = t || null;
       if (task?.target) throw new Error('dual guidance currently supports airborne landing tasks; hover-hold targets are unsupported');
-      stopTask = task?.success?.stop_speed !== undefined;
-      if (stopTask && !c.ground.enabled) throw new Error('dual guidance ground stopping requires ground.enabled=true');
+      if (task?.success?.stop_speed !== undefined && !c.ground.enabled) throw new Error('dual guidance ground stopping requires ground.enabled=true');
       if (task?.drive) throw new Error('dual guidance does not support externally scripted ground driving tasks');
-      upper = null; upperAt = -Infinity; lowerAt = -Infinity; lowerAction = null; landingDeadline = null;
-      groundLatched = false;
-      groundStopped = false;
-      if (groundMpc) groundMpc.reset({ task, seed });
-      pd.reset({ task, seed });
+      episodeSeed = seed;
+      modes.reset();
+      flightDrive.fill(0);
+      resetFlight();
+      groundController?.reset({ task });
       for (const k of Object.keys(stats)) stats[k] = k.startsWith('last') ? null : 0;
       ctl.plans = 0; ctl.evals = 0; ctl.planMs = 0; ctl.lastCost = null; ctl.diagnostics = null;
     },
     act(s) {
       const out = new Float64Array(outputSize);
-      // The predictor has no contact model. On the ground the plant handles support/contact and this controller
-      // leaves all thrusters closed after touchdown; the existing rigid-twin ground MPC handles drive channels.
+      modes.observe(s);
       if (!s.armed) return out;
-      if (s.phase === 'ground') groundLatched = true;
-      if (groundLatched) {
-        if (groundMpc) {
-          const stopSpeed = task?.success?.stop_speed ?? 0.5;
-          const vh = Math.hypot(s.v[0], s.v[2]);
-          if (groundStopped || vh <= stopSpeed) {
-            groundStopped = true;
-            out[DRIVE_IDX.brake] = 1;
-            out[DRIVE_IDX.steer] = 0;
-            return out;
-          }
-          const beforeMs = groundMpc.planMs, beforePlans = groundMpc.plans, beforeEvals = groundMpc.evals;
-          const driven = groundMpc.act(s);
-          ctl.planMs += groundMpc.planMs - beforeMs;
-          ctl.plans += groundMpc.plans - beforePlans;
-          ctl.evals += groundMpc.evals - beforeEvals;
-          out.set(driven.subarray(NU, NA), NU);
-        }
-        return out;
+      if (modes.mode === 'ground') {
+        // Exclusive ownership: flight planning is disabled and no cached valve command can escape.
+        return groundController ? groundController.act(s) : out;
       }
       if (!upper || s.t - upperAt >= c.upper_replan) planUpper(s);
       if (!lowerAction || s.t - lowerAt >= c.lower_replan_steps * CONTROL_DT - 1e-9) {
@@ -345,6 +333,7 @@ export function createDual(cfg = {}) {
         lowerAt = s.t;
       }
       out.set(lowerAction.subarray(0, NU));
+      if (c.ground.enabled) out.set(flightDrive, NU);
       return out;
     },
     predict(s) {
@@ -355,12 +344,17 @@ export function createDual(cfg = {}) {
         cost: upper.result.cost, diagnostics: stats.lastUpperDiagnostics };
     },
   });
-  Object.defineProperty(ctl, 'statistics', { enumerable: true, get: () => ({ ...stats, ground: {
-    enabled: !!groundMpc, active: !!groundMpc && groundLatched, latched: groundLatched, stopped: groundStopped,
-    plans: groundMpc?.plans ?? 0, evals: groundMpc?.evals ?? 0, planMs: groundMpc?.planMs ?? 0,
-    lastCost: groundMpc?.lastCost ?? null,
-  } }) });
-  ctl.groundController = groundMpc;
+  // Higher-level missions may explicitly request flight again; contact bounce alone does not rearm flight.
+  ctl.setMode = mode => modes.setMode(mode);
+  Object.defineProperty(ctl, 'mode', { get: () => modes.mode });
+  Object.defineProperty(ctl, 'statistics', { enumerable: true, get: () => ({ ...stats,
+    mode: modes.mode, modeTransitions: modes.transitions, departureResets: modes.departures,
+    flightActive: modes.mode === 'flight', ground: {
+      enabled: !!groundController, active: !!groundController && modes.mode === 'ground',
+      stopped: groundController?.stopped ?? false,
+    },
+  }) });
+  ctl.groundController = groundController;
   return ctl;
 }
 

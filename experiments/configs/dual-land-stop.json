@@ -1,6 +1,6 @@
 {
   "name": "dual-land-stop",
-  "description": "Two landing and automatic brake/steer examples; not a robustness acceptance suite.",
+  "description": "Two landing and mode-switching and brake-only examples; not a robustness acceptance suite.",
   "task": "escape-land-stop",
   "controllers": [{ "name": "dual" }],
   "presets": ["flat", "nose"],

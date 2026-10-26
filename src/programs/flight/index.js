@@ -30,6 +30,7 @@ import { FLIGHT_UI, FLIGHT_CSS, FLIGHT_GROUPS } from './ui.js';
 
 /** Known soft-body runs (shown when their .sim exists); ?run= may name any other flight-*.sim. */
 const RUNS = [
+  { id: 'dual-brake-flat', label: '双层 MPC · 落地制动', sub: '四轮平拍 · 触地切换 · 全刹车，无转向及 RCS' },
   { id: 'dual-stop-flat', label: '双层 MPC · 落地刹停', sub: '四轮平拍 · 空中两层 SQP · 触地后自动刹车与转向' },
   { id: 'soft', label: '软着陆', sub: '车头俯冲 · 自动驾驶 ap · 刹停' },
   { id: 'recover', label: '翻滚改出', sub: '倒扣车顶 · 自动驾驶 ap · 刹停' },
