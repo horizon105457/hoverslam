@@ -111,3 +111,27 @@ node tools/sim/flight.mjs 'controller=dual:{"capturePlans":true}' task=escape-la
 带规划记录的软体 flat 样例保存了 25 次快照（0.76 秒首次空中规划，3.04 秒地面清空），6 秒仿真完整完成，触地后 2.15 秒刹停，无车身碰撞及路缘事件。构建通过；刚体样例开启记录前后的状态与指令逐项相同。
 
 交互面板使用统一 CSS 像素布局：状态遥测保持右上，按底部信息区的实际高度限制可视高度，内容超出时内部滚动；喷口、制动转向、着陆结果与规划面板位于播放栏上方的可滚动信息区，播放栏换行和导演模式的留白会动态计入底部间距。窄于 900 px 或不高于 520 px 时，飞行记录也移入该区域；放大视口后自动恢复左侧位置。仪表用固定逻辑尺寸绘制并按设备像素比采样，不再随窗口高度放大而挤压其他面板。离线影片仍使用原全画幅 HUD 排版。
+
+## 定点降落（precision-pad / flat）
+
+`precision-pad` v2 在原软着陆要求上同时检查首次触地的水平落点距离 ≤ 1.5 m、水平速度模长 ≤ 0.5 m/s。目标中心沿用 `[-22, 0, 16]`；接地后的刹停不替代触地指标，硬件和初始条件采样规则均未修改。
+
+上层 SQP 对水平位置和速度分别使用 32 边内接多边形约束（圆半径最多保守约 0.482%），每组有一个非负恢复松弛量。线搜索使用非线性重积分得到的真实圆约束违反量构造 merit；一旦实际预测可行，不接受破坏可行性的步长。时长候选优先选择预测可行解，再比较代价。下层窗口到达上层选中轨迹的终点时，缩短窗口到同一时刻并施加相同终端约束；较早的跟踪窗口不强求提前停车。原有不带定点终端限制的任务保持原求解行为。
+
+`diagnostics.terminalConstraints` 分别报告位置/速度模长、约束残差、违反量与可行状态；`qpSolved` 仅表示数值求解状态。受约束求解中，后续 QP 失败会返回已接受的非线性轨迹并明确记录 `stop=qp_failure`、`qpSolved=false`，不会把该轨迹自动标为可行。所有候选不可行时会执行当前 merit 最优的恢复轨迹，最终任务成功仍以真实触地指标判定。规划快照保留上层终端残差，供录制后检查。
+
+复现参数见 `experiments/configs/dual-precision-pad.json`。该案例固定 flat、seed 0，任务原有随机化得到速度 58.0328 km/h、出桥角 14.1098°；软体使用刚体输出中的同一 launch，不将默认 flat 的 64 km/h 混作相同初始条件。8 次上层 / 2 次下层迭代、0.4 s 上层更新，以及较大的终端速度权重仅属于该案例，不修改其他案例默认值。
+
+```sh
+pad_controller=$(node --input-type=module -e 'import fs from "node:fs"; console.log(JSON.stringify(JSON.parse(fs.readFileSync("experiments/configs/dual-precision-pad.json","utf8")).controllers[0]))')
+node tools/flight/run.mjs task=precision-pad preset=flat seed=0 controller="$pad_controller" out=public/sims/dual-pad-rigid.json
+node tools/sim/flight.mjs task=precision-pad preset=flat launch=public/sims/dual-pad-rigid.json controller="$pad_controller" out=dual-pad-flat dur=6 hz=100
+```
+
+浏览器入口 `?program=flight&run=dual-pad-flat&mode=follow&paused`。金色圆环表示目标区域，红色 × 表示实测触地点，蓝色 ＋ 表示动态预测触地点。结果卡显示位置误差、水平速度及各自阈值；成功状态来自对应仿真记录的实测结果。页面仍是闭环计算结果的录制回放，不开启在线仿真。
+
+本次固定案例结果：刚体落点误差 0.09748 m、触地水平速度 0.03221 m/s、垂速 0.31334 m/s；软体对应为 0.09 m、0.224 m/s、1.104 m/s，倾角 7.86°，无车身碰撞、路缘碰撞，`success=true`。软体在 3.403 s 触地，6 s / 601 帧录制用时 207.626 s（含物理、求解与编码，其中控制规划统计为 7.64 s），不作实时性能承诺。完整指标保存在 `experiments/reports/dual-precision-pad/metrics.json`；这仅验证 flat / seed 0，不扩展为跨工况鲁棒性结论。
+
+验证边界：构建通过；求解器的有界可行恢复、不可达残差、零次迭代与无约束输出保持检查通过。既有 `npm test` 在 JS `pad-mppi` 对历史 golden 的约 1.09e-7 指令差异处未通过；同进程移除新增水平速度判据后输出逐项相同，因此没有调整 golden 或放宽容差。该项不计作本次通过项。
+
+另行执行的既有 Python 全套检查在中止时进度为 44%（98 项已收集），已出现一个 controller 和两个 parity 失败；controller 定位为调用 Node 子进程时 `OSError: [Errno 7] Argument list too long`。未将这次未完成的全套检查记为通过，也未扩大本任务去修改既有测试基础设施。

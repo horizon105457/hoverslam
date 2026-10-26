@@ -32,6 +32,7 @@ import { FLIGHT_UI, FLIGHT_CSS, FLIGHT_GROUPS } from './ui.js';
 /** Known soft-body runs (shown when their .sim exists); ?run= may name any other flight-*.sim. */
 const RUNS = [
   { id: 'dual-plans-flat', label: '双层 MPC · 规划可视化', sub: '完整轨迹 · 实际规划候选与短期预测 · 落地制动' },
+  { id: 'dual-pad-flat', label: '定点降落', sub: '目标半径 1.5 m · 触地水平速度 ≤ 0.5 m/s' },
   { id: 'dual-brake-flat', label: '双层 MPC · 落地制动', sub: '四轮平拍 · 触地切换 · 全刹车，无转向及 RCS' },
   { id: 'dual-stop-flat', label: '双层 MPC · 落地刹停', sub: '四轮平拍 · 空中两层 SQP · 触地后自动刹车与转向' },
   { id: 'soft', label: '软着陆', sub: '车头俯冲 · 自动驾驶 ap · 刹停' },
@@ -160,7 +161,7 @@ export default class FlightProgram extends Program {
   }
 
   afterLoad() {
-    this.trajectories.setLog(this.log);
+    this.trajectories.setLog(this.log, this.task?.pad);
     this.updateVisualizationUI();
     const success = this.metrics.success !== undefined ? !!this.metrics.success : true;
     this.edit = new FlightEdit(this.log, { success });
@@ -329,6 +330,7 @@ export default class FlightProgram extends Program {
     const m = this.metrics;
     const verdict = t >= e.tTouch + 0.2 && m.touchdown_vertical_speed !== undefined
       ? { success: !!m.success, vs: m.touchdown_vertical_speed, tilt: m.touchdown_tilt_deg, rate: m.touchdown_angular_rate, hull: !!m.hull_strike, crit: this.task?.success, hold: m.max_tilt_hold_deg,
+        padDistance: m.pad_distance, horizontalSpeed: m.touchdown_horizontal_speed,
         note: `${this.rigid ? '刚体孪生' : '软体'} · 用气 ${(m.gas_used_kg ?? 0).toFixed(1)} kg${m.peak_accel_g ? ` · 峰值 ${m.peak_accel_g.toFixed(1)} g` : ''}`,
         kerb: !!m.kerb && (m.kerb_after_td == null || t >= e.tTouch + m.kerb_after_td),
         stop: m.stopped && t >= e.tTouch + (m.stop_time ?? 0) ? `刹停 ${m.stop_time.toFixed(1)} s · ${m.stop_distance.toFixed(0)} m${m.kerb ? '   ·   路缘 ✗' : '   ·   未碰路缘 ✓'}` : null }

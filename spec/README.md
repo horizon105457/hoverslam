@@ -470,7 +470,8 @@ stop_speed` (`t_stop` = that step's `t`; no `landed` in stop tasks), other tasks
 **8.6 Success** (only for `landed` and `stopped`), every key optional, evaluated on the touchdown snapshot (§5.6):
 `|v_y| ≤ max_vertical_speed`; tilt `≤ max_tilt_deg` at touchdown and at every control step after it until the end (the
 hold window; up to the stop for `stopped`); `|ω| ≤ max_angular_rate`; pad distance (COM `(x, z)` at touchdown to
-`pad.center`) `≤ max_pad_distance`; `recovered` if `recover_tilt_deg` is given; hover tasks need the hold complete;
+`pad.center`) `≤ max_pad_distance`; horizontal speed `√(v_x² + v_z²) ≤ max_horizontal_speed`; `recovered` if
+`recover_tilt_deg` is given; hover tasks need the hold complete;
 `stopped` also needs `t_stop − t_touchdown ≤ stop_within` if given. No hull strike (or kerb) is implied by reaching
 `landed` / `stopped` unless the task forbids it.
 

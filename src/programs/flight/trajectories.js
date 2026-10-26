@@ -28,8 +28,9 @@ export class FlightTrajectories {
     this._lastDpr = 0;
   }
 
-  setLog(log) {
+  setLog(log, fallbackPad = null) {
     this.log = log;
+    this.pad = normalizePad(log?.flight?.pad) || normalizePad(fallbackPad);
     this.actual = [];
     this.touchdown = null;
     this.traces = [];
@@ -163,6 +164,20 @@ export class FlightTrajectories {
     g.moveTo(s[0] + r, s[1] - r); g.lineTo(s[0] - r, s[1] + r); g.stroke(); g.restore();
   }
 
+  _pad() {
+    if (!this.pad) return;
+    const { x, z, radius } = this.pad, g = this.g;
+    g.save(); g.strokeStyle = GOLD; g.globalAlpha = 0.9; g.lineWidth = 2; g.beginPath();
+    let pen = false;
+    for (let i = 0; i <= 64; i++) {
+      const a = i * Math.PI * 2 / 64, px = x + radius * Math.cos(a), pz = z + radius * Math.sin(a);
+      const s = this._screen(this._world.set(px, streetLevel(px, pz) + 0.055, pz));
+      if (!s) { pen = false; continue; }
+      if (!pen) { g.moveTo(s[0], s[1]); pen = true; } else g.lineTo(s[0], s[1]);
+    }
+    g.stroke(); g.restore();
+  }
+
   _plans(t) {
     if (!this.options.planning || !this.hasPlanning) return;
     const e = this._latestTrace(t);
@@ -190,6 +205,7 @@ export class FlightTrajectories {
     g.clearRect(0, 0, innerWidth, innerHeight);
     this.camera.updateWorldMatrix?.(true, false);
     this.camera.updateProjectionMatrix?.();
+    this._pad();
     if (this.options.trail) {
       this._actual(t);
       if (this.touchdown && t >= this.touchdown.t) this._touchdown();
@@ -197,5 +213,13 @@ export class FlightTrajectories {
     this._plans(t);
   }
 
-  dispose() { this.canvas.remove(); this.log = null; this.actual = []; this.traces = []; this.touchdown = null; }
+  dispose() { this.canvas.remove(); this.log = null; this.actual = []; this.traces = []; this.touchdown = null; this.pad = null; }
+}
+
+function normalizePad(pad) {
+  if (!pad || !Number.isFinite(pad.radius) || pad.radius <= 0) return null;
+  const c = pad.center;
+  const x = Array.isArray(c) ? c[0] : c?.x;
+  const z = Array.isArray(c) ? (c.length > 2 ? c[2] : c[1]) : c?.z;
+  return Number.isFinite(x) && Number.isFinite(z) ? { x, z, radius: pad.radius } : null;
 }

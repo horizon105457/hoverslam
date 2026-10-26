@@ -154,6 +154,7 @@ export function createDual(cfg = {}) {
       upper: mode === 'flight' ? upperPath : [], upperTimes: mode === 'flight' ? upperTimes : [],
       lower: mode === 'flight' ? lowerPath : [], lowerTimes: mode === 'flight' ? lowerTimes : [],
       candidates: mode === 'flight' ? upperCandidates : [],
+      terminalConstraints: mode === 'flight' ? stats.lastUpperDiagnostics?.terminalConstraints : null,
     });
   }
 
@@ -205,6 +206,12 @@ export function createDual(cfg = {}) {
     finally { ctl.planMs += now() - t0; }
   }
 
+  function terminalConstraints() {
+    if (!task?.pad || task.success?.max_horizontal_speed === undefined) return undefined;
+    return { penalty: c.terminal_constraint_penalty ?? 1000, position: { center: [task.pad.center[0], task.pad.center[2]], radius: task.success.max_pad_distance ?? task.pad.radius },
+      velocity: { center: [0, 0], radius: task.success.max_horizontal_speed } };
+  }
+
   function computeUpper(s) {
     const nominal = landingDeadline === null
       ? initialLandingDuration(s)
@@ -229,7 +236,8 @@ export function createDual(cfg = {}) {
       let result;
       try {
         result = optimizeTrajectory({ model, initial: states[0], controls, dts, references,
-          iterations: c.upper_iterations, weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust });
+          iterations: c.upper_iterations, weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust,
+          terminalConstraints: terminalConstraints() });
       } catch (error) {
         const failure = { duration, error: String(error), solver: error.diagnostics ?? null };
         candidates.push(failure);
@@ -237,10 +245,12 @@ export function createDual(cfg = {}) {
       }
       ctl.evals += result.diagnostics?.iterations ?? 0;
       if (c.capturePlans && candidateTrajectories.length < 8) candidateTrajectories.push(pathOf(result.states));
-      const score = result.cost + c.duration_penalty * (duration - nominal) ** 2;
-      const candidate = { duration, cost: result.cost, score, stop: result.diagnostics?.stop ?? null };
+      const violation = result.diagnostics?.terminalConstraints?.violation ?? 0;
+      const feasible = result.diagnostics?.terminalConstraints?.feasible ?? true;
+      const score = result.cost + (terminalConstraints()?.penalty ?? 0) * violation + c.duration_penalty * (duration - nominal) ** 2;
+      const candidate = { duration, cost: result.cost, score, terminalConstraints: result.diagnostics?.terminalConstraints, stop: result.diagnostics?.stop ?? null };
       candidates.push(candidate);
-      if (!best || score < best.score) best = { result, references, dts, duration, score };
+      if (!best || (feasible && !best.feasible) || (feasible === best.feasible && score < best.score)) best = { result, references, dts, duration, score, feasible };
     }
     if (!best) {
       const error = new Error('dual guidance upper optimization failed for every duration candidate');
@@ -302,17 +312,24 @@ export function createDual(cfg = {}) {
   }
 
   function lowerPlan(s) {
-    const initial = model.pack(s), dts = Array.from({ length: c.lower_nodes }, () => c.lower_dt);
-    const controls = [], references = [initial];
-    for (let i = 0; i < c.lower_nodes; i++) {
-      controls.push(sampleUpper(s.t + i * c.lower_dt, 'control'));
-      references.push(sampleUpper(s.t + (i + 1) * c.lower_dt, 'state'));
+    // Match the selected upper trajectory endpoint, not the initial duration prior.
+    const remaining = upper ? upperAt + upper.duration - s.t : Infinity;
+    const reachesLanding = !!terminalConstraints() && remaining > 0 && remaining <= c.lower_nodes * c.lower_dt;
+    // Keep the executed first command interval intact; only the final stage is truncated.
+    const count = reachesLanding ? Math.min(c.lower_nodes, Math.ceil(remaining / c.lower_dt)) : c.lower_nodes;
+    const dts = Array.from({ length: count }, (_, i) => reachesLanding ? Math.min(c.lower_dt, remaining - i * c.lower_dt) : c.lower_dt);
+    const initial = model.pack(s), controls = [], references = [initial], times = [s.t];
+    for (const dt of dts) {
+      controls.push(sampleUpper(times.at(-1), 'control'));
+      times.push(times.at(-1) + dt);
+      references.push(sampleUpper(times.at(-1), 'state'));
     }
     let result;
     const t0 = now();
     try {
       result = optimizeTrajectory({ model, initial, controls, dts, references, iterations: c.lower_iterations,
-        weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust });
+        weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust,
+        terminalConstraints: reachesLanding ? terminalConstraints() : undefined });
     } catch (error) {
       ctl.diagnostics = { stage: 'lower', predictionOnly: true, error: String(error), solver: error.diagnostics ?? null,
         upper: stats.lastUpperDiagnostics };
@@ -330,7 +347,7 @@ export function createDual(cfg = {}) {
     ctl.diagnostics = stats.lastLowerDiagnostics;
     if (c.capturePlans) {
       lowerPath = pathOf(result.states);
-      lowerTimes = result.states.map((_, i) => s.t + i * c.lower_dt);
+      lowerTimes = times;
     }
     return result.controls[0] || zero;
   }

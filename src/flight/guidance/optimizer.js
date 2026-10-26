@@ -58,6 +58,35 @@ function csc(ncol, entries) {
 }
 const key=(r,c)=>`${r},${c}`;
 
+// Inscribe a polygon so a zero-slack terminal QP point lies inside the requested disk. A radial-only
+// tangent loses all directional information at the centre and can cut corners away from it.
+const DISK_FACETS=32;
+function terminalDisks(constraints) {
+  if(constraints===undefined||constraints===null) return null;
+  if(typeof constraints!=='object') throw new TypeError('terminalConstraints must be an object');
+  const penalty=constraints.penalty ?? 1e4, tolerance=constraints.tolerance ?? 1e-3, disks=[];
+  if(!(finite(penalty)&&penalty>0)) throw new RangeError('terminalConstraints.penalty must be positive and finite');
+  if(!(finite(tolerance)&&tolerance>=0)) throw new RangeError('terminalConstraints.tolerance must be finite and nonnegative');
+  for(const [name,indices] of [['position',[0,2]],['velocity',[3,5]]]) if(constraints[name]!==undefined) {
+    const disk=constraints[name], center=vec(disk?.center,2,[0,0],`terminalConstraints.${name}.center`), radius=disk?.radius;
+    if(!(finite(radius)&&radius>0)||Array.from(center).some(v=>!finite(v))) throw new RangeError(`terminalConstraints.${name} requires a positive finite radius and finite centre`);
+    disks.push({name,indices,center,radius});
+  }
+  if(!disks.length) throw new RangeError('terminalConstraints requires a position or velocity disk');
+  return {disks,penalty,tolerance};
+}
+function terminalResiduals(state,terminal) {
+  if(!terminal) return null;
+  const out={feasible:true,tolerance:terminal.tolerance,violation:0,maxViolation:0};
+  for(const disk of terminal.disks) {
+    const norm=Math.hypot(state[disk.indices[0]]-disk.center[0],state[disk.indices[1]]-disk.center[1]), residual=norm-disk.radius, violation=Math.max(0,residual);
+    out[disk.name]={norm,radius:disk.radius,center:Array.from(disk.center),residual,violation};
+    out.violation+=violation; out.maxViolation=Math.max(out.maxViolation,violation);
+    if(!finite(norm)||violation>terminal.tolerance) out.feasible=false;
+  }
+  return out;
+}
+
 function costOf(model,states,controls,dts,refs,Q,Qf,Ru,Rs) {
   let cost=0;
   for(let k=0;k<states.length;k++) {
@@ -77,9 +106,12 @@ function costOf(model,states,controls,dts,refs,Q,Qf,Ru,Rs) {
  * `weights.smooth` are nonnegative scalar/NU vectors. Without references, the warm-start nonlinear rollout is the
  * target, so the solver only changes the plan when control regularization/smoothing can improve its cost. Returned
  * `diagnostics.success` means each attempted QP solve succeeded; `stop` reports when nonlinear line search found no
- * improving candidate.
+ * improving candidate. Optional `terminalConstraints.position` / `.velocity` specify horizontal x,z disks as
+ * `{center:[x,z],radius}` (centre defaults to zero). Elastic polygon constraints use `.penalty` (default 1e4)
+ * in both QP and nonlinear merit; `.tolerance` (default 1e-3) applies to reported actual disk residuals.
+ * Elastic slacks permit recovery from an infeasible warm start; a solved QP does not imply terminal feasibility.
  */
-export function optimizeTrajectory({ model, initial, controls, dts, references, iterations=3, weights={}, terminalWeights, trust=0.25, qpSettings }={}) {
+export function optimizeTrajectory({ model, initial, controls, dts, references, iterations=3, weights={}, terminalWeights, terminalConstraints, trust=0.25, qpSettings }={}) {
   if(!model||typeof model.step!=='function'||typeof model.linearize!=='function'||typeof model.minus!=='function') throw new TypeError('model must provide step, linearize and minus');
   if(!dts||!dts.length) throw new RangeError('dts must contain at least one stage');
   const N=dts.length, dt=Float64Array.from(dts,Number);
@@ -94,7 +126,8 @@ export function optimizeTrajectory({ model, initial, controls, dts, references, 
   const trustX=vec(typeof trust==='number'?trust:(trust.state ?? 0.25),ND,new Float64Array(ND).fill(0.25),'trust.state');
   const trustU=vec(typeof trust==='number'?trust:(trust.control ?? 0.25),NU,new Float64Array(NU).fill(0.25),'trust.control');
   if(Array.from(trustX).some(x=>!finite(x)||x<0)||Array.from(trustU).some(x=>!finite(x)||x<0)||!(Math.max(...trustX)>0&&Math.max(...trustU)>0)) throw new RangeError('trust radii must be finite, nonnegative, with at least one positive state and control radius');
-  const nx=(N+1)*ND, nv=nx+N*NU, ndyn=N*ND, m=ndyn+nv;
+  const terminal=terminalDisks(terminalConstraints), ns=terminal?.disks.length ?? 0;
+  const nx=(N+1)*ND, nbase=nx+N*NU, nv=nbase+ns, ndyn=N*ND, terminalRow=ndyn+nv, m=terminalRow+ns*DISK_FACETS;
   const xi=(k,j)=>k*ND+j, ui=(k,j)=>nx+k*NU+j;
   const pEntries=[];
   for(let j=0;j<nv;j++) pEntries.push([j,j]);
@@ -112,10 +145,16 @@ export function optimizeTrajectory({ model, initial, controls, dts, references, 
     }
   }
   for(let j=0;j<nv;j++) aEntries.push([ndyn+j,j]);
+  for(let d=0;d<ns;d++) for(let f=0;f<DISK_FACETS;f++) {
+    const row=terminalRow+d*DISK_FACETS+f, disk=terminal.disks[d];
+    for(const j of disk.indices) aEntries.push([row,xi(N,j)]);
+    aEntries.push([row,nbase+d]);
+  }
   const A=csc(nv,aEntries), Px=new Float64Array(P.i.length), Ax=new Float64Array(A.i.length);
   const solver=createQP({n:nv,m,Pp:P.p,Pi:P.i,Ap:A.p,Ai:A.i,settings:{verbose:false,max_iter:3000,eps_abs:1e-4,eps_rel:1e-4,...(weights.qpSettings||{}),...(qpSettings||{})}});
   let warmStart, diagnostics=[], acceptedStates=rollout(model,x0,U,dt), refs=referencesPacked(model,references,acceptedStates);
   let currentCost=costOf(model,acceptedStates,U,dt,refs,Q,Qf,Ru,Rs), stop='iteration_limit';
+  let terminalStatus=terminalResiduals(acceptedStates[N],terminal);
   const attDelta=new Float64Array(ND), attPlus=new Float64Array(NX), attMinus=new Float64Array(NX);
   const errPlus=new Float64Array(ND), errMinus=new Float64Array(ND), attJac=new Float64Array(9), hAtt=1e-5;
   try {
@@ -153,6 +192,7 @@ export function optimizeTrajectory({ model, initial, controls, dts, references, 
           addP(a,a,r); addP(b,b,r); addP(b,a,-r); q[a]+=r*diff; q[b]-=r*diff;
         }
       }
+      for(let d=0;d<ns;d++) { q[nbase+d]=terminal.penalty; addP(nbase+d,nbase+d,1e-8); }
       Px.fill(0); for(const [k,v] of pValues) { const p=P.index.get(k); if(p!==undefined) Px[p]=v; }
       Ax.fill(0); l.fill(-Infinity); u.fill(Infinity);
       for(let k=0;k<N;k++) {
@@ -170,7 +210,15 @@ export function optimizeTrajectory({ model, initial, controls, dts, references, 
           const k=Math.floor(j/ND), a=j%ND, rad=k===0?0:trustX[a]; l[row]=-rad;u[row]=rad;
           if(k>0&&a===12) l[row]=Math.max(l[row],-acceptedStates[k][13]);
           if(k>0&&a>=13) { const valve=acceptedStates[k][14+a-13]; l[row]=Math.max(l[row],-valve);u[row]=Math.min(u[row],1-valve); }
-        } else { const s=j-nx,k=Math.floor(s/NU),a=s%NU; l[row]=Math.max(-trustU[a],-U[k][a]);u[row]=Math.min(trustU[a],1-U[k][a]); }
+        } else if(j<nbase) { const s=j-nx,k=Math.floor(s/NU),a=s%NU; l[row]=Math.max(-trustU[a],-U[k][a]);u[row]=Math.min(trustU[a],1-U[k][a]); }
+        else l[row]=0; // Shared elastic slack is nonnegative, with no artificial recovery limit.
+      }
+      for(let d=0;d<ns;d++) for(let f=0;f<DISK_FACETS;f++) {
+        const row=terminalRow+d*DISK_FACETS+f, disk=terminal.disks[d], angle=2*Math.PI*f/DISK_FACETS, a=Math.cos(angle), b=Math.sin(angle);
+        Ax[A.index.get(key(row,xi(N,disk.indices[0])))]=a;
+        Ax[A.index.get(key(row,xi(N,disk.indices[1])))]=b;
+        Ax[A.index.get(key(row,nbase+d))]=-1;
+        u[row]=disk.radius*Math.cos(Math.PI/DISK_FACETS)-a*(acceptedStates[N][disk.indices[0]]-disk.center[0])-b*(acceptedStates[N][disk.indices[1]]-disk.center[1]);
       }
       for(let i=0;i<Px.length;i++) if(!finite(Px[i])) throw new Error(`non-finite QP P value at ${i}`);
       for(let i=0;i<Ax.length;i++) if(!finite(Ax[i])) throw new Error(`non-finite QP A value at ${i}`);
@@ -180,22 +228,30 @@ export function optimizeTrajectory({ model, initial, controls, dts, references, 
       const status=String(solved?.status ?? '').toLowerCase(), okStatus=['solved','solved inaccurate','optimal','success'].includes(status);
       if(!okStatus||!solved?.x||solved.x.length!==nv||Array.from(solved.x).some(v=>!finite(v))) {
         stop='qp_failure'; diagnostics.push({iteration:it,status:solved?.status??'missing status',accepted:false});
+        // A later elastic subproblem can fail numerically after a useful rollout was accepted. Return that
+        // rollout and its measured feasibility; never turn QP convergence trouble into a feasibility claim.
+        if(terminal) break;
         const error=new Error(`guidance QP failed at SQP iteration ${it}: ${solved?.status??'missing status'}`); error.diagnostics=diagnostics; throw error;
       }
       warmStart=Float64Array.from(solved.x);
-      let found=false, alpha=1, candidateCost=currentCost, candidateStates=null, candidateControls=null;
+      let found=false, alpha=1, candidateCost=currentCost, candidateStates=null, candidateControls=null, candidateTerminal=terminalStatus;
+      const currentMerit=currentCost+(terminal ? terminal.penalty*terminalStatus.violation : 0);
       for(let ls=0;ls<6;ls++,alpha*=0.5) {
         const testU=U.map((stage,k)=>Float64Array.from(stage,(x,j)=>Math.max(0,Math.min(1,x+alpha*solved.x[ui(k,j)]))));
         const testX=rollout(model,x0,testU,dt), c=costOf(model,testX,testU,dt,refs,Q,Qf,Ru,Rs);
-        if(c<currentCost-1e-12*Math.max(1,Math.abs(currentCost))) { found=true;candidateCost=c;candidateStates=testX;candidateControls=testU;break; }
+        const testTerminal=terminalResiduals(testX[N],terminal), merit=c+(terminal ? terminal.penalty*testTerminal.violation : 0);
+        // Once feasible, retain actual nonlinear feasibility even if a finite penalty would buy lower cost.
+        if((!terminal||!terminalStatus.feasible||testTerminal.feasible)&&merit<currentMerit-1e-12*Math.max(1,Math.abs(currentMerit))) { found=true;candidateCost=c;candidateStates=testX;candidateControls=testU;candidateTerminal=testTerminal;break; }
       }
-      diagnostics.push({iteration:it,status:solved.status,iterations:solved.iterations??null,accepted:found,alpha:found?alpha:0,costBefore:currentCost,costAfter:candidateCost});
+      diagnostics.push({iteration:it,status:solved.status,iterations:solved.iterations??null,accepted:found,alpha:found?alpha:0,costBefore:currentCost,costAfter:candidateCost,
+        ...(terminal ? {terminalViolationBefore:terminalStatus.violation,terminalViolationAfter:candidateTerminal.violation,meritBefore:currentMerit,meritAfter:candidateCost+terminal.penalty*candidateTerminal.violation,slack:Array.from(solved.x.subarray(nbase))} : {})});
       if(!found) { stop='line_search_no_improvement'; break; }
-      U.splice(0,U.length,...candidateControls); acceptedStates=candidateStates; currentCost=candidateCost;
+      U.splice(0,U.length,...candidateControls); acceptedStates=candidateStates; currentCost=candidateCost; terminalStatus=candidateTerminal;
     }
     if(iterations===0) stop='zero_iterations';
     return {states:acceptedStates,controls:U,dts:dt,cost:currentCost,
       diagnostics:{qpSolved:diagnostics.every(d=>d.status==='solved'||d.status==='solved inaccurate'),
-        stop,iterations:diagnostics.length,acceptedSteps:diagnostics.filter(d=>d.accepted).length,qp:diagnostics}};
+        stop,iterations:diagnostics.length,acceptedSteps:diagnostics.filter(d=>d.accepted).length,qp:diagnostics,
+        ...(terminal ? {terminalConstraints:terminalStatus} : {})}};
   } finally { solver.dispose?.(); }
 }
