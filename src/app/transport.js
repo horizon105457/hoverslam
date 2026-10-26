@@ -1,12 +1,18 @@
 // Generic playback bar: play/pause, optional reset/loop controls, a scrubbable timeline with event marks,
 // a time label and slots for program-specific button groups. Programs own the clock.
+// Shared filled geometry keeps all transport icons at the same optical weight.
+const icon = body => `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.8" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const RESET_ICON = icon('<rect x="5" y="5" width="2.5" height="14" rx="1"/><path d="M18 5 8 12l10 7z"/>');
+const PLAY_ICON = icon('<path d="m8 5 12 7-12 7z"/>');
+const PAUSE_ICON = icon('<rect x="7" y="5" width="3" height="14" rx="0.7"/><rect x="14" y="5" width="3" height="14" rx="0.7"/>');
+const LOOP_ICON = icon('<path d="M16 3v3H3v8l3-3V9h10v3l5-4.5zM8 21v-3h13v-8l-3 3v2H8v-3l-5 4.5z"/>');
 export class Transport {
   /** @param {{onPlay?:()=>void, onSeek?:(u:number)=>void, onReset?:()=>void, onLoop?:(on:boolean)=>void}} handlers */
   constructor(ui, { onPlay, onSeek, onReset, onLoop } = {}) {
     ui.mount(`<footer id="controls" class="controls">
-      ${onReset ? '<button id="b-reset" title="重置进度" aria-label="重置进度"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 6.4M3 4v7h7"/></svg></button>' : ''}
-      <button id="b-play" title="暂停播放" aria-label="暂停播放"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button>
-      ${onLoop ? '<button id="b-loop" title="开启循环" aria-label="开启循环" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4M3 6h18M7 22l-4-4 4-4m14 4H3"/></svg></button>' : ''}
+      ${onReset ? `<button id="b-reset" title="重置进度" aria-label="重置进度">${RESET_ICON}</button>` : ''}
+      <button id="b-play" title="暂停播放" aria-label="暂停播放">${PAUSE_ICON}</button>
+      ${onLoop ? `<button id="b-loop" title="开启循环" aria-label="开启循环" aria-pressed="false">${LOOP_ICON}</button>` : ''}
       <div id="timeline" class="timeline"><div class="track"><i id="t-fill"></i><b id="t-head"></b></div><div id="t-marks"></div></div>
       <span id="t-label" class="tlabel">0.00 s</span>
     </footer>`);
@@ -32,9 +38,7 @@ export class Transport {
     this.setSeekEnabled(true);
   }
   setPlaying(on) {
-    this.play.innerHTML = on
-      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>'
-      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 12 7-12 7z"/></svg>';
+    this.play.innerHTML = on ? PAUSE_ICON : PLAY_ICON;
     const title = on ? '暂停播放' : '继续播放';
     this.play.title = title;
     this.play.setAttribute('aria-label', title);
