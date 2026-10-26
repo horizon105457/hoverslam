@@ -26,10 +26,12 @@ import { PRESETS } from '../../scene/layout.js';
 import { FlightLog } from './timeline.js';
 import { FlightEdit } from './edit.js';
 import { FlightHUD } from './hud.js';
+import { FlightTrajectories } from './trajectories.js';
 import { FLIGHT_UI, FLIGHT_CSS, FLIGHT_GROUPS } from './ui.js';
 
 /** Known soft-body runs (shown when their .sim exists); ?run= may name any other flight-*.sim. */
 const RUNS = [
+  { id: 'dual-plans-flat', label: '双层 MPC · 规划可视化', sub: '完整轨迹 · 实际规划候选与短期预测 · 落地制动' },
   { id: 'dual-brake-flat', label: '双层 MPC · 落地制动', sub: '四轮平拍 · 触地切换 · 全刹车，无转向及 RCS' },
   { id: 'dual-stop-flat', label: '双层 MPC · 落地刹停', sub: '四轮平拍 · 空中两层 SQP · 触地后自动刹车与转向' },
   { id: 'soft', label: '软着陆', sub: '车头俯冲 · 自动驾驶 ap · 刹停' },
@@ -69,6 +71,8 @@ export default class FlightProgram extends Program {
     this.view.extraProbeHidden = this.plumes.objects;
     this.nom = nozzleNominal();
     this.hud = new FlightHUD();
+    this.trajectories = new FlightTrajectories({ root: ui.root, camera: stage.camera });
+    this.visualOptions = { trail: true, planning: false, exploration: false };
     this.filmHud = params.get('hud') !== '0';
     ui.mount(FLIGHT_UI);
     ui.root.appendChild(this.hud.canvas);
@@ -145,7 +149,7 @@ export default class FlightProgram extends Program {
     this.source = { kind: 'rigid', traj: url, producer: traj.producer, controller: traj.controller, model: traj.model };
     this.rigid = true;
     this.view.player = null;
-    this.log = new FlightLog(traj, { flight: { events: traj.events || [] }, duration: traj.t[traj.t.length - 1] });
+    this.log = new FlightLog(traj, { flight: { events: traj.events || [], metrics: traj.metrics, planningTrace: traj.planningTrace }, duration: traj.t[traj.t.length - 1] });
     this.plumes.setTrack(trackFromTrajectory(traj));
     this.metrics = traj.metrics || {};
     { const id = typeof traj.task === 'string' ? traj.task : traj.task?.id; this.task = loadTask(TASKS[id] ? id : 'escape-soft-landing'); }
@@ -157,6 +161,8 @@ export default class FlightProgram extends Program {
   }
 
   afterLoad() {
+    this.trajectories.setLog(this.log);
+    this.updateVisualizationUI();
     const success = this.metrics.success !== undefined ? !!this.metrics.success : true;
     this.edit = new FlightEdit(this.log, { success });
     if (this.edit.roll && this.label) this.label.sub += " · 跳跃 · 横滚 360°";
@@ -187,14 +193,22 @@ export default class FlightProgram extends Program {
     tr.addGroup(FLIGHT_GROUPS.modes, 'modes');
     tr.addGroup(FLIGHT_GROUPS.speeds, 'speeds');
     tr.addGroup(FLIGHT_GROUPS.view);
+    ui.mount(`<section id="visual-controls" class="visual-controls" aria-label="轨迹与规划遥测"><h2>轨迹 · 规划</h2><div class="visual-switches">${FLIGHT_GROUPS.trajectories}</div><div id="trajectory-legend" hidden></div></section>`);
+    for (const [id, key] of [['b-trail', 'trail'], ['b-plan', 'planning'], ['b-explore', 'exploration']]) {
+      $(id).onclick = () => {
+        this.visualOptions[key] = !this.visualOptions[key];
+        this.updateVisualizationUI();
+      };
+    }
+    this.updateVisualizationUI();
     document.querySelectorAll('#modes button').forEach(b => (b.onclick = () => this.setMode(b.dataset.mode)));
     document.querySelectorAll('#speeds button').forEach(b => (b.onclick = () => { this.speed = +b.dataset.speed; document.querySelectorAll('#speeds button').forEach(x => x.classList.toggle('on', x === b)); }));
     $('b-plume').onclick = () => { const on = !$('b-plume').classList.contains('on'); this.plumes.visible = on; $('b-plume').classList.toggle('on', on); };
-    $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); this.hud.canvas.style.display = on ? '' : 'none'; $('b-tele').classList.toggle('on', on); };
+    $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); this.hud.canvas.style.display = on ? '' : 'none'; $('visual-controls').hidden = !on; $('b-tele').classList.toggle('on', on); };
     const setClean = hidden => {
       document.body.classList.toggle('clean', hidden);
       // Hidden controls must also leave keyboard navigation, while the restore button stays accessible.
-      for (const el of [this.transport.el, $('fpanel')]) el.inert = hidden;
+      for (const el of [this.transport.el, $('fpanel'), $('visual-controls')]) el.inert = hidden;
       (hidden ? $('b-ui-restore') : $('b-ui')).focus({ preventScroll: true });
     };
     $('b-ui').onclick = () => setClean(true);
@@ -230,6 +244,25 @@ export default class FlightProgram extends Program {
       this.controls.update();
     }
     this.buildMarks();
+  }
+  updateVisualizationUI() {
+    this.trajectories.setOptions(this.visualOptions);
+    const $ = this.ctx.ui.$, available = this.trajectories.hasPlanning;
+    for (const [id, key] of [['b-trail', 'trail'], ['b-plan', 'planning'], ['b-explore', 'exploration']]) {
+      const button = $(id);
+      if (!button) continue;
+      button.classList.toggle('on', this.visualOptions[key]);
+      button.setAttribute('aria-pressed', String(this.visualOptions[key]));
+      if (key !== 'trail') {
+        button.disabled = !available || (key === 'exploration' && !this.visualOptions.planning);
+        button.title = available ? (key === 'planning' ? '显示当前规划与短期预测' : '显示本次求解的候选路径') : '此录制未保存规划';
+      }
+    }
+    const legend = $('trajectory-legend');
+    if (legend) {
+      legend.hidden = !this.visualOptions.trail && !this.visualOptions.planning;
+      legend.innerHTML = `${this.visualOptions.trail ? '<span style="color:#93D3B8">━ 实际轨迹</span><span style="color:#D94A58">× 实际着陆</span>' : ''}${this.visualOptions.planning && available ? '<span style="color:#F2C879">━ 上层规划</span><span style="color:#78C9ED">━ 短期预测</span><span style="color:#397DE0">＋ 预测着陆</span>' : ''}${this.visualOptions.planning && this.visualOptions.exploration && available ? '<span style="color:#A79BBB">━ 时间候选</span>' : ''}${!available ? '<span>此录制未保存规划</span>' : ''}`;
+    }
   }
   timeRange() { return [-2.5, this.log?.duration || 6]; }
 
@@ -347,6 +380,7 @@ export default class FlightProgram extends Program {
       this.transport.setProgress((t - a) / (b - a));
     }
     this.applyScene(t);
+    this.trajectories.draw(t);
     if (this.world.group.userData.wind) this.world.group.userData.wind.value += dt;
     this.transport.setLabel(`${t.toFixed(2)} s`);
     this.drawHud(t, false);

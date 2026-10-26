@@ -75,6 +75,8 @@ function makeReferences(model, s, task, seedStates, dts, c) {
 function validateConfig(input) {
   const c = { ...defaults, ...input };
   delete c._doc;
+  if (c.capturePlans === undefined) c.capturePlans = false;
+  if (typeof c.capturePlans !== 'boolean') throw new TypeError('guidance capturePlans must be boolean');
   c.ground = { ...defaults.ground, ...(input.ground || {}) };
   delete c.ground._doc;
   if (typeof c.ground.enabled !== 'boolean') throw new TypeError('guidance ground.enabled must be boolean');
@@ -121,22 +123,38 @@ export function createDual(cfg = {}) {
   const zero = new Float64Array(NU);
   const groundController = c.ground.enabled ? createGroundStop() : null;
   const flightDrive = new Float64Array(NA - NU);
-  let task = null, episodeSeed = 0, upper = null, upperAt = -Infinity, lowerAt = -Infinity, lowerAction = null, landingDeadline = null;
+  let task = null, episodeSeed = 0, upper = null, upperAt = -Infinity, lowerAt = -Infinity, lowerAction = null,
+    upperPath = [], upperTimes = [], lowerPath = [], lowerTimes = [], upperCandidates = [], landingDeadline = null, tracedMode = 'flight';
   const modes = new LandingModes({ onChange: () => {
     resetFlight();
     groundController?.reset({ task });
   }, onDeparture: () => flightDrive.fill(0) });
   const stats = { upperSolves: 0, lowerSolves: 0, durationCandidates: 0, lastUpperCost: null, lastLowerCost: null,
     lastUpperDiagnostics: null, lastLowerDiagnostics: null, lastDiagnostics: null };
-  const ctl = { name: 'dual', config: c, plans: 0, evals: 0, planMs: 0, lastCost: null, diagnostics: null };
+  const ctl = { name: 'dual', config: c, plans: 0, evals: 0, planMs: 0, lastCost: null, diagnostics: null, planningTrace: [] };
   const now = () => globalThis.performance?.now?.() ?? Date.now();
 
   // Clear live planner state on either transition; cumulative solve counters remain episode diagnostics.
   function resetFlight() {
-    upper = null; upperAt = -Infinity; lowerAt = -Infinity; lowerAction = null; landingDeadline = null;
+    upper = null; upperAt = -Infinity; lowerAt = -Infinity; lowerAction = null;
+    upperPath = []; upperTimes = []; lowerPath = []; lowerTimes = [];
+    upperCandidates = []; landingDeadline = null;
     pd.reset({ task, seed: episodeSeed });
     for (const k of Object.keys(stats)) if (k.startsWith('last')) stats[k] = null;
     ctl.lastCost = null; ctl.diagnostics = null;
+  }
+
+  function pathOf(states) {
+    return (states || []).map(x => [x[0], x[1], x[2]]);
+  }
+
+  function recordPlanning(t, mode) {
+    if (!c.capturePlans) return;
+    ctl.planningTrace.push({ t, mode,
+      upper: mode === 'flight' ? upperPath : [], upperTimes: mode === 'flight' ? upperTimes : [],
+      lower: mode === 'flight' ? lowerPath : [], lowerTimes: mode === 'flight' ? lowerTimes : [],
+      candidates: mode === 'flight' ? upperCandidates : [],
+    });
   }
 
   function rolloutPD(s, dts) {
@@ -194,6 +212,7 @@ export function createDual(cfg = {}) {
     const overdue = landingDeadline !== null && s.t >= landingDeadline;
     let best = null;
     const candidates = [];
+    const candidateTrajectories = [];
     for (const scale of c.upper_time_candidates) {
       stats.durationCandidates++;
       const minDuration = Math.max(CONTROL_DT * c.lower_replan_steps,
@@ -217,6 +236,7 @@ export function createDual(cfg = {}) {
         continue;
       }
       ctl.evals += result.diagnostics?.iterations ?? 0;
+      if (c.capturePlans && candidateTrajectories.length < 8) candidateTrajectories.push(pathOf(result.states));
       const score = result.cost + c.duration_penalty * (duration - nominal) ** 2;
       const candidate = { duration, cost: result.cost, score, stop: result.diagnostics?.stop ?? null };
       candidates.push(candidate);
@@ -230,6 +250,12 @@ export function createDual(cfg = {}) {
     }
     upper = best;
     upperAt = s.t;
+    if (c.capturePlans) {
+      upperPath = pathOf(best.result.states);
+      upperTimes = [upperAt];
+      for (const dt of best.dts) upperTimes.push(upperTimes[upperTimes.length - 1] + dt);
+      upperCandidates = candidateTrajectories;
+    }
     if (landingDeadline === null) landingDeadline = s.t + best.duration;
     lowerAt = -Infinity;
     lowerAction = null;
@@ -302,6 +328,10 @@ export function createDual(cfg = {}) {
     stats.lastDiagnostics = stats.lastLowerDiagnostics;
     ctl.lastCost = result.cost;
     ctl.diagnostics = stats.lastLowerDiagnostics;
+    if (c.capturePlans) {
+      lowerPath = pathOf(result.states);
+      lowerTimes = result.states.map((_, i) => s.t + i * c.lower_dt);
+    }
     return result.controls[0] || zero;
   }
 
@@ -313,6 +343,8 @@ export function createDual(cfg = {}) {
       if (task?.drive) throw new Error('dual guidance does not support externally scripted ground driving tasks');
       episodeSeed = seed;
       modes.reset();
+      tracedMode = modes.mode;
+      ctl.planningTrace.length = 0;
       flightDrive.fill(0);
       resetFlight();
       groundController?.reset({ task });
@@ -324,14 +356,19 @@ export function createDual(cfg = {}) {
       modes.observe(s);
       if (!s.armed) return out;
       if (modes.mode === 'ground') {
+        if (tracedMode !== 'ground') { recordPlanning(s.t, 'ground'); tracedMode = 'ground'; }
         // Exclusive ownership: flight planning is disabled and no cached valve command can escape.
         return groundController ? groundController.act(s) : out;
       }
-      if (!upper || s.t - upperAt >= c.upper_replan) planUpper(s);
+      let replanned = false;
+      if (!upper || s.t - upperAt >= c.upper_replan) { planUpper(s); replanned = true; }
       if (!lowerAction || s.t - lowerAt >= c.lower_replan_steps * CONTROL_DT - 1e-9) {
         lowerAction = Float64Array.from(lowerPlan(s));
         lowerAt = s.t;
+        replanned = true;
       }
+      if (replanned) recordPlanning(s.t, 'flight');
+      tracedMode = 'flight';
       out.set(lowerAction.subarray(0, NU));
       if (c.ground.enabled) out.set(flightDrive, NU);
       return out;
