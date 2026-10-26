@@ -53,7 +53,7 @@ const runName = id => (id.startsWith('flight-') ? id.slice(7) : id);
 const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c === 'mppi' ? 'MPPI 闭环' : c === 'mpc' ? '纯 MPC（无 PD）' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);
 
 export default class FlightProgram extends Program {
-  static meta = { id: 'flight', title: '坠 · 冷气推力着陆' };
+  static meta = { id: 'flight', title: 'JetCar Mini · 冷气推力着陆' };
 
   async init() {
     const { stage, ui, assets, params } = this.ctx;
@@ -133,7 +133,7 @@ export default class FlightProgram extends Program {
     this.metrics = meta.flight?.metrics || {};
     this.task = loadTask(TASKS[meta.flight?.task] ? meta.flight.task : 'escape-soft-landing');
     const preset = PRESETS[meta.flight?.preset];
-    this.label = { title: '坠 · FALL', sub: `冷气推力 · ${preset?.label || meta.flight?.preset || ''} · ${ctlLabel(meta.flight?.controller)}${meta.flight?.armDelay ? ` · 点火延迟 ${meta.flight.armDelay} s` : ''} · 软体` };
+    this.label = { title: 'JetCar Mini', sub: `冷气推力 · ${preset?.label || meta.flight?.preset || ''} · ${ctlLabel(meta.flight?.controller)}${meta.flight?.armDelay ? ` · 点火延迟 ${meta.flight.armDelay} s` : ''} · 软体` };
     this.afterLoad();
     document.querySelectorAll('#runs button').forEach(b => b.classList.toggle('on', b.dataset.run === id));
     const r = this.runs?.find(x => x.id === id); if (r) document.querySelector(`#runs button[data-run="${id}"]`)?.classList.add(this.metrics.success ? 'ok' : 'fail');
@@ -154,7 +154,7 @@ export default class FlightProgram extends Program {
     this.metrics = traj.metrics || {};
     { const id = typeof traj.task === 'string' ? traj.task : traj.task?.id; this.task = loadTask(TASKS[id] ? id : 'escape-soft-landing'); }
     const ctl = typeof traj.controller === 'string' ? traj.controller : traj.controller?.name || traj.controller?.type || '';
-    this.label = { title: '坠 · FALL', sub: `刚体回放 · ${traj.preset || ''} · ${ctl} · ${traj.producer || ''}` };
+    this.label = { title: 'JetCar Mini', sub: `刚体回放 · ${traj.preset || ''} · ${ctl} · ${traj.producer || ''}` };
     this.ctx.ui.$('runs').innerHTML = '';
     this.ctx.ui.$('fnote').innerHTML = `刚体孪生轨迹回放（未变形车身）<br><code>${url}</code>`;
     this.afterLoad();

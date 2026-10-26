@@ -1,7 +1,8 @@
-# 坠 · FALL
+# JetCar Mini
 
-五菱宏光 MINI EV 冲出高架坠落的软体破坏仿真，正在扩展为冷气推进（10 喷口，参考 Tesla Roadster "Rocket" 版）的
-飞行/着陆控制实验平台。物理：自研 XPBD 节点-梁晶格（离线预计算）+ 刚体冷气推进孪生（JS / Python 同步）；渲染：three.js。
+JetCar Mini 是基于五菱宏光 MINI EV 的冷气推进、飞行着陆与软体动力学实验平台，包含双层非线性 MPC、
+触地后的地面刹停，以及带规划轨迹的可视化回放。物理采用自研 XPBD 节点-梁晶格和 JS / Python 刚体孪生；渲染采用 three.js。
+项目原名“坠 · FALL”，原有坠落破坏仿真与短片工具继续保留。
 
 架构、接口契约与分工见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)；坐标系、单位、推进模型与数据格式见
 [`spec/README.md`](spec/README.md)。
@@ -32,6 +33,17 @@ npm run flight:settle && npm run flight:sim:all   # 带套件的软体：settle 
 # http://127.0.0.1:5173/?program=install                  安装动画
 npm run film:install && npm run film:flight     # 导出三段成片到 renders/
 ```
+
+## 当前双层 MPC 案例
+
+- `dual-plans-flat`：着陆与地面刹停，显示实际拖尾、规划、预测及探索轨迹。
+- `dual-pad-flat`：flat / seed 0 定点降落；软体触地位置误差 **0.09 m**、水平速度 **0.224 m/s**，满足 1.5 m / 0.5 m/s 阈值。
+- 可视化入口：`http://127.0.0.1:5173/?program=flight&run=dual-pad-flat&mode=follow&paused`。需要先按[复现说明](docs/DUAL_GUIDANCE.md#定点降落precision-pad--flat)生成录制；`public/sims/` 不纳入 Git。
+- 仿真过程中闭环求解，浏览器播放已生成的录制；**在线仿真仍暂停实施**。默认不循环，支持暂停、重置、循环、跟随视角旋转与缩放。
+- 实验结果使用[统一大字模板](src/programs/flight/result.js)，填入标题、指标和说明即可。保留当前“探索”名称与展示效果。
+
+双层 MPC 使用随项目携带的 OSQP WASM，运行已有求解器不需要安装 acados 或 Emscripten。案例参数、指标和已知验证限制见
+[`docs/DUAL_GUIDANCE.md`](docs/DUAL_GUIDANCE.md) 与 [`experiments/reports/dual-precision-pad/metrics.json`](experiments/reports/dual-precision-pad/metrics.json)。
 
 ## 代码地图
 
