@@ -2,7 +2,7 @@
 
 JetCar Mini 是基于五菱宏光 MINI EV 的冷气推进、飞行着陆与软体动力学实验平台，包含双层非线性 MPC、
 触地后的地面刹停，以及带规划轨迹的可视化回放。物理采用自研 XPBD 节点-梁晶格和 JS / Python 刚体孪生；渲染采用 three.js。
-项目原名“坠 · FALL”，原有坠落破坏仿真与短片工具继续保留。
+界面使用中文主标题“御风”和小字副标题“Jet-Car Mini”。项目原名“坠 · FALL”，原有坠落破坏仿真与短片工具继续保留。
 
 架构、接口契约与分工见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)；坐标系、单位、推进模型与数据格式见
 [`spec/README.md`](spec/README.md)。
