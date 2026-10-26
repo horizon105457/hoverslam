@@ -33,7 +33,7 @@ export const FLIGHT_UI = `
   <div id="runs" class="runs"></div>
   <p id="fnote"></p>
 </aside>
-<button id="b-ui-restore" title="显示界面 (H)" aria-label="显示界面"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>显示界面</button>`;
+<button id="b-ui-restore" title="显示界面 (H)" aria-label="显示界面"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>`;
 
 export const FLIGHT_GROUPS = {
   modes: '<button data-mode="director" class="on">导演</button><button data-mode="free">自由</button><button data-mode="follow">跟随</button>',
