@@ -4,6 +4,7 @@
 import defaults from './defaults.json' with { type: 'json' };
 import { FlightModel, ND, NU } from './model.js';
 import { optimizeTrajectory } from './optimizer.js';
+import { recoveryConfig, commandLimits, optimizeRecovery } from './recovery.js';
 import { createPD } from '../controllers/pd.js';
 import { createGroundStop } from '../controllers/ground-stop.js';
 import { LandingModes } from '../landing-modes.js';
@@ -77,6 +78,7 @@ function validateConfig(input) {
   delete c._doc;
   if (c.capturePlans === undefined) c.capturePlans = false;
   if (typeof c.capturePlans !== 'boolean') throw new TypeError('guidance capturePlans must be boolean');
+  c.recovery = recoveryConfig(input.recovery);
   c.ground = { ...defaults.ground, ...(input.ground || {}) };
   delete c.ground._doc;
   if (typeof c.ground.enabled !== 'boolean') throw new TypeError('guidance ground.enabled must be boolean');
@@ -132,10 +134,13 @@ export function createDual(cfg = {}) {
   const stats = { upperSolves: 0, lowerSolves: 0, durationCandidates: 0, lastUpperCost: null, lastLowerCost: null,
     lastUpperDiagnostics: null, lastLowerDiagnostics: null, lastDiagnostics: null };
   const ctl = { name: 'dual', config: c, plans: 0, evals: 0, planMs: 0, lastCost: null, diagnostics: null, planningTrace: [] };
+  if (c.recovery.enabled) ctl.commandLimits = commandLimits(c.recovery);
+  let previousBurn = false; // Last executed gate; replanning must not clear this boundary state.
   const now = () => globalThis.performance?.now?.() ?? Date.now();
 
   // Clear live planner state on either transition; cumulative solve counters remain episode diagnostics.
   function resetFlight() {
+    previousBurn = false;
     upper = null; upperAt = -Infinity; lowerAt = -Infinity; lowerAction = null;
     upperPath = []; upperTimes = []; lowerPath = []; lowerTimes = [];
     upperCandidates = []; landingDeadline = null;
@@ -155,6 +160,9 @@ export function createDual(cfg = {}) {
       lower: mode === 'flight' ? lowerPath : [], lowerTimes: mode === 'flight' ? lowerTimes : [],
       candidates: mode === 'flight' ? upperCandidates : [],
       terminalConstraints: mode === 'flight' ? stats.lastUpperDiagnostics?.terminalConstraints : null,
+      ...(c.recovery.enabled ? { recovery: mode === 'flight' ? {
+        upper: stats.lastUpperDiagnostics?.recovery ?? null, lower: stats.lastLowerDiagnostics?.recovery ?? null,
+      } : null } : {}),
     });
   }
 
@@ -235,20 +243,22 @@ export function createDual(cfg = {}) {
       const references = makeReferences(model, s, task, states, dts, c);
       let result;
       try {
-        result = optimizeTrajectory({ model, initial: states[0], controls, dts, references,
+        const options = { model, initial: states[0], controls, dts, references,
           iterations: c.upper_iterations, weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust,
-          terminalConstraints: terminalConstraints() });
+          terminalConstraints: terminalConstraints() };
+        result = c.recovery.enabled ? optimizeRecovery(options, c.recovery, 'upper', previousBurn) : optimizeTrajectory(options);
       } catch (error) {
         const failure = { duration, error: String(error), solver: error.diagnostics ?? null };
         candidates.push(failure);
         continue;
       }
-      ctl.evals += result.diagnostics?.iterations ?? 0;
+      ctl.evals += result.diagnostics?.recovery?.evaluations ?? result.diagnostics?.iterations ?? 0;
       if (c.capturePlans && candidateTrajectories.length < 8) candidateTrajectories.push(pathOf(result.states));
       const violation = result.diagnostics?.terminalConstraints?.violation ?? 0;
       const feasible = result.diagnostics?.terminalConstraints?.feasible ?? true;
-      const score = result.cost + (terminalConstraints()?.penalty ?? 0) * violation + c.duration_penalty * (duration - nominal) ** 2;
-      const candidate = { duration, cost: result.cost, score, terminalConstraints: result.diagnostics?.terminalConstraints, stop: result.diagnostics?.stop ?? null };
+      const score = result.cost + (result.diagnostics?.recovery?.switchingCost ?? 0) + (terminalConstraints()?.penalty ?? 0) * violation + c.duration_penalty * (duration - nominal) ** 2;
+      const candidate = { duration, cost: result.cost, score, terminalConstraints: result.diagnostics?.terminalConstraints, stop: result.diagnostics?.stop ?? null,
+        ...(c.recovery.enabled ? { recovery: result.diagnostics.recovery } : {}) };
       candidates.push(candidate);
       if (!best || (feasible && !best.feasible) || (feasible === best.feasible && score < best.score)) best = { result, references, dts, duration, score, feasible };
     }
@@ -314,10 +324,20 @@ export function createDual(cfg = {}) {
   function lowerPlan(s) {
     // Match the selected upper trajectory endpoint, not the initial duration prior.
     const remaining = upper ? upperAt + upper.duration - s.t : Infinity;
-    const reachesLanding = !!terminalConstraints() && remaining > 0 && remaining <= c.lower_nodes * c.lower_dt;
+    // In recovery mode the first predicted command spans its entire execution hold. This makes the selected
+    // gate/throttle executable even when a caller configures a lower mesh finer than the controller hold.
+    const firstDt = c.recovery.enabled ? Math.max(c.lower_dt, c.lower_replan_steps * CONTROL_DT) : c.lower_dt;
+    const horizon = c.recovery.enabled ? firstDt + (c.lower_nodes - 1) * c.lower_dt : c.lower_nodes * c.lower_dt;
+    const reachesLanding = !!terminalConstraints() && remaining > 0 && remaining <= horizon;
     // Keep the executed first command interval intact; only the final stage is truncated.
-    const count = reachesLanding ? Math.min(c.lower_nodes, Math.ceil(remaining / c.lower_dt)) : c.lower_nodes;
-    const dts = Array.from({ length: count }, (_, i) => reachesLanding ? Math.min(c.lower_dt, remaining - i * c.lower_dt) : c.lower_dt);
+    const count = reachesLanding ? Math.min(c.lower_nodes, c.recovery.enabled
+      ? 1 + Math.max(0, Math.ceil((remaining - firstDt) / c.lower_dt - 1e-10))
+      : Math.ceil(remaining / c.lower_dt)) : c.lower_nodes;
+    const dts = Array.from({ length: count }, (_, i) => {
+      const dt = i === 0 ? firstDt : c.lower_dt, elapsed = i === 0 ? 0 : firstDt + (i - 1) * c.lower_dt;
+      // Keep the original lower mesh byte-for-byte equivalent while the optional recovery mode is disabled.
+      return reachesLanding ? Math.min(dt, remaining - (c.recovery.enabled ? elapsed : i * c.lower_dt)) : dt;
+    });
     const initial = model.pack(s), controls = [], references = [initial], times = [s.t];
     for (const dt of dts) {
       controls.push(sampleUpper(times.at(-1), 'control'));
@@ -327,9 +347,10 @@ export function createDual(cfg = {}) {
     let result;
     const t0 = now();
     try {
-      result = optimizeTrajectory({ model, initial, controls, dts, references, iterations: c.lower_iterations,
+      const options = { model, initial, controls, dts, references, iterations: c.lower_iterations,
         weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust,
-        terminalConstraints: reachesLanding ? terminalConstraints() : undefined });
+        terminalConstraints: reachesLanding ? terminalConstraints() : undefined };
+      result = c.recovery.enabled ? optimizeRecovery(options, c.recovery, 'lower', previousBurn) : optimizeTrajectory(options);
     } catch (error) {
       ctl.diagnostics = { stage: 'lower', predictionOnly: true, error: String(error), solver: error.diagnostics ?? null,
         upper: stats.lastUpperDiagnostics };
@@ -340,6 +361,7 @@ export function createDual(cfg = {}) {
       ctl.planMs += now() - t0;
     }
     stats.lowerSolves++;
+    if (c.recovery.enabled) ctl.evals += result.diagnostics?.recovery?.evaluations ?? 0;
     stats.lastLowerCost = result.cost;
     stats.lastLowerDiagnostics = { stage: 'lower', predictionOnly: true, ...result.diagnostics };
     stats.lastDiagnostics = stats.lastLowerDiagnostics;
@@ -387,6 +409,7 @@ export function createDual(cfg = {}) {
       if (replanned) recordPlanning(s.t, 'flight');
       tracedMode = 'flight';
       out.set(lowerAction.subarray(0, NU));
+      if (c.recovery.enabled) previousBurn = ctl.commandLimits.bottomIndices.some(i => out[i] > 0);
       if (c.ground.enabled) out.set(flightDrive, NU);
       return out;
     },

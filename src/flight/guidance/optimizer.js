@@ -36,6 +36,23 @@ function packedControls(controls,n) {
     return Float64Array.from(u,(x)=>Math.max(0,Math.min(1,finite(+x)?+x:0)));
   });
 }
+function packedControlBounds(bounds,n) {
+  if(bounds===undefined||bounds===null) return null;
+  const out={};
+  for(const name of ['lower','upper']) {
+    const rows=bounds[name];
+    if(!rows||rows.length!==n) throw new RangeError(`controlBounds.${name} must contain ${n} stage vectors`);
+    out[name]=Array.from(rows,(row,k)=>{
+      if(!row||row.length!==NU) throw new RangeError(`controlBounds.${name}[${k}] must have ${NU} entries`);
+      return Float64Array.from(row,Number);
+    });
+  }
+  for(let k=0;k<n;k++) for(let j=0;j<NU;j++) {
+    const lo=out.lower[k][j], hi=out.upper[k][j];
+    if(!(finite(lo)&&finite(hi)&&lo>=0&&lo<=hi&&hi<=1)) throw new RangeError(`controlBounds[${k}][${j}] requires 0 <= lower <= upper <= 1`);
+  }
+  return out;
+}
 function referencesPacked(model,references,nominal) {
   if(references===undefined||references===null) return nominal.map(x=>Float64Array.from(x));
   if((ArrayBuffer.isView(references)||Array.isArray(references))&&references.length===NX&&typeof references[0]==='number') return nominal.map(()=>Float64Array.from(references));
@@ -110,14 +127,17 @@ function costOf(model,states,controls,dts,refs,Q,Qf,Ru,Rs) {
  * `{center:[x,z],radius}` (centre defaults to zero). Elastic polygon constraints use `.penalty` (default 1e4)
  * in both QP and nonlinear merit; `.tolerance` (default 1e-3) applies to reported actual disk residuals.
  * Elastic slacks permit recovery from an infeasible warm start; a solved QP does not imply terminal feasibility.
+ * Optional `controlBounds:{lower,upper}` supplies N x NU absolute bounds in [0,1], including fixed controls.
+ * Warm-start projection, QP steps and nonlinear line search all preserve these bounds.
  */
-export function optimizeTrajectory({ model, initial, controls, dts, references, iterations=3, weights={}, terminalWeights, terminalConstraints, trust=0.25, qpSettings }={}) {
+export function optimizeTrajectory({ model, initial, controls, dts, references, controlBounds, iterations=3, weights={}, terminalWeights, terminalConstraints, trust=0.25, qpSettings }={}) {
   if(!model||typeof model.step!=='function'||typeof model.linearize!=='function'||typeof model.minus!=='function') throw new TypeError('model must provide step, linearize and minus');
   if(!dts||!dts.length) throw new RangeError('dts must contain at least one stage');
   const N=dts.length, dt=Float64Array.from(dts,Number);
   for(let k=0;k<N;k++) if(!(finite(dt[k])&&dt[k]>0)) throw new RangeError(`dts[${k}] must be positive and finite`);
   if(!Number.isInteger(iterations)||iterations<0) throw new RangeError('iterations must be a nonnegative integer');
-  const x0=asPacked(model,initial), U=packedControls(controls,N);
+  const x0=asPacked(model,initial), U=packedControls(controls,N), bounds=packedControlBounds(controlBounds,N);
+  if(bounds) for(let k=0;k<N;k++) for(let j=0;j<NU;j++) U[k][j]=Math.max(bounds.lower[k][j],Math.min(bounds.upper[k][j],U[k][j]));
   const directStateWeights=['p','v','rotation','attitude','w','omega','gas','valve'].some(k=>weights[k]!==undefined) ? weights : undefined;
   const Q=checkedNonnegative(stateWeights(weights.state ?? directStateWeights,defaultStateWeights,'weights.state'),'weights.state');
   const Qf=checkedNonnegative(stateWeights(terminalWeights ?? weights.terminal,Q,'terminalWeights'),'terminalWeights');
@@ -210,7 +230,11 @@ export function optimizeTrajectory({ model, initial, controls, dts, references, 
           const k=Math.floor(j/ND), a=j%ND, rad=k===0?0:trustX[a]; l[row]=-rad;u[row]=rad;
           if(k>0&&a===12) l[row]=Math.max(l[row],-acceptedStates[k][13]);
           if(k>0&&a>=13) { const valve=acceptedStates[k][14+a-13]; l[row]=Math.max(l[row],-valve);u[row]=Math.min(u[row],1-valve); }
-        } else if(j<nbase) { const s=j-nx,k=Math.floor(s/NU),a=s%NU; l[row]=Math.max(-trustU[a],-U[k][a]);u[row]=Math.min(trustU[a],1-U[k][a]); }
+        } else if(j<nbase) {
+          const s=j-nx,k=Math.floor(s/NU),a=s%NU;
+          l[row]=Math.max(-trustU[a],(bounds ? bounds.lower[k][a] : 0)-U[k][a]);
+          u[row]=Math.min(trustU[a],(bounds ? bounds.upper[k][a] : 1)-U[k][a]);
+        }
         else l[row]=0; // Shared elastic slack is nonnegative, with no artificial recovery limit.
       }
       for(let d=0;d<ns;d++) for(let f=0;f<DISK_FACETS;f++) {
@@ -230,14 +254,14 @@ export function optimizeTrajectory({ model, initial, controls, dts, references, 
         stop='qp_failure'; diagnostics.push({iteration:it,status:solved?.status??'missing status',accepted:false});
         // A later elastic subproblem can fail numerically after a useful rollout was accepted. Return that
         // rollout and its measured feasibility; never turn QP convergence trouble into a feasibility claim.
-        if(terminal) break;
+        if(terminal||bounds) break;
         const error=new Error(`guidance QP failed at SQP iteration ${it}: ${solved?.status??'missing status'}`); error.diagnostics=diagnostics; throw error;
       }
       warmStart=Float64Array.from(solved.x);
       let found=false, alpha=1, candidateCost=currentCost, candidateStates=null, candidateControls=null, candidateTerminal=terminalStatus;
       const currentMerit=currentCost+(terminal ? terminal.penalty*terminalStatus.violation : 0);
       for(let ls=0;ls<6;ls++,alpha*=0.5) {
-        const testU=U.map((stage,k)=>Float64Array.from(stage,(x,j)=>Math.max(0,Math.min(1,x+alpha*solved.x[ui(k,j)]))));
+        const testU=U.map((stage,k)=>Float64Array.from(stage,(x,j)=>Math.max(bounds ? bounds.lower[k][j] : 0,Math.min(bounds ? bounds.upper[k][j] : 1,x+alpha*solved.x[ui(k,j)]))));
         const testX=rollout(model,x0,testU,dt), c=costOf(model,testX,testU,dt,refs,Q,Qf,Ru,Rs);
         const testTerminal=terminalResiduals(testX[N],terminal), merit=c+(terminal ? terminal.penalty*testTerminal.violation : 0);
         // Once feasible, retain actual nonlinear feasibility even if a finite penalty would buy lower cost.

@@ -31,6 +31,7 @@ import { FLIGHT_UI, FLIGHT_CSS, FLIGHT_GROUPS } from './ui.js';
 
 /** Known soft-body runs (shown when their .sim exists); ?run= may name any other flight-*.sim. */
 const RUNS = [
+  { id: 'dual-recovery-flat', label: '双层 MPC · 非凸回收', sub: '主推进组关闭或 ≥ 40% · 最小稳态推重比 > 1 · 定点降落' },
   { id: 'dual-plans-flat', label: '双层 MPC · 规划可视化', sub: '完整轨迹 · 实际规划候选与短期预测 · 落地制动' },
   { id: 'dual-pad-flat', label: '定点降落', sub: '目标半径 1.5 m · 触地水平速度 ≤ 0.5 m/s' },
   { id: 'dual-brake-flat', label: '双层 MPC · 落地制动', sub: '四轮平拍 · 触地切换 · 全刹车，无转向及 RCS' },
