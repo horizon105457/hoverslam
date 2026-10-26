@@ -19,6 +19,44 @@ export class FlightHUD {
   }
   resize(w, h) { if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; } }
 
+  /** Interactive cards share one CSS flow; the full-frame canvas remains the offline film source. */
+  mountLive(dock) {
+    this.live = {};
+    for (const [name, width, label] of [['thrust', 311, '喷口遥测'], ['drive', 178, '制动与转向遥测'], ['status', 282, '飞行状态遥测']]) {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'instrument-card'; canvas.style.width = `${width}px`;
+      canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', label);
+      dock.appendChild(canvas); this.live[name] = canvas;
+    }
+    this.live.verdict = document.createElement('section');
+    this.live.verdict.className = 'instrument-verdict';
+    dock.appendChild(this.live.verdict);
+  }
+
+  drawLive(s) {
+    // A fixed logical sheet separates card geometry from viewport size and device pixel ratio.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.resize(Math.round(1920 * dpr), Math.round(1080 * dpr));
+    this.draw({ ...s, title: null, verdict: null, letterbox: false });
+    const rows = s.roll != null ? 10 : 9;
+    for (const [name, rect] of Object.entries({ thrust: [22, 840, 311, 222], drive: [347, 840, 178, 222], status: [1618, 22, 282, rows * 25 + 54] })) {
+      const dst = this.live[name], [x, y, w, h] = rect;
+      dst.hidden = name === 'drive' && !s.drive;
+      const W = Math.round(w * dpr), H = Math.round(h * dpr);
+      if (dst.width !== W || dst.height !== H) { dst.width = W; dst.height = H; }
+      dst.style.height = `${h}px`;
+      const g = dst.getContext('2d'); g.clearRect(0, 0, W, H);
+      g.drawImage(this.canvas, x * dpr, y * dpr, w * dpr, h * dpr, 0, 0, W, H);
+    }
+    const v = s.verdict, box = this.live.verdict;
+    box.hidden = !v;
+    if (v) {
+      const text = `${verdictLabel(v)}\n触地垂速 ${v.vs.toFixed(2)} m/s · 倾角 ${v.tilt.toFixed(1)}°\n角速度 ${v.rate.toFixed(2)} rad/s · ${v.hull ? '车身触地' : '四轮着地'}${v.stop ? `\n${v.stop}` : ''}${v.note ? `\n${v.note}` : ''}`;
+      if (box.textContent !== text) box.textContent = text;
+      box.style.color = v.success ? MINT : RED;
+    }
+  }
+
   /**
    * @param s {t, thrust[], valve[], nom[], tank:{m,T,p}, m0, pc, pset, alt, vy, tilt, rate, speed, phase, roll (deg or null),
    *           drive: null | {brake 0..1, steer rad}, verdict: null | {success, vs, tilt, rate, hull, crit, stop?}, title, sub, letterbox}

@@ -75,7 +75,6 @@ export default class FlightProgram extends Program {
     this.visualOptions = { trail: true, planning: false, exploration: false };
     this.filmHud = params.get('hud') !== '0';
     ui.mount(FLIGHT_UI);
-    ui.root.appendChild(this.hud.canvas);
     this.controls = new OrbitControls(stage.camera, stage.renderer.domElement);
     this.controls.enableDamping = true; this.controls.enabled = false;
     this.mode = params.get('mode') || 'director';
@@ -193,7 +192,12 @@ export default class FlightProgram extends Program {
     tr.addGroup(FLIGHT_GROUPS.modes, 'modes');
     tr.addGroup(FLIGHT_GROUPS.speeds, 'speeds');
     tr.addGroup(FLIGHT_GROUPS.view);
+    ui.mount('<div id="status-dock" aria-label="飞行状态遥测"></div><div id="instrument-dock" aria-label="底部仪表区"><div id="instrument-flow"></div></div>');
+    this.hud.mountLive($('instrument-flow'));
+    $('status-dock').appendChild(this.hud.live.status);
     ui.mount(`<section id="visual-controls" class="visual-controls" aria-label="轨迹与规划遥测"><h2>轨迹 · 规划</h2><div class="visual-switches">${FLIGHT_GROUPS.trajectories}</div><div id="trajectory-legend" hidden></div></section>`);
+    $('instrument-flow').appendChild($('visual-controls'));
+    this.setupPanelLayout();
     for (const [id, key] of [['b-trail', 'trail'], ['b-plan', 'planning'], ['b-explore', 'exploration']]) {
       $(id).onclick = () => {
         this.visualOptions[key] = !this.visualOptions[key];
@@ -204,11 +208,11 @@ export default class FlightProgram extends Program {
     document.querySelectorAll('#modes button').forEach(b => (b.onclick = () => this.setMode(b.dataset.mode)));
     document.querySelectorAll('#speeds button').forEach(b => (b.onclick = () => { this.speed = +b.dataset.speed; document.querySelectorAll('#speeds button').forEach(x => x.classList.toggle('on', x === b)); }));
     $('b-plume').onclick = () => { const on = !$('b-plume').classList.contains('on'); this.plumes.visible = on; $('b-plume').classList.toggle('on', on); };
-    $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); this.hud.canvas.style.display = on ? '' : 'none'; $('visual-controls').hidden = !on; $('b-tele').classList.toggle('on', on); };
+    $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); $('instrument-dock').hidden = !on; $('status-dock').hidden = !on; $('b-tele').classList.toggle('on', on); };
     const setClean = hidden => {
       document.body.classList.toggle('clean', hidden);
       // Hidden controls must also leave keyboard navigation, while the restore button stays accessible.
-      for (const el of [this.transport.el, $('fpanel'), $('visual-controls')]) el.inert = hidden;
+      for (const el of [this.transport.el, $('fpanel'), $('instrument-dock'), $('status-dock')]) el.inert = hidden;
       (hidden ? $('b-ui-restore') : $('b-ui')).focus({ preventScroll: true });
     };
     $('b-ui').onclick = () => setClean(true);
@@ -338,15 +342,52 @@ export default class FlightProgram extends Program {
   }
 
   drawHud(t, film) {
+    const s = this.hudState(t);
+    if (!film) { this.hud.drawLive(s); return; }
     const r = this.ctx.stage.renderer.domElement;
     this.hud.resize(r.width, r.height);
-    const s = this.hudState(t);
-    if (!film) { s.title = null; s.letterbox = document.body.classList.contains('cinema'); }
     this.hud.draw(s);
+  }
+
+  setupPanelLayout() {
+    const $ = this.ctx.ui.$;
+    const update = () => {
+      const compact = innerWidth < 900 || innerHeight <= 520;
+      if (compact !== this._compactPanels) {
+        this._compactPanels = compact;
+        document.body.classList.toggle('compact-panels', compact);
+        if (compact) $('instrument-flow').prepend($('fpanel'));
+        else this.ctx.ui.root.appendChild($('fpanel'));
+      }
+      const bar = this.transport.el.getBoundingClientRect();
+      const space = `${innerHeight - bar.top + 12}px`;
+      if (space !== this._playbackSpace) {
+        document.body.style.setProperty('--playback-space', space); this._playbackSpace = space;
+      }
+      const height = `${$('instrument-dock').getBoundingClientRect().height}px`;
+      if (height !== this._instrumentHeight) {
+        document.body.style.setProperty('--instrument-height', height); this._instrumentHeight = height;
+      }
+    };
+    this.panelObserver = new ResizeObserver(update);
+    this.panelObserver.observe(this.transport.el);
+    this.panelObserver.observe($('instrument-dock'));
+    window.addEventListener('resize', update);
+    this._panelResize = update;
+    update();
+  }
+
+  dispose() {
+    this.panelObserver?.disconnect();
+    window.removeEventListener('resize', this._panelResize);
+    this.controls?.dispose();
+    this.trajectories?.dispose();
+    document.body.classList.remove('compact-panels');
   }
 
   // ------------------------------------------------------------------ frame
   frame(dt) {
+    this._panelResize?.();
     const stage = this.ctx.stage, cam = stage.camera, ui = this.ctx.ui;
     if (!this.edit) { stage.render(dt); return; }
     let t;
