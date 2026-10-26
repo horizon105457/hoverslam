@@ -31,27 +31,13 @@ import { FLIGHT_UI, FLIGHT_CSS, FLIGHT_GROUPS } from './ui.js';
 
 /** Known soft-body runs (shown when their .sim exists); ?run= may name any other flight-*.sim. */
 const RUNS = [
-  { id: 'dual-recovery35-flat', label: '双层 MPC · 35% 回收', sub: '主推进组关闭或 ≥ 35% · 重启间隔倒数惩罚 · 定点降落' },
-  { id: 'dual-recovery-flat', label: '双层 MPC · 非凸回收', sub: '主推进组关闭或 ≥ 40% · 最小稳态推重比 > 1 · 定点降落' },
-  { id: 'dual-plans-flat', label: '双层 MPC · 规划可视化', sub: '完整轨迹 · 实际规划候选与短期预测 · 落地制动' },
-  { id: 'dual-pad-flat', label: '定点降落', sub: '目标半径 1.5 m · 触地水平速度 ≤ 0.5 m/s' },
-  { id: 'dual-brake-flat', label: '双层 MPC · 落地制动', sub: '四轮平拍 · 触地切换 · 全刹车，无转向及 RCS' },
-  { id: 'dual-stop-flat', label: '双层 MPC · 落地刹停', sub: '四轮平拍 · 空中两层 SQP · 触地后自动刹车与转向' },
-  { id: 'soft', label: '软着陆', sub: '车头俯冲 · 自动驾驶 ap · 刹停' },
-  { id: 'recover', label: '翻滚改出', sub: '倒扣车顶 · 自动驾驶 ap · 刹停' },
-  { id: 'hard', label: '硬着陆', sub: '倒扣车顶 · 点火延迟 0.6 s' },
-  { id: 'mpc-stop-nose', label: 'MPC · 落地边刹边转', sub: '车头俯冲 · 纯 MPC 规划刹车与转向，转 43° 刹停' },
-  { id: 'mpc-stop-corner', label: 'MPC · 翻滚改出 · 刹停', sub: '角部翻滚 · 纯 MPC，避开路缘刹停' },
-  { id: 'mpc-roll', label: 'MPC · 跳跃横滚 360°', sub: '四轮平拍 · 纯 MPC（无 PD），落地后刹车转向' },
-  { id: 'pd-nose', label: 'pd · 着陆后失控', sub: '车头俯冲 · 孪生 pd（无航向控制、不用刹车）' },
-  { id: 'pd-roof', label: 'pd · 着陆后失控', sub: '倒扣车顶 · 孪生 pd（无航向控制、不用刹车）' },
-  { id: 'replay-mppi-nose', label: 'MPPI 开环回放', sub: '车头俯冲 · 孪生 MPPI 轨迹开环回放' },
-  { id: 'mppi-nose', label: 'MPPI 闭环 · 软着陆', sub: '车头俯冲 · JS MPPI 在软体上实时重规划（无刹车）' },
-  { id: 'mppi-roof', label: 'MPPI 闭环 · 落在路缘', sub: '倒扣车顶 · JS MPPI 软触地，但正落在路缘上（无刹车）' },
-  { id: 'two-costs-first-nose3', label: 'MPC · 托着往下放', sub: '车头俯冲 · 代价无用气项、下落速度计价（gas-two-costs）' },
-  { id: 'two-costs-second-nose3', label: 'MPC · 自杀式点火', sub: '车头俯冲 · 代价加用气项（gas-two-costs）' },
+  { id: 'nonconvex-stop', label: '落地刹停.非凸', sub: '35% 最小油门 · 接地倾角 ≤ 5° · 触地后全刹车' },
+  { id: 'nonconvex-pad', label: '定点降落.非凸', sub: '35% 最小油门 · 靶心误差 ≤ 1.5 m · 触地水平速度 ≤ 0.5 m/s' },
 ];
-const runName = id => (id.startsWith('flight-') ? id.slice(7) : id);
+const runName = id => {
+  const name = id.startsWith('flight-') ? id.slice(7) : id;
+  return name === 'dual-recovery35-flat' ? 'nonconvex-pad' : name; // Preserve bookmarks to the accepted pad demo.
+};
 const ctlLabel = c => (!c ? '' : c === 'ap' ? '自动驾驶 ap' : c === 'pd' ? '孪生 pd' : c === 'mppi' ? 'MPPI 闭环' : c === 'mpc' ? '纯 MPC（无 PD）' : c.startsWith('replay:') ? `开环回放 ${c.slice(7)}` : c);
 
 export default class FlightProgram extends Program {
@@ -90,7 +76,7 @@ export default class FlightProgram extends Program {
     if (params.has('traj')) await this.loadTrajectory(params.get('traj'));
     else {
       const avail = await this.listRuns();
-      await this.loadRun(params.get('run') || avail[0]?.id || 'soft');
+      await this.loadRun(params.get('run') || avail[0]?.id || 'nonconvex-pad');
     }
     const self = this;
     this.film = {
@@ -117,7 +103,7 @@ export default class FlightProgram extends Program {
       b.onclick = () => this.loadRun(r.id);
       box.appendChild(b);
     }
-    if (!this.runs.length) box.innerHTML = '<p id="fnote">还没有飞行记录：<code>node tools/sim/flight.mjs preset=nose controller=ap out=soft</code></p>';
+    if (!this.runs.length) box.innerHTML = '<p id="fnote">还没有飞行记录：<code>npm run demos:generate</code></p>';
     return this.runs;
   }
 

@@ -34,18 +34,26 @@ npm run flight:settle && npm run flight:sim:all   # 带套件的软体：settle 
 npm run film:install && npm run film:flight     # 导出三段成片到 renders/
 ```
 
-## 当前双层 MPC 案例
+## 正式演示案例
 
-- `dual-plans-flat`：着陆与地面刹停，显示实际拖尾、规划、预测及探索轨迹。
-- `dual-pad-flat`：flat / seed 0 定点降落；软体触地位置误差 **0.09 m**、水平速度 **0.224 m/s**，满足 1.5 m / 0.5 m/s 阈值。
-- `dual-recovery35-flat`：35% 最小油门，重启惩罚为关闭间隔的倒数；软体落点误差 **0.27 m**、水平速度 **0.054 m/s**，在线仿真仍暂停。
-- `dual-recovery-flat`（保留的 40% 历史录制）：非凸回收，底部推进组关闭或 ≥ 40%，最小可用稳态推重比 > 1；配置与复现见 [双层控制文档](docs/DUAL_GUIDANCE.md#非凸回收dual-recovery--flat)。
-- 可视化入口：`http://127.0.0.1:5173/?program=flight&run=dual-pad-flat&mode=follow&paused`。需要先按[复现说明](docs/DUAL_GUIDANCE.md#定点降落precision-pad--flat)生成录制；`public/sims/` 不纳入 Git。
-- 仿真过程中闭环求解，浏览器播放已生成的录制；**在线仿真仍暂停实施**。默认不循环，支持暂停、重置、循环、跟随视角旋转与缩放。
-- 实验结果使用[统一大字模板](src/programs/flight/result.js)，填入标题、指标和说明即可。保留当前“探索”名称与展示效果。
+仅保留两个双层 MPC demo，共用 **35% 最小开启油门 + 重启关闭间隔倒数惩罚**：
 
-双层 MPC 使用随项目携带的 OSQP WASM，运行已有求解器不需要安装 acados 或 Emscripten。案例参数、指标和已知验证限制见
-[`docs/DUAL_GUIDANCE.md`](docs/DUAL_GUIDANCE.md) 与 [`experiments/reports/dual-precision-pad/metrics.json`](experiments/reports/dual-precision-pad/metrics.json)。
+- **落地刹停.非凸**（`nonconvex-stop`）：无固定靶心，优先控制接地姿态（≤ 5° / 0.5 rad/s），接地后全刹车；实测 4.43 m/s、1.96° 接地，1.24 m 内刹停。
+- **定点降落.非凸**（`nonconvex-pad`）：目标半径 1.5 m、触地水平速度 ≤ 0.5 m/s；实测 0.27 m / 0.054 m/s。
+
+仓库仅附带配置、源码、复现入口和指标，**软体录制不纳入 Git**。
+
+```sh
+npm run demos:generate                         # 本地生成两个 demo，无新增依赖
+npm run demos:generate -- only=nonconvex-pad     # 只生成其中一个
+npm run dev
+# ?program=flight&run=nonconvex-stop&mode=follow&paused
+# ?program=flight&run=nonconvex-pad&mode=follow&paused
+```
+
+浏览器播放离线闭环计算的录制，在线仿真仍暂停实施。原播放、轨迹、视角和大字结果样式保持不变。
+设计与复现见 [双层控制说明](docs/DUAL_GUIDANCE.md)，指标见 [正式 demo 报告](experiments/reports/demos/README.md)。
+其余二开案例的配置和历史证据见 [归档](experiments/archive/dual-development/README.md)，不再列入默认演示菜单。
 
 ## 代码地图
 

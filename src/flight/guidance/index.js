@@ -38,8 +38,12 @@ function makeReferences(model, s, task, seedStates, dts, c) {
   const refs = [Float64Array.from(seedStates[0])], N = dts.length;
   const T = dts.reduce((a, b) => a + b, 0), x0 = s.p[0], z0 = s.p[2];
   const pad = task?.pad?.center;
-  const targetX = pad ? pad[0] : x0 + s.v[0] * T;
-  const targetZ = pad ? pad[2] : z0 + s.v[2] * T;
+  const brakeHorizontal = !!pad || c.terminal_horizontal_speed !== undefined;
+  const speed = Math.hypot(s.v[0], s.v[2]);
+  const scale = pad ? 0 : Math.min(1, (c.terminal_horizontal_speed ?? speed) / Math.max(speed, 1e-9));
+  const vxEnd = s.v[0] * scale, vzEnd = s.v[2] * scale;
+  const targetX = pad ? pad[0] : x0 + (brakeHorizontal ? (s.v[0] + vxEnd) * 0.5 : s.v[0]) * T;
+  const targetZ = pad ? pad[2] : z0 + (brakeHorizontal ? (s.v[2] + vzEnd) * 0.5 : s.v[2]) * T;
   const q0 = Float64Array.from(seedStates[0].subarray(6, 10));
   const heading = Math.atan2(-2 * (q0[0] * q0[2] - q0[1] * q0[3]), 1 - 2 * (q0[1] * q0[1] + q0[2] * q0[2]));
   const qUp = new Float64Array([0, Math.sin(heading / 2), 0, Math.cos(heading / 2)]);
@@ -54,12 +58,12 @@ function makeReferences(model, s, task, seedStates, dts, c) {
     const f2 = f * f, f3 = f2 * f;
     const h00 = 2 * f3 - 3 * f2 + 1, h10 = f3 - 2 * f2 + f;
     const h01 = -2 * f3 + 3 * f2, h11 = f3 - f2;
-    // Coast horizontally on ordinary landing tasks; pad tasks use Hermite interpolation to brake to zero at the pad.
-    r[0] = pad ? h00 * x0 + h10 * T * s.v[0] + h01 * targetX : x0 + s.v[0] * elapsed;
-    r[2] = pad ? h00 * z0 + h10 * T * s.v[2] + h01 * targetZ : z0 + s.v[2] * elapsed;
+    // Coast by default; pad tasks brake to zero, while stop demos can request a finite arrival speed without a pad.
+    r[0] = brakeHorizontal ? h00 * x0 + h10 * T * s.v[0] + h01 * targetX + h11 * T * vxEnd : x0 + s.v[0] * elapsed;
+    r[2] = brakeHorizontal ? h00 * z0 + h10 * T * s.v[2] + h01 * targetZ + h11 * T * vzEnd : z0 + s.v[2] * elapsed;
     r[1] = h00 * s.p[1] + h10 * T * s.v[1] + h01 * touchdownY + h11 * T * c.terminal_vy;
-    r[3] = pad ? ((6 * f2 - 6 * f) / T) * x0 + (3 * f2 - 4 * f + 1) * s.v[0] + ((-6 * f2 + 6 * f) / T) * targetX : s.v[0];
-    r[5] = pad ? ((6 * f2 - 6 * f) / T) * z0 + (3 * f2 - 4 * f + 1) * s.v[2] + ((-6 * f2 + 6 * f) / T) * targetZ : s.v[2];
+    r[3] = brakeHorizontal ? ((6 * f2 - 6 * f) / T) * x0 + (3 * f2 - 4 * f + 1) * s.v[0] + ((-6 * f2 + 6 * f) / T) * targetX + (3 * f2 - 2 * f) * vxEnd : s.v[0];
+    r[5] = brakeHorizontal ? ((6 * f2 - 6 * f) / T) * z0 + (3 * f2 - 4 * f + 1) * s.v[2] + ((-6 * f2 + 6 * f) / T) * targetZ + (3 * f2 - 2 * f) * vzEnd : s.v[2];
     r[4] = ((6 * f2 - 6 * f) / T) * s.p[1] + (3 * f2 - 4 * f + 1) * s.v[1] +
       ((-6 * f2 + 6 * f) / T) * touchdownY + (3 * f2 - 2 * f) * c.terminal_vy;
     const attitudeFraction = f;
@@ -79,6 +83,7 @@ function validateConfig(input) {
   if (c.capturePlans === undefined) c.capturePlans = false;
   if (typeof c.capturePlans !== 'boolean') throw new TypeError('guidance capturePlans must be boolean');
   c.recovery = recoveryConfig(input.recovery);
+  if (c.terminal_horizontal_speed !== undefined && !(Number.isFinite(c.terminal_horizontal_speed) && c.terminal_horizontal_speed >= 0)) throw new RangeError('guidance terminal_horizontal_speed must be finite and nonnegative');
   c.ground = { ...defaults.ground, ...(input.ground || {}) };
   delete c.ground._doc;
   if (typeof c.ground.enabled !== 'boolean') throw new TypeError('guidance ground.enabled must be boolean');
