@@ -89,6 +89,9 @@ export class FlightHUD {
     const bx = px(40), by = H - lb - px(96), bh = px(92), bw = px(16), gap = px(9), ggap = px(26);
     panel(g, bx - px(18), by - bh - px(52), px(18) * 2 + 10 * bw + 7 * gap + 2 * ggap, bh + px(130), k);
     g.font = `500 ${px(12)}px ${FONT}`; g.fillStyle = DIM; g.fillText('冷气推力器 · 阀门开度', bx, by - bh - px(26));
+    g.font = `500 ${px(9)}px ${FONT}`;
+    g.fillStyle = '#78C9ED'; g.fillText('━ 最小油门', bx + px(155), by - bh - px(26));
+    g.fillStyle = '#D94A58'; g.fillText('━ 最大油门', bx + px(218), by - bh - px(26));
     let x = bx;
     for (const grp of ['bottom', 'rear', 'side']) {
       const idx = GROUPS[grp];
@@ -101,6 +104,12 @@ export class FlightHUD {
         g.fillStyle = f > 0.02 ? MINT : 'rgba(147,211,184,0.35)';
         g.fillRect(x, by - bh * f, bw, bh * f);
         g.fillStyle = 'rgba(255,255,255,0.85)'; g.fillRect(x, by - bh * v - px(1.5), bw, px(3));
+        // Command bounds are distinct from the measured valve opening and delivered thrust.
+        // Extend beyond the bar so a boundary remains visible when the white opening marker coincides.
+        const limitAt = (values, fallback) => Array.isArray(values) ? (values[i] ?? fallback) : (values ?? fallback);
+        const lo = clamp01(limitAt(s.commandLimits?.min, 0)), hi = clamp01(limitAt(s.commandLimits?.max, 1));
+        g.fillStyle = '#78C9ED'; g.fillRect(x - px(3), by - bh * lo - px(1), bw + px(6), px(2));
+        g.fillStyle = '#D94A58'; g.fillRect(x - px(3), by - bh * hi - px(1), bw + px(6), px(2));
         g.save(); g.translate(x + bw / 2 + px(3.5), by + px(6)); g.rotate(Math.PI / 2);
         g.fillStyle = f > 0.02 ? FG : DIM; g.font = `500 ${px(9)}px ${FONT}`; g.fillText(this.ids[i].replace('_', ''), 0, 0); g.restore();
         x += bw + gap;

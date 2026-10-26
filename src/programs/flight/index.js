@@ -336,7 +336,7 @@ export default class FlightProgram extends Program {
         stop: m.stopped && t >= e.tTouch + (m.stop_time ?? 0) ? `刹停 ${m.stop_time.toFixed(1)} s · ${m.stop_distance.toFixed(0)} m${m.kerb ? '   ·   路缘 ✗' : '   ·   未碰路缘 ✓'}` : null }
       : null;
     return {
-      t, thrust, valve, nom: this.nom.F, tank: tk, m0: L.log.tank[0][0], pc: pc > 2 * WORLD.air.pressure ? pc : 0,
+      t, thrust, valve, commandLimits: L.flight?.commandLimits ?? L.log?.commandLimits, nom: this.nom.F, tank: tk, m0: L.log.tank[0][0], pc: pc > 2 * WORLD.air.pressure ? pc : 0,
       alt: L.p(t)[1] - this.restY, vy: v[1], speed: Math.hypot(v[0], v[2]), tilt: L.tilt(t), rate: Math.hypot(w[0], w[1], w[2]), phase, verdict,
       roll: e.roll ? e.roll.at(t) : null, drive: t < 0 ? (L.log.drive ? { brake: 0, steer: 0 } : null) : L.driveState(t),
       title: this.label?.title, sub: this.label?.sub,
