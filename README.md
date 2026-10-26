@@ -25,6 +25,7 @@ uv venv python/.venv && uv pip install -p python/.venv -e 'python[test,rl]'   # 
 npm test                                  # spec 生成物是否最新 + JS/Python 双向一致性 + pytest
 npm run flight:bench -- experiments/configs/baseline-soft-landing.json --workers 6   # zero / pd / mppi 对比
 npm run flight:run -- task=escape-soft-landing controller=pd preset=nose seed=0 out=x.json   # JS 侧出轨迹
+npm run flight:run -- task=escape-soft-landing controller=dual preset=flat seed=0 out=/tmp/dual.json   # 双层非线性规划/跟踪（JS + 随项目携带的 WASM）
 npm run flight:settle && npm run flight:sim:all   # 带套件的软体：settle + 软着陆/改出/硬着陆三段（约 4 分钟）
 # http://127.0.0.1:5173/?program=flight&run=soft          软体飞行录制
 # http://127.0.0.1:5173/?program=flight&traj=/experiments/runs/<...>/traj/<x>.json   刚体轨迹秒看（MPC/PPO 结果）
@@ -33,6 +34,8 @@ npm run film:install && npm run film:flight     # 导出三段成片到 renders/
 ```
 
 ## 代码地图
+
+双层控制的模块划分、运行方式和支持边界见 [`docs/DUAL_GUIDANCE.md`](docs/DUAL_GUIDANCE.md)。
 
 - `spec/`：跨语言唯一事实源（场景尺寸、坠落预设、10 个喷口与气罐、车辆参数、挑战任务）；`npm run spec` 重新生成 `spec/generated/`
 - `src/app/`：外壳（上下文与资源懒加载、节目注册、播放条）；`src/programs/<id>/`：各节目
