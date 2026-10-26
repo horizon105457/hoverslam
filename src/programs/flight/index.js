@@ -191,9 +191,18 @@ export default class FlightProgram extends Program {
     document.querySelectorAll('#speeds button').forEach(b => (b.onclick = () => { this.speed = +b.dataset.speed; document.querySelectorAll('#speeds button').forEach(x => x.classList.toggle('on', x === b)); }));
     $('b-plume').onclick = () => { const on = !$('b-plume').classList.contains('on'); this.plumes.visible = on; $('b-plume').classList.toggle('on', on); };
     $('b-tele').onclick = () => { const on = !$('b-tele').classList.contains('on'); this.hud.canvas.style.display = on ? '' : 'none'; $('b-tele').classList.toggle('on', on); };
-    $('b-ui').onclick = () => document.body.classList.toggle('clean');
+    const setClean = hidden => {
+      document.body.classList.toggle('clean', hidden);
+      // Hidden controls must also leave keyboard navigation, while the restore button stays accessible.
+      for (const el of [this.transport.el, $('fpanel')]) el.inert = hidden;
+      (hidden ? $('b-ui-restore') : $('b-ui')).focus({ preventScroll: true });
+    };
+    $('b-ui').onclick = () => setClean(true);
+    $('b-ui-restore').onclick = () => setClean(false);
     addEventListener('keydown', e => {
-      if (e.key === 'h' || e.key === 'H') document.body.classList.toggle('clean');
+      if (e.key === 'h' || e.key === 'H') {
+        if (!e.repeat && !e.target?.isContentEditable && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) setClean(!document.body.classList.contains('clean'));
+      }
       if (e.key === ' ') {
         const target = e.target, tag = target?.tagName;
         if (target?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
