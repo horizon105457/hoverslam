@@ -1,17 +1,19 @@
 # 双层非凸飞行与正式演示
 
-正式 demo 仅保留“落地刹停.非凸”和“定点降落.非凸”。仓库跟踪源代码、配置、复现脚本和紧凑指标；
+正式二开 demo 仅保留“落地刹停.非凸”和“定点降落.非凸”。仓库跟踪源代码、配置、复现脚本和紧凑指标；
 **所有软体录制、轨迹数据及其本地归档均不纳入 Git**。旧二开案例移至
-[`experiments/archive/dual-development`](../experiments/archive/dual-development/README.md)，不再显示在默认演示列表。
+[`experiments/archive/dual-development`](../experiments/archive/dual-development/README.md)，不再显示在默认演示列表。官方原有案例和算法保留；对应录制生成后仍可在列表中选择。
 
 ## 运行
 
+需要 Node.js ≥ 22.12（推荐 24）与 npm；无需 Python 或重新编译求解器。车模、静置状态及 WASM 均已跟踪。
+
 ```sh
-npm install
+npm ci
 npm run demos:generate                         # 两个案例，耗时数分钟/例
 npm run demos:generate -- only=nonconvex-pad     # 仅定点降落
 npm run demos:generate -- only=nonconvex-stop    # 仅落地刹停
-npm run dev
+npm run demos:view                            # 自动打开正式演示，默认暂停
 ```
 
 播放入口：

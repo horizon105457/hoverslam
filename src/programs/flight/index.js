@@ -33,6 +33,20 @@ import { FLIGHT_UI, FLIGHT_CSS, FLIGHT_GROUPS } from './ui.js';
 const RUNS = [
   { id: 'nonconvex-stop', label: '落地刹停.非凸', sub: '35% 最小油门 · 接地倾角 ≤ 5° · 触地后全刹车' },
   { id: 'nonconvex-pad', label: '定点降落.非凸', sub: '35% 最小油门 · 靶心误差 ≤ 1.5 m · 触地水平速度 ≤ 0.5 m/s' },
+  // Original upstream examples remain available whenever their recordings are generated.
+  { id: 'soft', label: '软着陆', sub: '车头俯冲 · 自动驾驶 ap · 刹停' },
+  { id: 'recover', label: '翻滚改出', sub: '倒扣车顶 · 自动驾驶 ap · 刹停' },
+  { id: 'hard', label: '硬着陆', sub: '倒扣车顶 · 点火延迟 0.6 s' },
+  { id: 'mpc-stop-nose', label: 'MPC · 落地边刹边转', sub: '车头俯冲 · 纯 MPC 规划刹车与转向，转 43° 刹停' },
+  { id: 'mpc-stop-corner', label: 'MPC · 翻滚改出 · 刹停', sub: '角部翻滚 · 纯 MPC，避开路缘刹停' },
+  { id: 'mpc-roll', label: 'MPC · 跳跃横滚 360°', sub: '四轮平拍 · 纯 MPC（无 PD），落地后刹车转向' },
+  { id: 'pd-nose', label: 'pd · 着陆后失控', sub: '车头俯冲 · 孪生 pd（无航向控制、不用刹车）' },
+  { id: 'pd-roof', label: 'pd · 着陆后失控', sub: '倒扣车顶 · 孪生 pd（无航向控制、不用刹车）' },
+  { id: 'replay-mppi-nose', label: 'MPPI 开环回放', sub: '车头俯冲 · 孪生 MPPI 轨迹开环回放' },
+  { id: 'mppi-nose', label: 'MPPI 闭环 · 软着陆', sub: '车头俯冲 · JS MPPI 在软体上实时重规划（无刹车）' },
+  { id: 'mppi-roof', label: 'MPPI 闭环 · 落在路缘', sub: '倒扣车顶 · JS MPPI 软触地，但正落在路缘上（无刹车）' },
+  { id: 'two-costs-first-nose3', label: 'MPC · 托着往下放', sub: '车头俯冲 · 代价无用气项、下落速度计价（gas-two-costs）' },
+  { id: 'two-costs-second-nose3', label: 'MPC · 自杀式点火', sub: '车头俯冲 · 代价加用气项（gas-two-costs）' },
 ];
 const runName = id => {
   const name = id.startsWith('flight-') ? id.slice(7) : id;

@@ -9,11 +9,26 @@ JetCar Mini 是基于五菱宏光 MINI EV 的冷气推进、飞行着陆与软�
 
 ## 快速开始
 
+需要 **Node.js ≥ 22.12（推荐 Node 24）与 npm**。正式 demo 不需要 Python、acados、Emscripten，
+也不需要安装浏览器自动化运行时。车模、静置状态和 OSQP WASM 已随仓库提供。
+
 ```sh
-npm install
-npm run precompute:all   # 生成 public/sims/*.sim（未入库，约 4 分钟）
-npm run dev              # http://127.0.0.1:5173/?program=crash&preset=roof
-npm run film -- program=crash preset=roof out=renders/x.mp4 w=1920 h=1080 samples=16   # 导出成片，需 dev 运行中
+npm ci                    # 按 lockfile 安装；首次需要访问 npm registry
+npm run demos:generate    # 顺序生成两个正式案例，本机参考每例约 6–7 分钟
+npm run demos:view        # 打开 flight 查看器，默认暂停，可在左侧切换两个案例
+```
+
+生成器会自动创建 `public/sims/`。软体录制和刚体中间轨迹均不纳入 Git；无需先运行 settle、spec
+或 precompute。只生成一例：`npm run demos:generate -- only=nonconvex-pad`（或 `nonconvex-stop`）。
+端口被占用时：`npm run demos:view -- --port 5188`。若浏览器未自动打开，使用终端显示的地址并追加
+`?program=flight&mode=follow&paused`。再次查看不需要重新生成。
+
+原始坠车场景及影片工具仍可使用：
+
+```sh
+npm run precompute:all
+npm run dev
+npm run film -- program=crash preset=roof out=renders/x.mp4 w=1920 h=1080 samples=16
 ```
 
 `?program=<id>` 选择节目：`crash`（默认，坠车查看器）、`flight`（冷气辅助逃逸/着陆）、`install`（喷口安装 motion design），
@@ -36,7 +51,7 @@ npm run film:install && npm run film:flight     # 导出三段成片到 renders/
 
 ## 正式演示案例
 
-仅保留两个双层 MPC demo，共用 **35% 最小开启油门 + 重启关闭间隔倒数惩罚**：
+二开正式演示仅保留两个双层 MPC demo，共用 **35% 最小开启油门 + 重启关闭间隔倒数惩罚**：
 
 - **落地刹停.非凸**（`nonconvex-stop`）：无固定靶心，优先控制接地姿态（≤ 5° / 0.5 rad/s），接地后全刹车；实测 4.43 m/s、1.96° 接地，1.24 m 内刹停。
 - **定点降落.非凸**（`nonconvex-pad`）：目标半径 1.5 m、触地水平速度 ≤ 0.5 m/s；实测 0.27 m / 0.054 m/s。
@@ -46,14 +61,14 @@ npm run film:install && npm run film:flight     # 导出三段成片到 renders/
 ```sh
 npm run demos:generate                         # 本地生成两个 demo，无新增依赖
 npm run demos:generate -- only=nonconvex-pad     # 只生成其中一个
-npm run dev
+npm run demos:view
 # ?program=flight&run=nonconvex-stop&mode=follow&paused
 # ?program=flight&run=nonconvex-pad&mode=follow&paused
 ```
 
 浏览器播放离线闭环计算的录制，在线仿真仍暂停实施。原播放、轨迹、视角和大字结果样式保持不变。
 设计与复现见 [双层控制说明](docs/DUAL_GUIDANCE.md)，指标见 [正式 demo 报告](experiments/reports/demos/README.md)。
-其余二开案例的配置和历史证据见 [归档](experiments/archive/dual-development/README.md)，不再列入默认演示菜单。
+其余二开案例的配置和历史证据见 [归档](experiments/archive/dual-development/README.md)，不再列入默认演示菜单。官方原有案例和算法不清理，对应录制生成后仍会显示。
 
 ## 代码地图
 
