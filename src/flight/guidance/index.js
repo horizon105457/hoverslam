@@ -5,7 +5,8 @@ import defaults from './defaults.json' with { type: 'json' };
 import { FlightModel, ND, NU } from './model.js';
 import { optimizeTrajectory } from './optimizer.js';
 import { createPD } from '../controllers/pd.js';
-import { CONTROL_DT } from '../contract.js';
+import { createMPC } from '../mpc/index.js';
+import { CONTROL_DT, NA, DRIVE_IDX } from '../contract.js';
 import { WORLD } from '../../core/spec.js';
 import { streetLevel } from '../world.js';
 import { heightOf } from '../tasks.js';
@@ -73,6 +74,10 @@ function makeReferences(model, s, task, seedStates, dts, c) {
 function validateConfig(input) {
   const c = { ...defaults, ...input };
   delete c._doc;
+  c.ground = { ...defaults.ground, ...(input.ground || {}),
+    objective: { ...defaults.ground.objective, ...(input.ground?.objective || {}) } };
+  delete c.ground._doc;
+  if (typeof c.ground.enabled !== 'boolean') throw new TypeError('guidance ground.enabled must be boolean');
   c.upper_nodes = Math.trunc(finitePositive(c.upper_nodes, 'upper_nodes'));
   c.lower_nodes = Math.trunc(finitePositive(c.lower_nodes, 'lower_nodes'));
   c.upper_iterations = Math.trunc(finitePositive(c.upper_iterations, 'upper_iterations'));
@@ -112,8 +117,17 @@ function terminalWeights(c) {
 /** Create the two-level nonlinear flight controller. QP initialization is owned by the controller registry. */
 export function createDual(cfg = {}) {
   const c = validateConfig(cfg), model = new FlightModel(), pd = createPD(cfg.pd || {});
+  const outputSize = c.ground.enabled ? NA : NU;
   const zero = new Float64Array(NU);
+  const groundMpc = c.ground.enabled ? createMPC({
+    horizon: c.ground.horizon, knot: c.ground.knot, replan: c.ground.replan,
+    plan_dt: c.ground.plan_dt, first_passes: c.ground.first_passes,
+    optimizer: 'cem', mixer: 'raw', umax: 0, drive: true, drive_air: false, drive_init: [1, 0],
+    init: 0, objective: c.ground.objective,
+    cem: { samples: c.ground.samples, iters: c.ground.iters, elites: c.ground.elites },
+  }) : null;
   let task = null, upper = null, upperAt = -Infinity, lowerAt = -Infinity, lowerAction = null, landingDeadline = null;
+  let stopTask = false, groundLatched = false, groundStopped = false;
   const stats = { upperSolves: 0, lowerSolves: 0, durationCandidates: 0, lastUpperCost: null, lastLowerCost: null,
     lastUpperDiagnostics: null, lastLowerDiagnostics: null, lastDiagnostics: null };
   const ctl = { name: 'dual', config: c, plans: 0, evals: 0, planMs: 0, lastCost: null, diagnostics: null };
@@ -162,6 +176,12 @@ export function createDual(cfg = {}) {
   }
 
   function planUpper(s) {
+    const t0 = now();
+    try { return computeUpper(s); }
+    finally { ctl.planMs += now() - t0; }
+  }
+
+  function computeUpper(s) {
     const nominal = landingDeadline === null
       ? initialLandingDuration(s)
       : Math.max(CONTROL_DT * c.lower_replan_steps, landingDeadline - s.t);
@@ -257,6 +277,7 @@ export function createDual(cfg = {}) {
       references.push(sampleUpper(s.t + (i + 1) * c.lower_dt, 'state'));
     }
     let result;
+    const t0 = now();
     try {
       result = optimizeTrajectory({ model, initial, controls, dts, references, iterations: c.lower_iterations,
         weights: stageWeights(c), terminalWeights: terminalWeights(c), trust: c.trust });
@@ -266,6 +287,8 @@ export function createDual(cfg = {}) {
       stats.lastLowerDiagnostics = ctl.diagnostics;
       stats.lastDiagnostics = ctl.diagnostics;
       throw error;
+    } finally {
+      ctl.planMs += now() - t0;
     }
     stats.lowerSolves++;
     stats.lastLowerCost = result.cost;
@@ -280,25 +303,49 @@ export function createDual(cfg = {}) {
     reset({ task: t, seed = 0 } = {}) {
       task = t || null;
       if (task?.target) throw new Error('dual guidance currently supports airborne landing tasks; hover-hold targets are unsupported');
-      if (task?.success?.stop_speed !== undefined || task?.drive) throw new Error('dual guidance does not support ground driving tasks');
+      stopTask = task?.success?.stop_speed !== undefined;
+      if (stopTask && !c.ground.enabled) throw new Error('dual guidance ground stopping requires ground.enabled=true');
+      if (task?.drive) throw new Error('dual guidance does not support externally scripted ground driving tasks');
       upper = null; upperAt = -Infinity; lowerAt = -Infinity; lowerAction = null; landingDeadline = null;
+      groundLatched = false;
+      groundStopped = false;
+      if (groundMpc) groundMpc.reset({ task, seed });
       pd.reset({ task, seed });
       for (const k of Object.keys(stats)) stats[k] = k.startsWith('last') ? null : 0;
       ctl.plans = 0; ctl.evals = 0; ctl.planMs = 0; ctl.lastCost = null; ctl.diagnostics = null;
     },
     act(s) {
-      const t0 = now();
-      try {
+      const out = new Float64Array(outputSize);
       // The predictor has no contact model. On the ground the plant handles support/contact and this controller
-      // leaves all thrusters closed, including after touchdown.
-      if (s.phase === 'ground' || !s.armed) return Float64Array.from(zero);
+      // leaves all thrusters closed after touchdown; the existing rigid-twin ground MPC handles drive channels.
+      if (!s.armed) return out;
+      if (s.phase === 'ground') groundLatched = true;
+      if (groundLatched) {
+        if (groundMpc) {
+          const stopSpeed = task?.success?.stop_speed ?? 0.5;
+          const vh = Math.hypot(s.v[0], s.v[2]);
+          if (groundStopped || vh <= stopSpeed) {
+            groundStopped = true;
+            out[DRIVE_IDX.brake] = 1;
+            out[DRIVE_IDX.steer] = 0;
+            return out;
+          }
+          const beforeMs = groundMpc.planMs, beforePlans = groundMpc.plans, beforeEvals = groundMpc.evals;
+          const driven = groundMpc.act(s);
+          ctl.planMs += groundMpc.planMs - beforeMs;
+          ctl.plans += groundMpc.plans - beforePlans;
+          ctl.evals += groundMpc.evals - beforeEvals;
+          out.set(driven.subarray(NU, NA), NU);
+        }
+        return out;
+      }
       if (!upper || s.t - upperAt >= c.upper_replan) planUpper(s);
       if (!lowerAction || s.t - lowerAt >= c.lower_replan_steps * CONTROL_DT - 1e-9) {
         lowerAction = Float64Array.from(lowerPlan(s));
         lowerAt = s.t;
       }
-      return Float64Array.from(lowerAction);
-      } finally { ctl.planMs += now() - t0; }
+      out.set(lowerAction.subarray(0, NU));
+      return out;
     },
     predict(s) {
       if (!upper) return { states: [], controls: [], duration: null, cost: null, diagnostics: null };
@@ -308,7 +355,12 @@ export function createDual(cfg = {}) {
         cost: upper.result.cost, diagnostics: stats.lastUpperDiagnostics };
     },
   });
-  Object.defineProperty(ctl, 'statistics', { enumerable: true, get: () => ({ ...stats }) });
+  Object.defineProperty(ctl, 'statistics', { enumerable: true, get: () => ({ ...stats, ground: {
+    enabled: !!groundMpc, active: !!groundMpc && groundLatched, latched: groundLatched, stopped: groundStopped,
+    plans: groundMpc?.plans ?? 0, evals: groundMpc?.evals ?? 0, planMs: groundMpc?.planMs ?? 0,
+    lastCost: groundMpc?.lastCost ?? null,
+  } }) });
+  ctl.groundController = groundMpc;
   return ctl;
 }
 
